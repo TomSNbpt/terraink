@@ -54,6 +54,22 @@
       ]
     },
     {
+      "id": "phone_cases",
+      "name": "Phone Cases",
+      "layouts": [
+        {
+          "id": "phone_case_universal",
+          "name": "Universal",
+          "description": "4.65 x 7.68 inch phone case print layout at 300 DPI.",
+          "width": 4.65,
+          "height": 7.68,
+          "unit": "in",
+          "posterWidthCm": 11.811,
+          "posterHeightCm": 19.5072
+        }
+      ]
+    },
+    {
       "id": "poster",
       "name": "Poster",
       "layouts": [
