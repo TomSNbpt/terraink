@@ -107,7 +107,7 @@
   color: #ffc6aa;
 }
 
-.export-modal-option--svg {
+.export-modal-option--rsvg {
   background: linear-gradient(
     135deg,
     rgba(42, 126, 79, 0.96),
@@ -115,6 +115,16 @@
   );
   border-color: rgba(120, 221, 161, 0.56);
   color: #effff5;
+}
+
+.export-modal-option--svg {
+  background: linear-gradient(
+    135deg,
+    rgba(20, 104, 134, 0.96),
+    rgba(13, 78, 104, 0.96)
+  );
+  border-color: rgba(111, 211, 240, 0.56);
+  color: #ecfaff;
 }
 
 .export-modal-option-icon {
@@ -197,7 +207,7 @@
 .export-fab-trigger-desktop {
   position: fixed;
   right: 18px;
-  bottom: 52px;
+  bottom: 18px;
   z-index: 101;
   height: 44px;
   padding: 0 16px;

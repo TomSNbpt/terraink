@@ -7,6 +7,7 @@ import {
   RouteIcon,
   StyleIcon,
   SettingsIcon,
+  PresetsIcon,
 } from "./Icons";
 import type { MobileTab } from "./MobileNavBar";
 
@@ -21,6 +22,7 @@ const tabs: {
   { id: "layers", label: "Layers", Icon: LayersIcon },
   { id: "markers", label: "Markers", Icon: MarkersIcon },
   { id: "routes", label: "Routes", Icon: RouteIcon },
+  { id: "presets", label: "Presets", Icon: PresetsIcon },
 ];
 
 interface DesktopNavBarProps {

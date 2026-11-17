@@ -20,8 +20,20 @@ import {
 } from "@/features/routes/domain/constants";
 import type { SavedTheme } from "@/features/theme/domain/types";
 import type { UserDefaults } from "@/features/settings/domain/types";
+import {
+  DEFAULT_PRESET_ID,
+  DEFAULT_PRESET_NAME,
+  type PresetSnapshot,
+  type UserPreset,
+} from "@/features/presets/domain/types";
+import {
+  cloneSnapshot,
+  ensureDefaultPresetFirst,
+} from "@/features/presets/infrastructure/presetsStorage";
 
 /* ────── Form state ────── */
+
+export type CustomSizeUnit = "in" | "px";
 
 export interface PosterForm {
   location: string;
@@ -30,6 +42,7 @@ export interface PosterForm {
   distance: string;
   width: string;
   height: string;
+  customSizeUnit: CustomSizeUnit;
   theme: string;
   layout: string;
   displayCity: string;
@@ -59,6 +72,10 @@ export interface PosterState {
   customColors: Record<string, string>;
   savedThemes: SavedTheme[];
   userDefaults: UserDefaults;
+  presets: UserPreset[];
+  activePresetId: string | null;
+  presetLoadSeq: number;
+  targetBearing: number;
   markers: MarkerItem[];
   customMarkerIcons: MarkerIconDefinition[];
   markerDefaults: MarkerDefaults;
@@ -128,7 +145,18 @@ export type PosterAction =
       type: "SET_ROUTE_DEFAULTS";
       defaults: Partial<RouteDefaults>;
       applyToRoutes?: boolean;
-    };
+    }
+  | { type: "SET_PRESETS"; presets: UserPreset[] }
+  | { type: "ADD_PRESET"; preset: UserPreset; setActive?: boolean }
+  | {
+      type: "UPDATE_PRESET";
+      presetId: string;
+      snapshot: PresetSnapshot;
+      name?: string;
+    }
+  | { type: "REMOVE_PRESET"; presetId: string }
+  | { type: "SET_DEFAULT_PRESET"; snapshot: PresetSnapshot }
+  | { type: "APPLY_PRESET"; presetId: string };
 
 /* ────── Reducer ────── */
 
@@ -267,13 +295,9 @@ export function posterReducer(
       return {
         ...state,
         selectedLocation: null,
-        displayNameOverrides: { city: false, country: false },
         form: {
           ...state.form,
           location: "",
-          displayCity: "",
-          displayCountry: "",
-          displayContinent: "",
         },
       };
 
@@ -513,6 +537,144 @@ export function posterReducer(
               lineStyle: nextDefaults.lineStyle,
             }))
           : state.routes,
+      };
+    }
+
+    case "SET_PRESETS": {
+      const fallbackSnapshot: PresetSnapshot = {
+        form: { ...state.form },
+        customColors: { ...state.customColors },
+        displayNameOverrides: { ...state.displayNameOverrides },
+        markers: state.markers,
+        markerDefaults: state.markerDefaults,
+        routes: state.routes,
+        routeDefaults: state.routeDefaults,
+        bearing: state.targetBearing,
+      };
+      const normalized = ensureDefaultPresetFirst(
+        action.presets,
+        fallbackSnapshot,
+      );
+      const stillHasActive =
+        state.activePresetId !== null &&
+        normalized.some((p) => p.id === state.activePresetId);
+      return {
+        ...state,
+        presets: normalized,
+        activePresetId: stillHasActive ? state.activePresetId : DEFAULT_PRESET_ID,
+      };
+    }
+
+    case "ADD_PRESET": {
+      const nextPreset: UserPreset = {
+        ...action.preset,
+        snapshot: cloneSnapshot(action.preset.snapshot),
+      };
+      return {
+        ...state,
+        presets: [...state.presets, nextPreset],
+        activePresetId: action.setActive ? nextPreset.id : state.activePresetId,
+      };
+    }
+
+    case "UPDATE_PRESET": {
+      const now = new Date().toISOString();
+      const cloned = cloneSnapshot(action.snapshot);
+      return {
+        ...state,
+        presets: state.presets.map((preset) =>
+          preset.id === action.presetId
+            ? {
+                ...preset,
+                ...(action.name && preset.id !== DEFAULT_PRESET_ID
+                  ? { name: action.name.trim() }
+                  : {}),
+                updatedAt: now,
+                snapshot: cloned,
+              }
+            : preset,
+        ),
+      };
+    }
+
+    case "REMOVE_PRESET": {
+      if (action.presetId === DEFAULT_PRESET_ID) {
+        return state;
+      }
+      const nextPresets = state.presets.filter((p) => p.id !== action.presetId);
+      return {
+        ...state,
+        presets: nextPresets,
+        activePresetId:
+          state.activePresetId === action.presetId ? null : state.activePresetId,
+      };
+    }
+
+    case "SET_DEFAULT_PRESET": {
+      const now = new Date().toISOString();
+      const cloned = cloneSnapshot(action.snapshot);
+      const hasDefault = state.presets.some((p) => p.id === DEFAULT_PRESET_ID);
+      const nextPresets = hasDefault
+        ? state.presets.map((preset) =>
+            preset.id === DEFAULT_PRESET_ID
+              ? {
+                  ...preset,
+                  name: DEFAULT_PRESET_NAME,
+                  updatedAt: now,
+                  snapshot: cloned,
+                }
+              : preset,
+          )
+        : [
+            {
+              id: DEFAULT_PRESET_ID,
+              name: DEFAULT_PRESET_NAME,
+              createdAt: now,
+              updatedAt: now,
+              snapshot: cloned,
+            },
+            ...state.presets,
+          ];
+      return {
+        ...state,
+        presets: nextPresets,
+      };
+    }
+
+    case "APPLY_PRESET": {
+      const target = state.presets.find((p) => p.id === action.presetId);
+      if (!target) {
+        return state;
+      }
+      const snap = cloneSnapshot(target.snapshot);
+      let nextSavedThemes = state.savedThemes;
+      if (
+        snap.savedThemeFallback &&
+        !state.savedThemes.some((t) => t.id === snap.savedThemeFallback!.id)
+      ) {
+        nextSavedThemes = [...state.savedThemes, snap.savedThemeFallback];
+      }
+
+      return {
+        ...state,
+        form: snap.form,
+        customColors: snap.customColors,
+        savedThemes: nextSavedThemes,
+        displayNameOverrides: snap.displayNameOverrides,
+        markers: snap.markers,
+        markerDefaults: snap.markerDefaults,
+        routes: snap.routes,
+        routeDefaults: snap.routeDefaults,
+        targetBearing:
+          typeof snap.bearing === "number" && Number.isFinite(snap.bearing)
+            ? snap.bearing
+            : 0,
+        activePresetId: target.id,
+        presetLoadSeq: state.presetLoadSeq + 1,
+        isMarkerEditorActive: false,
+        activeMarkerId: null,
+        selectedLocation: null,
+        error: "",
       };
     }
 

@@ -5,21 +5,16 @@ import type { UserDefaults } from "@/features/settings/domain/types";
 import { clamp } from "@/shared/geo/math";
 import { recordRecentLocation } from "@/features/location/application/useRecentLocations";
 import type { SearchResult } from "@/features/location/domain/types";
+import type { CustomSizeUnit } from "../application/posterReducer";
 import {
-  normalizePosterSizeValue,
-  resolveLayoutIdForSize,
+  formatLayoutCm,
 } from "@/features/layout/domain/layoutMatcher";
-import { formatLayoutCm } from "@/features/layout/domain/layoutMatcher";
 import {
   getLayoutOption,
-  layoutOptions,
 } from "@/features/layout/infrastructure/layoutRepository";
 import {
-  MIN_POSTER_CM,
-  MAX_POSTER_CM,
   MIN_DISTANCE_METERS,
   MAX_DISTANCE_METERS,
-  LAYOUT_MATCH_TOLERANCE_CM,
 } from "@/core/config";
 
 /**
@@ -75,50 +70,18 @@ export function useFormHandlers() {
       }
 
       if (name === "width" || name === "height") {
-        const normalizedChangedValue = clamp(
-          parsed,
-          MIN_POSTER_CM,
-          MAX_POSTER_CM,
-        );
-
-        const prevWidth =
-          name === "width" ? normalizedChangedValue : Number(state.form.width);
-        const prevHeight =
-          name === "height"
-            ? normalizedChangedValue
-            : Number(state.form.height);
-
-        const nextWidth = normalizePosterSizeValue(
-          prevWidth,
-          normalizedChangedValue,
-          MIN_POSTER_CM,
-          MAX_POSTER_CM,
-        );
-        const nextHeight = normalizePosterSizeValue(
-          prevHeight,
-          normalizedChangedValue,
-          MIN_POSTER_CM,
-          MAX_POSTER_CM,
-        );
+        if (parsed <= 0) return;
 
         dispatch({
           type: "SET_FORM_FIELDS",
           fields: {
-            width: formatLayoutCm(nextWidth),
-            height: formatLayoutCm(nextHeight),
-            layout: resolveLayoutIdForSize(
-              nextWidth,
-              nextHeight,
-              state.form.layout,
-              LAYOUT_MATCH_TOLERANCE_CM,
-              getLayoutOption(state.form.layout),
-              layoutOptions,
-            ),
+            [name]: String(parsed),
+            layout: "custom",
           },
         });
       }
     },
-    [dispatch, state.form.width, state.form.height, state.form.layout],
+    [dispatch],
   );
 
   const handleThemeChange = useCallback(
@@ -130,6 +93,16 @@ export function useFormHandlers() {
 
   const handleLayoutChange = useCallback(
     (layoutId: string) => {
+      if (layoutId === "custom") {
+        dispatch({
+          type: "SET_LAYOUT",
+          layoutId: "custom",
+          widthCm: state.form.width,
+          heightCm: state.form.height,
+        });
+        return;
+      }
+
       const layoutOption = getLayoutOption(layoutId);
       if (!layoutOption) return;
 
@@ -139,6 +112,13 @@ export function useFormHandlers() {
         widthCm: formatLayoutCm(layoutOption.widthCm),
         heightCm: formatLayoutCm(layoutOption.heightCm),
       });
+    },
+    [dispatch, state.form.height, state.form.width],
+  );
+
+  const handleCustomSizeUnitChange = useCallback(
+    (unit: CustomSizeUnit) => {
+      dispatch({ type: "SET_FIELD", name: "customSizeUnit", value: unit });
     },
     [dispatch],
   );
@@ -231,6 +211,7 @@ export function useFormHandlers() {
     handleNumericFieldBlur,
     handleThemeChange,
     handleLayoutChange,
+    handleCustomSizeUnitChange,
     handleColorChange,
     handleResetColors,
     handleSetCustomColors,

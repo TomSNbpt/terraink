@@ -33,7 +33,12 @@ import {
   loadUserDefaults,
   saveUserDefaults,
 } from "@/features/settings/infrastructure/userDefaultsStorage";
-import type { UserDefaults } from "@/features/settings/domain/types";
+import type { PresetSnapshot } from "@/features/presets/domain/types";
+import {
+  cloneSnapshot,
+  loadPresets,
+  savePresets,
+} from "@/features/presets/infrastructure/presetsStorage";
 
 /* ────── Default form (moved from appConfig) ────── */
 
@@ -68,6 +73,7 @@ export const DEFAULT_FORM: PosterForm = {
   distance: String(DEFAULT_DISTANCE_METERS),
   width: String(defaultLayoutWidthCm),
   height: String(defaultLayoutHeightCm),
+  customSizeUnit: "in",
   theme: defaultThemeName,
   layout: defaultLayoutId,
   displayCity: "Hanover",
@@ -90,55 +96,69 @@ export const DEFAULT_FORM: PosterForm = {
   showRoutes: true,
 };
 
-function applyUserDefaultsToForm(
-  baseForm: PosterForm,
-  defaults: UserDefaults,
-): PosterForm {
-  const next: PosterForm = { ...baseForm };
-  if (defaults.theme) next.theme = defaults.theme;
-  if (defaults.layout) {
-    next.layout = defaults.layout;
-    // Width/height aren't saved separately — derive from the layout option so
-    // a saved "linkedin_cover" actually loads with LinkedIn dimensions.
-    const layoutOption = getLayoutOption(defaults.layout);
-    if (layoutOption) {
-      next.width = formatLayoutCm(layoutOption.widthCm);
-      next.height = formatLayoutCm(layoutOption.heightCm);
-    }
-  }
-  if (defaults.fontFamily !== undefined) next.fontFamily = defaults.fontFamily;
-  return next;
+export function createFallbackPresetSnapshot(): PresetSnapshot {
+  const defaultThemeTextColor = getTheme(defaultThemeName).ui.text;
+  return {
+    form: { ...DEFAULT_FORM },
+    customColors: {},
+    displayNameOverrides: {
+      city: false,
+      country: false,
+    },
+    markers: [],
+    markerDefaults: {
+      ...createDefaultMarkerSettings(),
+      color: defaultThemeTextColor,
+    },
+    routes: [],
+    routeDefaults: {
+      ...createDefaultRouteSettings(),
+      color: defaultThemeTextColor,
+    },
+    bearing: 0,
+  };
 }
 
 function buildInitialState(): PosterState {
   const userDefaults = loadUserDefaults();
+  const savedThemes = loadSavedThemes();
+  const fallbackSnapshot = createFallbackPresetSnapshot();
+  const presets = loadPresets(fallbackSnapshot);
+  const defaultPreset = presets[0];
+  const initialSnap = cloneSnapshot(defaultPreset.snapshot);
+
+  const mergedSavedThemes =
+    initialSnap.savedThemeFallback &&
+    !savedThemes.some((t) => t.id === initialSnap.savedThemeFallback!.id)
+      ? [...savedThemes, initialSnap.savedThemeFallback]
+      : savedThemes;
+
   return {
-    form: applyUserDefaultsToForm(DEFAULT_FORM, userDefaults),
-    customColors: {},
-    savedThemes: [],
+    form: initialSnap.form,
+    customColors: initialSnap.customColors,
+    savedThemes: mergedSavedThemes,
     userDefaults,
-    markers: [],
+    presets,
+    activePresetId: defaultPreset.id,
+    presetLoadSeq: 0,
+    targetBearing:
+      typeof initialSnap.bearing === "number" &&
+      Number.isFinite(initialSnap.bearing)
+        ? initialSnap.bearing
+        : 0,
+    markers: initialSnap.markers,
     customMarkerIcons: [],
-    markerDefaults: {
-      ...createDefaultMarkerSettings(),
-      color: getTheme(defaultThemeName).ui.text,
-    },
+    markerDefaults: initialSnap.markerDefaults,
     isMarkerEditorActive: false,
     activeMarkerId: null,
-    routes: [],
-    routeDefaults: {
-      ...createDefaultRouteSettings(),
-      color: getTheme(defaultThemeName).ui.text,
-    },
+    routes: initialSnap.routes,
+    routeDefaults: initialSnap.routeDefaults,
     error: "",
     isExporting: false,
     isLocationFocused: false,
     selectedLocation: null,
     userLocation: null,
-    displayNameOverrides: {
-      city: false,
-      country: false,
-    },
+    displayNameOverrides: initialSnap.displayNameOverrides,
   };
 }
 
@@ -172,11 +192,13 @@ export function PosterProvider({ children }: { children: ReactNode }) {
   const mapRef = useRef(null) as MapInstanceRef;
   const lastSyncedMarkerThemeColorRef = useRef<string | null>(null);
   const lastSyncedRouteThemeColorRef = useRef<string | null>(null);
+  const lastMarkerPresetSeqRef = useRef<number>(state.presetLoadSeq);
+  const lastRoutePresetSeqRef = useRef<number>(state.presetLoadSeq);
   const hasLoadedCustomIconsRef = useRef(false);
-  const hasLoadedSavedThemesRef = useRef(false);
   const initialUserDefaultsRef = useRef(state.userDefaults);
+  const initialPresetsRef = useRef(state.presets);
 
-  // The map opens on the DEFAULT_FORM coordinates. Reading the visitor's
+  // The map opens on the DEFAULT preset coordinates. Reading the visitor's
   // position here would raise a permission prompt nobody asked for, so
   // locating stays behind the "use my location" control.
 
@@ -207,6 +229,15 @@ export function PosterProvider({ children }: { children: ReactNode }) {
     const markerThemeColor = effectiveTheme.ui.text;
     const previouslySynced = lastSyncedMarkerThemeColorRef.current;
 
+    if (
+      previouslySynced === null ||
+      lastMarkerPresetSeqRef.current !== state.presetLoadSeq
+    ) {
+      lastSyncedMarkerThemeColorRef.current = markerThemeColor;
+      lastMarkerPresetSeqRef.current = state.presetLoadSeq;
+      return;
+    }
+
     if (previouslySynced === markerThemeColor) {
       return;
     }
@@ -217,20 +248,32 @@ export function PosterProvider({ children }: { children: ReactNode }) {
       defaults: { color: markerThemeColor },
       applyToMarkers: true,
     });
-  }, [dispatch, effectiveTheme.ui.text]);
+  }, [dispatch, effectiveTheme.ui.text, state.presetLoadSeq]);
 
   useEffect(() => {
     const routeThemeColor = effectiveTheme.ui.text;
-    if (lastSyncedRouteThemeColorRef.current === routeThemeColor) {
+    const previouslySynced = lastSyncedRouteThemeColorRef.current;
+
+    if (
+      previouslySynced === null ||
+      lastRoutePresetSeqRef.current !== state.presetLoadSeq
+    ) {
+      lastSyncedRouteThemeColorRef.current = routeThemeColor;
+      lastRoutePresetSeqRef.current = state.presetLoadSeq;
       return;
     }
+
+    if (previouslySynced === routeThemeColor) {
+      return;
+    }
+
     lastSyncedRouteThemeColorRef.current = routeThemeColor;
     dispatch({
       type: "SET_ROUTE_DEFAULTS",
       defaults: { color: routeThemeColor },
       applyToRoutes: true,
     });
-  }, [dispatch, effectiveTheme.ui.text]);
+  }, [dispatch, effectiveTheme.ui.text, state.presetLoadSeq]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -263,17 +306,13 @@ export function PosterProvider({ children }: { children: ReactNode }) {
   }, [state.customMarkerIcons]);
 
   useEffect(() => {
-    const saved = loadSavedThemes();
-    hasLoadedSavedThemesRef.current = true;
-    if (saved.length > 0) {
-      dispatch({ type: "SET_SAVED_THEMES", themes: saved });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hasLoadedSavedThemesRef.current) return;
     saveSavedThemes(state.savedThemes);
   }, [state.savedThemes]);
+
+  useEffect(() => {
+    if (state.presets === initialPresetsRef.current) return;
+    savePresets(state.presets);
+  }, [state.presets]);
 
   useEffect(() => {
     if (state.userDefaults === initialUserDefaultsRef.current) return;

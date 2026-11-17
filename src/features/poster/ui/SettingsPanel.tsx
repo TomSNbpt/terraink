@@ -12,6 +12,7 @@ import SettingsSection from "@/features/settings/ui/SettingsSection";
 import LayersSection from "@/features/map/ui/LayersSection";
 import MarkersSection from "@/features/markers/ui/MarkersSection";
 import RoutesSection from "@/features/routes/ui/RoutesSection";
+import PresetsSection from "@/features/presets/ui/PresetsSection";
 import TypographySection from "@/features/poster/ui/TypographySection";
 import {
   LocationIcon,
@@ -20,6 +21,7 @@ import {
   LayersIcon,
   MarkersIcon,
   RouteIcon,
+  PresetsIcon,
   StyleIcon,
   ChevronDownIcon,
 } from "@/shared/ui/Icons";
@@ -40,6 +42,7 @@ type SectionId =
   | "layers"
   | "markers"
   | "routes"
+  | "presets"
   | "style";
 
 const accordionSections: {
@@ -53,6 +56,7 @@ const accordionSections: {
   { id: "layers", label: "Layers", Icon: LayersIcon },
   { id: "markers", label: "Markers", Icon: MarkersIcon },
   { id: "routes", label: "Routes", Icon: RouteIcon },
+  { id: "presets", label: "Presets", Icon: PresetsIcon },
   { id: "style", label: "Style", Icon: StyleIcon },
 ];
 
@@ -70,6 +74,7 @@ export default function SettingsPanel({
     handleNumericFieldBlur,
     handleThemeChange,
     handleLayoutChange,
+    handleCustomSizeUnitChange,
     handleColorChange,
     handleResetColors,
     handleSetCustomColors,
@@ -180,6 +185,7 @@ export default function SettingsPanel({
                 onNumericFieldBlur={handleNumericFieldBlur}
                 onThemeChange={handleThemeChange}
                 onLayoutChange={handleLayoutChange}
+                onCustomUnitChange={handleCustomSizeUnitChange}
                 selectedTheme={selectedTheme}
                 themeOptions={themeOptions}
                 layoutGroups={layoutGroups}
@@ -223,6 +229,7 @@ export default function SettingsPanel({
                 onNumericFieldBlur={handleNumericFieldBlur}
                 onThemeChange={handleThemeChange}
                 onLayoutChange={handleLayoutChange}
+                onCustomUnitChange={handleCustomSizeUnitChange}
                 selectedTheme={selectedTheme}
                 themeOptions={themeOptions}
                 layoutGroups={layoutGroups}
@@ -310,12 +317,31 @@ export default function SettingsPanel({
       </div>
 
       <div
+        className={`mobile-section mobile-section--presets accordion-item${openSections.has("presets") ? " accordion-item--open" : ""}`}
+      >
+        <AccordionHeader
+          sectionId="presets"
+          label={accordionSections[6].label}
+          Icon={accordionSections[6].Icon}
+          isOpen={openSections.has("presets")}
+          onToggle={toggleSection}
+        />
+        <div
+          className={`accordion-body${openSections.has("presets") ? " is-open" : ""}`}
+        >
+          <div className="accordion-body-inner">
+            {!isColorEditorActive ? <PresetsSection /> : null}
+          </div>
+        </div>
+      </div>
+
+      <div
         className={`mobile-section mobile-section--style accordion-item${openSections.has("style") ? " accordion-item--open" : ""}`}
       >
         <AccordionHeader
           sectionId="style"
-          label={accordionSections[6].label}
-          Icon={accordionSections[6].Icon}
+          label={accordionSections[7].label}
+          Icon={accordionSections[7].Icon}
           isOpen={openSections.has("style")}
           onToggle={toggleSection}
         />

@@ -4,7 +4,7 @@ export interface Layout {
   description: string;
   width: number;
   height: number;
-  unit: "cm" | "px";
+  unit: "in" | "px";
   widthCm: number;
   heightCm: number;
   symbol: string;

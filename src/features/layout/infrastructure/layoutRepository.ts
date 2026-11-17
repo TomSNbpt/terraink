@@ -1,4 +1,6 @@
 import layoutsManifest from "@/data/layouts.json";
+import { CM_PER_INCH } from "@/core/config";
+import { OUTPUT_DPI } from "@/features/poster/infrastructure/renderer/constants";
 import { toPositiveNumber } from "@/shared/utils/number";
 import type { Layout, LayoutGroup } from "../domain/types";
 
@@ -7,11 +9,11 @@ const fallbackSymbol =
 
 const fallbackLayout: Layout = {
   id: "print_poster_20x30",
-  name: "Poster 20 x 30 cm",
+  name: "Poster 8 x 12 in",
   description: "Classic portrait poster size (2:3 ratio).",
-  width: 20,
-  height: 30,
-  unit: "cm",
+  width: Number((20 / CM_PER_INCH).toFixed(2)),
+  height: Number((30 / CM_PER_INCH).toFixed(2)),
+  unit: "in",
   widthCm: 20,
   heightCm: 30,
   symbol: fallbackSymbol,
@@ -19,11 +21,13 @@ const fallbackLayout: Layout = {
   categoryName: "Print",
 };
 
-function normalizeUnit(value: unknown): "cm" | "px" {
+function normalizeRawUnit(value: unknown): "cm" | "in" | "px" {
   const unit = String(value ?? "")
     .trim()
     .toLowerCase();
-  return unit === "px" ? "px" : "cm";
+  if (unit === "px") return "px";
+  if (unit === "in") return "in";
+  return "cm";
 }
 
 function formatDecimal(value: number): string {
@@ -59,18 +63,36 @@ function normalizeLayout(
   layout: any,
   fallbackIdSuffix: string | number,
 ): Layout {
-  const width = toPositiveNumber(layout?.width, fallbackLayout.width);
-  const height = toPositiveNumber(layout?.height, fallbackLayout.height);
-  const unit = normalizeUnit(layout?.unit);
+  const rawWidth = toPositiveNumber(layout?.width, fallbackLayout.widthCm);
+  const rawHeight = toPositiveNumber(layout?.height, fallbackLayout.heightCm);
+  const rawUnit = normalizeRawUnit(layout?.unit);
 
   const widthCm = toPositiveNumber(
     layout?.posterWidthCm,
-    unit === "cm" ? width : fallbackLayout.widthCm,
+    rawUnit === "in"
+      ? rawWidth * CM_PER_INCH
+      : rawUnit === "cm"
+        ? rawWidth
+        : fallbackLayout.widthCm,
   );
   const heightCm = toPositiveNumber(
     layout?.posterHeightCm,
-    unit === "cm" ? height : fallbackLayout.heightCm,
+    rawUnit === "in"
+      ? rawHeight * CM_PER_INCH
+      : rawUnit === "cm"
+        ? rawHeight
+        : fallbackLayout.heightCm,
   );
+
+  const unit: "in" | "px" = rawUnit === "px" ? "px" : "in";
+  const width =
+    rawUnit === "cm"
+      ? Number((rawWidth / CM_PER_INCH).toFixed(2))
+      : rawWidth;
+  const height =
+    rawUnit === "cm"
+      ? Number((rawHeight / CM_PER_INCH).toFixed(2))
+      : rawHeight;
 
   const rawSymbol = String(layout?.symbol ?? "").trim();
 
@@ -147,6 +169,7 @@ export function getLayoutOption(layoutId: string): Layout | null {
 export function createCustomLayoutOption(
   widthCm: number,
   heightCm: number,
+  unit: "in" | "px" = "in",
 ): Layout {
   const normalizedWidthCm = toPositiveNumber(widthCm, fallbackLayout.widthCm);
   const normalizedHeightCm = toPositiveNumber(
@@ -155,13 +178,22 @@ export function createCustomLayoutOption(
   );
   const symbol = createSymbolFromRatio(normalizedWidthCm, normalizedHeightCm);
 
+  const width =
+    unit === "px"
+      ? Math.max(1, Math.round((normalizedWidthCm / CM_PER_INCH) * OUTPUT_DPI))
+      : Number((normalizedWidthCm / CM_PER_INCH).toFixed(2));
+  const height =
+    unit === "px"
+      ? Math.max(1, Math.round((normalizedHeightCm / CM_PER_INCH) * OUTPUT_DPI))
+      : Number((normalizedHeightCm / CM_PER_INCH).toFixed(2));
+
   return {
     id: "custom",
     name: "Custom Layout",
     description: "Manual width and height values.",
-    width: normalizedWidthCm,
-    height: normalizedHeightCm,
-    unit: "cm",
+    width,
+    height,
+    unit,
     widthCm: normalizedWidthCm,
     heightCm: normalizedHeightCm,
     symbol,

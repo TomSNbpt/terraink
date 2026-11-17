@@ -7,6 +7,7 @@ import {
   RouteIcon,
   StyleIcon,
   SettingsIcon,
+  PresetsIcon,
 } from "./Icons";
 
 export type MobileTab =
@@ -17,6 +18,7 @@ export type MobileTab =
   | "layers"
   | "markers"
   | "routes"
+  | "presets"
   | "settings";
 
 const tabs: {
@@ -31,6 +33,7 @@ const tabs: {
   { id: "layers", label: "Layers", Icon: LayersIcon },
   { id: "markers", label: "Markers", Icon: MarkersIcon },
   { id: "routes", label: "Routes", Icon: RouteIcon },
+  { id: "presets", label: "Presets", Icon: PresetsIcon },
 ];
 
 interface MobileNavBarProps {

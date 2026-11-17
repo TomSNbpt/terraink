@@ -49,16 +49,8 @@ export function validatePosterInput(
     );
   }
 
-  const widthCm = clamp(
-    parseNumericInput("Width", form.width),
-    config.minPosterCm,
-    config.maxPosterCm,
-  );
-  const heightCm = clamp(
-    parseNumericInput("Height", form.height),
-    config.minPosterCm,
-    config.maxPosterCm,
-  );
+  const widthCm = Math.max(0.01, parseNumericInput("Width", form.width));
+  const heightCm = Math.max(0.01, parseNumericInput("Height", form.height));
   const widthInches = widthCm / CM_PER_INCH;
   const heightInches = heightCm / CM_PER_INCH;
   const distanceMeters = clamp(

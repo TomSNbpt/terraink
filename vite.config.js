@@ -249,6 +249,11 @@ ${body}
 
 export default defineConfig({
   plugins: [react(), adsensePlugin(), legalPagesPlugin()],
+  server: {
+    host: "0.0.0.0",
+    port: 3000,
+    allowedHosts: true,
+  },
   define: {
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
   },

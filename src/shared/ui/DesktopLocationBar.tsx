@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePosterContext } from "@/features/poster/ui/PosterContext";
 import { useFormHandlers } from "@/features/poster/application/useFormHandlers";
 import { useLocationAutocomplete } from "@/features/location/application/useLocationAutocomplete";
@@ -15,17 +15,15 @@ import type { SearchResult } from "@/features/location/domain/types";
 import { MyLocationIcon, LocationIcon, SearchIcon } from "@/shared/ui/Icons";
 
 /**
- * Desktop floating location bar.
- * Renders a pill-shaped search row with a search icon on the left,
- * a coords-toggle pin button, and a GPS button on the right.
- * Clicking the pin icon shows/hides the lat/lon coordinate fields.
+ * Floating location bar for desktop and mobile.
+ * Collapses the search input to a magnifying glass icon button matching the
+ * GPS and lat/lon toggle buttons, and expands horizontally when clicked.
  */
 export default function DesktopLocationBar() {
   const { state, dispatch, mapRef } = usePosterContext();
   const {
     handleChange,
     handleLocationSelect: handleLocationSelectBase,
-    handleClearLocation,
     setLocationFocused,
   } = useFormHandlers();
   const { locationSuggestions, isLocationSearching, searchNow } = useLocationAutocomplete(
@@ -37,9 +35,21 @@ export default function DesktopLocationBar() {
     useCurrentLocation(flyToLocation);
   const { recent, removeRecent, clearRecent } = useRecentLocations();
 
+  const [showSearch, setShowSearch] = useState(false);
   const [showCoords, setShowCoords] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  const hasLocationValue = state.form.location.trim().length > 0;
+  const openSearch = () => {
+    setShowSearch(true);
+    window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+  };
+
+  const closeSearch = () => {
+    setShowSearch(false);
+    setLocationFocused(false);
+  };
 
   const onLocationSelect = (location: SearchResult) => {
     handleLocationSelectBase(location);
@@ -47,76 +57,107 @@ export default function DesktopLocationBar() {
   };
 
   return (
-    <div className={`dsk-loc-bar${showCoords ? " show-coords" : ""}`}>
+    <div
+      className={`dsk-loc-bar${showSearch ? " show-search" : ""}${showCoords ? " show-coords" : ""}`}
+    >
       <div className="location-autocomplete">
         <div className="location-search-stack">
           <div className="location-search-main-row">
-            <div className="location-search-row">
-              <span className="location-search-icon" aria-hidden="true">
-                <SearchIcon />
-              </span>
-              <div className="location-input-wrap">
-                <input
-                  className="form-control-tall"
-                  name="location"
-                  value={state.form.location}
-                  onChange={handleChange}
-                  onFocus={() => setLocationFocused(true)}
-                  onBlur={() => setLocationFocused(false)}
-                  onKeyDown={(e) => { if (e.key === "Enter") void searchNow(e.currentTarget.value); }}
-                  placeholder={PLACEHOLDER_LOCATION_SEARCH}
-                  autoComplete="off"
-                />
-                {hasLocationValue ? (
+            {showSearch ? (
+              <div className="location-search-row">
+                <button
+                  type="button"
+                  className="location-search-icon"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={closeSearch}
+                  aria-label="Hide location search"
+                  title="Hide location search"
+                >
+                  <SearchIcon />
+                </button>
+                <div className="location-input-wrap">
+                  <input
+                    ref={searchInputRef}
+                    className="form-control-tall"
+                    name="location"
+                    value={state.form.location}
+                    onChange={handleChange}
+                    onFocus={() => setLocationFocused(true)}
+                    onBlur={() => setLocationFocused(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        void searchNow(e.currentTarget.value);
+                      } else if (e.key === "Escape") {
+                        closeSearch();
+                      }
+                    }}
+                    placeholder={PLACEHOLDER_LOCATION_SEARCH}
+                    autoComplete="off"
+                  />
                   <button
                     type="button"
                     className="location-clear-btn"
-                    aria-label="Clear location"
+                    aria-label="Close location search"
+                    title="Close location search"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={handleClearLocation}
+                    onClick={closeSearch}
                   >
                     x
                   </button>
-                ) : null}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="location-search-icons">
-            <button
-              type="button"
-              className={`icon-only-btn location-row-icon-btn${isLocatingUser ? " is-locating" : ""}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={handleUseCurrentLocation}
-              disabled={isLocatingUser}
-              aria-label="Use current location"
-              title="Use current location"
-            >
-              <MyLocationIcon className="location-current-icon" />
-            </button>
-            <button
-              type="button"
-              className={`icon-only-btn location-row-icon-btn${showCoords ? " is-active" : ""}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setShowCoords((v) => !v)}
-              aria-label="Toggle coordinate fields"
-              title="Show/hide lat & lon"
-            >
-              <LocationIcon />
-            </button>
+              {!showSearch ? (
+                <button
+                  type="button"
+                  className="icon-only-btn location-row-icon-btn"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={openSearch}
+                  aria-label="Search location"
+                  title="Search location"
+                >
+                  <SearchIcon />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={`icon-only-btn location-row-icon-btn${isLocatingUser ? " is-locating" : ""}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleUseCurrentLocation}
+                disabled={isLocatingUser}
+                aria-label="Use current location"
+                title="Use current location"
+              >
+                <MyLocationIcon className="location-current-icon" />
+              </button>
+              <button
+                type="button"
+                className={`icon-only-btn location-row-icon-btn${showCoords ? " is-active" : ""}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setShowCoords((v) => !v)}
+                aria-label="Toggle coordinate fields"
+                title="Show/hide lat & lon"
+              >
+                <LocationIcon />
+              </button>
             </div>
           </div>
 
-          <LocationSuggestionsDropdown
-            query={state.form.location}
-            isFocused={state.isLocationFocused}
-            suggestions={locationSuggestions}
-            isSearching={isLocationSearching}
-            onSelect={onLocationSelect}
-            recent={recent}
-            onRecentSelect={onLocationSelect}
-            onRecentRemove={removeRecent}
-            onClearRecent={clearRecent}
-          />
+          {showSearch ? (
+            <LocationSuggestionsDropdown
+              query={state.form.location}
+              isFocused={state.isLocationFocused}
+              suggestions={locationSuggestions}
+              isSearching={isLocationSearching}
+              onSelect={onLocationSelect}
+              recent={recent}
+              onRecentSelect={onLocationSelect}
+              onRecentRemove={removeRecent}
+              onClearRecent={clearRecent}
+            />
+          ) : null}
         </div>
 
         {locationPermissionMessage ? (

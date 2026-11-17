@@ -27,6 +27,7 @@ import type {
   ThemeColors,
 } from "@/features/theme/domain/types";
 import type { LayoutGroup } from "@/features/layout/domain/types";
+import type { CustomSizeUnit } from "@/features/poster/application/posterReducer";
 
 const FALLBACK_COLOR = "#000000";
 
@@ -36,6 +37,7 @@ interface MapSettingsForm {
   width: string;
   height: string;
   distance: string;
+  customSizeUnit?: CustomSizeUnit;
   includeBuildings: boolean;
   includeWater: boolean;
   includeParks: boolean;
@@ -54,6 +56,7 @@ interface MapSettingsSectionProps {
   onNumericFieldBlur: (event: React.FocusEvent<HTMLInputElement>) => void;
   onThemeChange: (themeId: string) => void;
   onLayoutChange: (layoutId: string) => void;
+  onCustomUnitChange?: (unit: CustomSizeUnit) => void;
   selectedTheme: ResolvedTheme;
   themeOptions: ThemeOption[];
   layoutGroups: LayoutGroup[];
@@ -78,6 +81,7 @@ export default function MapSettingsSection({
   onNumericFieldBlur,
   onThemeChange,
   onLayoutChange,
+  onCustomUnitChange,
   selectedTheme,
   themeOptions,
   layoutGroups,
@@ -198,8 +202,12 @@ export default function MapSettingsSection({
   const selectedLayoutOption = useMemo(() => {
     const match = layoutOptions.find((lo) => lo.id === form.layout);
     if (match) return match;
-    return createCustomLayoutOption(Number(form.width), Number(form.height));
-  }, [form.height, form.layout, form.width, layoutOptions]);
+    return createCustomLayoutOption(
+      Number(form.width),
+      Number(form.height),
+      form.customSizeUnit ?? "in",
+    );
+  }, [form.customSizeUnit, form.height, form.layout, form.width, layoutOptions]);
   const selectedLayoutDescription =
     selectedLayoutOption.id === "custom"
       ? "Your custom layout."
@@ -613,6 +621,8 @@ export default function MapSettingsSection({
               maxPosterCm={maxPosterCm}
               onChange={onChange}
               onNumericFieldBlur={onNumericFieldBlur}
+              customSizeUnit={form.customSizeUnit}
+              onCustomSizeUnitChange={onCustomUnitChange}
               showDistanceField={false}
             />
           </div>

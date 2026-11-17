@@ -6,27 +6,13 @@ import {
 } from "@/features/markers/domain/constants";
 import GeneralHeader from "@/shared/ui/GeneralHeader";
 import DesktopNavBar from "@/shared/ui/DesktopNavBar";
-import FooterNote from "@/shared/ui/FooterNote";
 import PreviewPanel from "@/features/poster/ui/PreviewPanel";
 import MobileNavBar, { type MobileTab } from "@/shared/ui/MobileNavBar";
 import InstallPrompt from "@/features/install/ui/InstallPrompt";
 import { useSwipeDown } from "@/shared/hooks/useSwipeDown";
-import StartupLocationModal from "@/features/location/ui/StartupLocationModal";
 import { CheckIcon } from "@/shared/ui/Icons";
-import SupportModal from "@/features/export/ui/SupportModal";
-import {
-  SUPPORT_PROMPT_EVENT,
-  type SupportPromptState,
-} from "@/features/export/application/useExport";
 import { useSessionAnalytics } from "@/features/export/application/useSessionAnalytics";
-import {
-  LEGAL_DOC_EVENT,
-  type LegalDocDetail,
-  type LegalDocType,
-} from "@/features/legal/application/legalDoc";
 
-const AboutModal = lazy(() => import("@/shared/ui/AboutModal"));
-const LegalModal = lazy(() => import("@/features/legal/ui/LegalModal"));
 const SettingsPanel = lazy(() => import("@/features/poster/ui/SettingsPanel"));
 const AnnouncementModal = lazy(
   () => import("@/features/updates/ui/AnnouncementModal"),
@@ -95,25 +81,6 @@ export default function AppShell() {
   const [desktopPanelOpen, setDesktopPanelOpen] = useState(false);
   const [desktopLocationRowVisible, setDesktopLocationRowVisible] =
     useState(true);
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [supportPrompt, setSupportPrompt] = useState<SupportPromptState | null>(null);
-  const [legalDoc, setLegalDoc] = useState<LegalDocType | null>(null);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      setSupportPrompt((e as CustomEvent<SupportPromptState>).detail);
-    };
-    window.addEventListener(SUPPORT_PROMPT_EVENT, handler);
-    return () => window.removeEventListener(SUPPORT_PROMPT_EVENT, handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      setLegalDoc((e as CustomEvent<LegalDocDetail>).detail.doc);
-    };
-    window.addEventListener(LEGAL_DOC_EVENT, handler);
-    return () => window.removeEventListener(LEGAL_DOC_EVENT, handler);
-  }, []);
 
   useEffect(() => {
     const preload = () => {
@@ -216,9 +183,8 @@ export default function AppShell() {
       data-mobile-tab={mobileTab}
       data-desktop-tab={desktopTab}
     >
-      <GeneralHeader onAboutOpen={() => setAboutOpen(true)} />
+      <GeneralHeader />
       <InstallPrompt />
-      <StartupLocationModal />
 
       <DesktopNavBar
         activeTab={desktopTab}
@@ -315,26 +281,9 @@ export default function AppShell() {
         <ExportFab isMobile={isMobileViewport} />
       </Suspense>
 
-      <FooterNote />
       <Suspense fallback={null}>
         <AnnouncementModal />
       </Suspense>
-      {aboutOpen ? (
-        <Suspense fallback={null}>
-          <AboutModal onClose={() => setAboutOpen(false)} />
-        </Suspense>
-      ) : null}
-      {supportPrompt ? (
-        <SupportModal
-          posterNumber={supportPrompt.posterNumber}
-          onClose={() => setSupportPrompt(null)}
-        />
-      ) : null}
-      {legalDoc ? (
-        <Suspense fallback={null}>
-          <LegalModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
-        </Suspense>
-      ) : null}
     </div>
   );
 }

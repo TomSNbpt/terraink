@@ -11,6 +11,7 @@ import {
   createPngBlob,
   createPdfBlobFromCanvas,
   createLayeredSvgBlobFromMap,
+  createVectorSvgBlobFromMap,
   createPosterFilename,
   triggerDownloadBlob,
 } from "@/core/services";
@@ -171,8 +172,12 @@ export function useExport() {
         const lat = Number(form.latitude) || 0;
         const lon = Number(form.longitude) || 0;
 
-        if (format === "svg") {
-          const svgBlob = await createLayeredSvgBlobFromMap({
+        if (format === "rsvg" || format === "svg") {
+          const buildSvg =
+            format === "svg"
+              ? createVectorSvgBlobFromMap
+              : createLayeredSvgBlobFromMap;
+          const svgBlob = await buildSvg({
             map,
             exportWidth: size.width,
             exportHeight: size.height,
@@ -285,6 +290,11 @@ export function useExport() {
     [exportPoster],
   );
 
+  const handleDownloadRsvg = useCallback(
+    () => exportPoster("rsvg"),
+    [exportPoster],
+  );
+
   const handleDownloadSvg = useCallback(
     () => exportPoster("svg"),
     [exportPoster],
@@ -295,6 +305,7 @@ export function useExport() {
     exportPoster,
     handleDownloadPng,
     handleDownloadPdf,
+    handleDownloadRsvg,
     handleDownloadSvg,
   };
 }

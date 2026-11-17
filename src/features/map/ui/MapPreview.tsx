@@ -74,6 +74,8 @@ interface MapPreviewProps {
   style: StyleSpecification;
   center: [lon: number, lat: number];
   zoom: number;
+  bearing?: number;
+  presetLoadSeq?: number;
   mapRef: MapInstanceRef;
   interactive?: boolean;
   allowRotation?: boolean;
@@ -96,6 +98,8 @@ export default function MapPreview({
   style,
   center,
   zoom,
+  bearing = 0,
+  presetLoadSeq = 0,
   mapRef,
   interactive = false,
   allowRotation = false,
@@ -110,6 +114,7 @@ export default function MapPreview({
   const isSyncing = useRef(false);
   const hasMountedStyleRef = useRef(false);
   const prevStyleRef = useRef<StyleSpecification | null>(null);
+  const lastPresetLoadSeqRef = useRef(presetLoadSeq);
   const onMoveEndRef = useRef(onMoveEnd);
   const onMoveRef = useRef(onMove);
   onMoveEndRef.current = onMoveEnd;
@@ -123,6 +128,7 @@ export default function MapPreview({
       style,
       center,
       zoom,
+      bearing,
       interactive: false,
       attributionControl: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
@@ -242,26 +248,46 @@ export default function MapPreview({
     const map = mapRef.current;
     if (!map) return;
 
+    const presetChanged = lastPresetLoadSeqRef.current !== presetLoadSeq;
+    if (presetChanged) {
+      lastPresetLoadSeqRef.current = presetLoadSeq;
+    }
+
     const currentCenter = map.getCenter();
     const centerDelta = Math.max(
       Math.abs(currentCenter.lng - center[0]),
       Math.abs(currentCenter.lat - center[1]),
     );
     const zoomDelta = Math.abs(map.getZoom() - zoom);
+    const bearingDelta = Math.abs(map.getBearing() - bearing);
 
     if (
+      !presetChanged &&
       centerDelta < MAP_CENTER_SYNC_EPSILON &&
       zoomDelta < MAP_ZOOM_SYNC_EPSILON
     ) {
       return;
     }
 
+    if (
+      presetChanged &&
+      centerDelta < MAP_CENTER_SYNC_EPSILON &&
+      zoomDelta < MAP_ZOOM_SYNC_EPSILON &&
+      bearingDelta < 0.05
+    ) {
+      return;
+    }
+
     isSyncing.current = true;
-    map.jumpTo({ center, zoom });
+    map.jumpTo({
+      center,
+      zoom,
+      ...(presetChanged ? { bearing, pitch: 0 } : {}),
+    });
     requestAnimationFrame(() => {
       isSyncing.current = false;
     });
-  }, [center, zoom, mapRef]);
+  }, [center, zoom, bearing, presetLoadSeq, mapRef]);
 
   const normalizedOverzoomScale = Math.max(1, overzoomScale);
   const innerStyle: CSSProperties =

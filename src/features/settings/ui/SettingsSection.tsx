@@ -86,23 +86,31 @@ export default function SettingsSection() {
     <section className="panel-block settings-section">
       <h2>Settings</h2>
       <p className="settings-note">
-        These are the values used when the app loads. Tap{" "}
-        <strong>Save Settings</strong> to capture your current poster setup
-        (theme, layout, font) as your defaults. Saved locally on this device.
+        Startup defaults are now managed by the <strong>DEFAULT</strong> preset
+        in the <strong>Presets</strong> menu.
       </p>
 
       <div className="settings-defaults-list">
-        <div className="settings-default-row">
+        <div className="settings-default-row is-disabled" aria-disabled="true">
           <span className="settings-default-label">Default theme</span>
-          <span className="settings-default-value">{themeLabel}</span>
+          <span className="settings-default-value">
+            <span>{themeLabel}</span>
+            <span className="settings-coming-soon">Managed in Presets</span>
+          </span>
         </div>
-        <div className="settings-default-row">
+        <div className="settings-default-row is-disabled" aria-disabled="true">
           <span className="settings-default-label">Default layout</span>
-          <span className="settings-default-value">{layoutLabel}</span>
+          <span className="settings-default-value">
+            <span>{layoutLabel}</span>
+            <span className="settings-coming-soon">Managed in Presets</span>
+          </span>
         </div>
-        <div className="settings-default-row">
+        <div className="settings-default-row is-disabled" aria-disabled="true">
           <span className="settings-default-label">Default font</span>
-          <span className="settings-default-value">{fontLabel}</span>
+          <span className="settings-default-value">
+            <span>{fontLabel}</span>
+            <span className="settings-coming-soon">Managed in Presets</span>
+          </span>
         </div>
 
         <div className="settings-default-row is-disabled" aria-disabled="true">
@@ -138,6 +146,7 @@ export default function SettingsSection() {
           type="button"
           className="settings-save-btn"
           onClick={handleSaveClick}
+          disabled
         >
           Save Settings
         </button>
@@ -145,7 +154,7 @@ export default function SettingsSection() {
           type="button"
           className="settings-reset-btn"
           onClick={handleResetClick}
-          disabled={!hasAnyDefaults}
+          disabled
         >
           Reset
         </button>

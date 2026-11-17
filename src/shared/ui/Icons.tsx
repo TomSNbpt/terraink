@@ -38,3 +38,8 @@ export { FiChevronDown as ChevronDownIcon } from "react-icons/fi";
 export { FiX as CloseIcon } from "react-icons/fi";
 export { FiSearch as SearchIcon } from "react-icons/fi";
 export { FiClock as HistoryIcon } from "react-icons/fi";
+export { FiBookmark as PresetsIcon } from "react-icons/fi";
+export { FiCopy as CopyIcon } from "react-icons/fi";
+export { FiUpload as UploadIcon } from "react-icons/fi";
+export { FiRefreshCw as RefreshIcon } from "react-icons/fi";
+export { FiPlus as AddIcon } from "react-icons/fi";

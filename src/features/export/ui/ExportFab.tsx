@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useExport } from "@/features/export/application/useExport";
 import type { ExportFormat } from "@/features/export/domain/types";
 import { CloseIcon, DownloadIcon, LoaderIcon } from "@/shared/ui/Icons";
-import SocialLinkGroup from "@/shared/ui/SocialLinkGroup";
 
 const FORMAT_OPTIONS: { format: ExportFormat; label: string }[] = [
   { format: "png", label: "PNG" },
   { format: "pdf", label: "PDF" },
-  { format: "svg", label: "RSVG" },
+  { format: "rsvg", label: "RSVG" },
+  { format: "svg", label: "SVG" },
 ];
 
 interface ExportFabProps {
@@ -115,10 +115,6 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
                 </button>
               ))}
             </div>
-            <p className="export-modal-support-label">
-              Support the project <span className="heart">❤︎</span>
-            </p>
-            <SocialLinkGroup variant="mobile-export" />
           </div>
         </div>
       ) : null}

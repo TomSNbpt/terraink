@@ -15,7 +15,6 @@ import RouteOverlay from "@/features/routes/ui/RouteOverlay";
 import RouteEndpointsOverlay from "@/features/routes/ui/RouteEndpointsOverlay";
 import GradientFades from "./GradientFades";
 import PosterTextOverlay from "./PosterTextOverlay";
-import SettingsInfo from "./SettingsInfo";
 import MapPrimaryControls from "./MapPrimaryControls";
 import {
   PlusIcon,
@@ -43,6 +42,7 @@ import {
   formatLayoutDimensions,
   getLayoutOption,
 } from "@/features/layout/infrastructure/layoutRepository";
+import { DEFAULT_PRESET_ID } from "@/features/presets/domain/types";
 
 const LOCKED_HINT = "Map is locked to prevent unintended movement.";
 const UNLOCK_HINT = `${LOCKED_HINT}\nClick to unlock map editing.`;
@@ -77,9 +77,13 @@ export default function PreviewPanel() {
   const frameRef = useRef<HTMLDivElement | null>(null);
   const ghostCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [mapBearing, setMapBearing] = useState(0);
+  const [mapBearing, setMapBearing] = useState(state.targetBearing);
   const [isRotationEnabled, setIsRotationEnabled] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    setMapBearing(state.targetBearing);
+  }, [state.presetLoadSeq, state.targetBearing]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -171,17 +175,9 @@ export default function PreviewPanel() {
   const formLat = Number(form.latitude) || 0;
   const formLon = Number(form.longitude) || 0;
   const layoutOption =
-    getLayoutOption(form.layout) ?? createCustomLayoutOption(widthCm, heightCm);
-  const posterSizeLabel = formatLayoutDimensions(layoutOption);
+    getLayoutOption(form.layout) ??
+    createCustomLayoutOption(widthCm, heightCm, form.customSizeUnit);
   const layoutLabel = `${layoutOption.name} (${formatLayoutDimensions(layoutOption)})`;
-  const infoLocationLabel =
-    [form.displayCity, form.displayCountry].filter(Boolean).join(", ") ||
-    form.location ||
-    DEFAULT_LOCATION_LABEL;
-  const infoLayoutLabel = layoutOption.name;
-  const markerCount = state.markers.length;
-  const markersLabel = `${markerCount} marker${markerCount === 1 ? "" : "s"}`;
-  const coordinatesLabel = `${formLat.toFixed(4)}, ${formLon.toFixed(4)}`;
   const isCityCountryView = mapZoom >= COUNTRY_VIEW_ZOOM_LEVEL;
   const isCountryContinentView =
     mapZoom >= CONTINENT_VIEW_ZOOM_LEVEL && mapZoom < COUNTRY_VIEW_ZOOM_LEVEL;
@@ -271,16 +267,37 @@ export default function PreviewPanel() {
   const handleRecenter = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
+    const defaultPresetForm = state.presets.find(
+      (p) => p.id === DEFAULT_PRESET_ID,
+    )?.snapshot.form;
+    const defaultPresetLat = Number(defaultPresetForm?.latitude);
+    const defaultPresetLon = Number(defaultPresetForm?.longitude);
+    const hasDefaultPresetTarget =
+      defaultPresetForm &&
+      Number.isFinite(defaultPresetLat) &&
+      Number.isFinite(defaultPresetLon);
+
     const target = selectedLocation ||
-      userLocation || {
-        id: "fallback:hanover",
-        label: DEFAULT_LOCATION_LABEL,
-        city: DEFAULT_CITY,
-        country: DEFAULT_COUNTRY,
-        continent: "Europe",
-        lat: DEFAULT_LAT,
-        lon: DEFAULT_LON,
-      };
+      userLocation ||
+      (hasDefaultPresetTarget
+        ? {
+            id: "default-preset",
+            label: defaultPresetForm.location || DEFAULT_LOCATION_LABEL,
+            city: defaultPresetForm.displayCity,
+            country: defaultPresetForm.displayCountry,
+            continent: defaultPresetForm.displayContinent || "Europe",
+            lat: defaultPresetLat,
+            lon: defaultPresetLon,
+          }
+        : {
+            id: "fallback:hanover",
+            label: DEFAULT_LOCATION_LABEL,
+            city: DEFAULT_CITY,
+            country: DEFAULT_COUNTRY,
+            continent: "Europe",
+            lat: DEFAULT_LAT,
+            lon: DEFAULT_LON,
+          });
     const applyTarget = (
       city: string,
       country: string,
@@ -346,7 +363,7 @@ export default function PreviewPanel() {
       .catch(() => {
         // fallback names already applied above — nothing more to do.
       });
-  }, [mapRef, selectedLocation, userLocation, dispatch]);
+  }, [mapRef, selectedLocation, userLocation, state.presets, dispatch]);
 
   const handleMarkerPositionChange = useCallback(
     (markerId: string, lat: number, lon: number) => {
@@ -404,6 +421,8 @@ export default function PreviewPanel() {
             style={mapStyle}
             center={mapCenter}
             zoom={mapZoom}
+            bearing={state.targetBearing}
+            presetLoadSeq={state.presetLoadSeq}
             mapRef={mapRef}
             interactive={isEditing && !isMarkerEditorActive}
             allowRotation={isEditing && isRotationEnabled}
@@ -589,21 +608,15 @@ export default function PreviewPanel() {
         </div>
       </div>
 
-      <div className="desktop-right-panel">
-        <SettingsInfo
-          location={infoLocationLabel}
-          theme={effectiveTheme.name}
-          layout={infoLayoutLabel}
-          posterSize={posterSizeLabel}
-          markers={markersLabel}
-          coordinates={coordinatesLabel}
-        />
-        <AdUnit
-          slot={AD_SLOT_SIDEBAR}
-          enabled={ADS_SIDEBAR_ENABLED}
-          className="sidebar-ad-slot"
-        />
-      </div>
+      {ADS_SIDEBAR_ENABLED ? (
+        <div className="desktop-right-panel">
+          <AdUnit
+            slot={AD_SLOT_SIDEBAR}
+            enabled={ADS_SIDEBAR_ENABLED}
+            className="sidebar-ad-slot"
+          />
+        </div>
+      ) : null}
     </section>
   );
 }

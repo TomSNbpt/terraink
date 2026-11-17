@@ -82,6 +82,7 @@ interface MapSyncState {
   form: { latitude: string; longitude: string; distance: string };
   displayNameOverrides: { city: boolean; country: boolean };
   selectedLocation: { label?: string; city?: string; country?: string; continent?: string } | null;
+  presetLoadSeq?: number;
 }
 
 type MapSyncDispatch = (action: {
@@ -103,7 +104,10 @@ export function useMapSync(
   const lastLookupCoordsRef = useRef<[number, number] | null>(null);
   const latestLocationLookupSeqRef = useRef(0);
   const skippedCoordinateLookupRef = useRef<string>("");
-  const lastManualCoordinateLookupRef = useRef<string>("");
+  const lastManualCoordinateLookupRef = useRef<string>(
+    `${(Number(form.latitude) || 0).toFixed(6)},${(Number(form.longitude) || 0).toFixed(6)}`,
+  );
+  const lastPresetLoadSeqRef = useRef<number>(state.presetLoadSeq ?? 0);
   // Read selectedLocation without adding it to the coordinate effect's deps.
   // The effect should only re-run when lat/lon change (user typed coordinates),
   // not when selectedLocation changes (e.g. CLEAR_LOCATION) — otherwise clearing
@@ -260,6 +264,13 @@ export function useMapSync(
     }
 
     const coordinateKey = `${lat.toFixed(6)},${lon.toFixed(6)}`;
+    const currentPresetSeq = state.presetLoadSeq ?? 0;
+    if (lastPresetLoadSeqRef.current !== currentPresetSeq) {
+      lastPresetLoadSeqRef.current = currentPresetSeq;
+      lastManualCoordinateLookupRef.current = coordinateKey;
+      return;
+    }
+
     if (skippedCoordinateLookupRef.current === coordinateKey) {
       skippedCoordinateLookupRef.current = "";
       return;
@@ -276,7 +287,7 @@ export function useMapSync(
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [form.latitude, form.longitude, updateLocationFromCoordinates]);
+  }, [form.latitude, form.longitude, state.presetLoadSeq, updateLocationFromCoordinates]);
 
   const flyToLocation = useCallback(
     (lat: number, lon: number, keepCurrentZoom = false) => {

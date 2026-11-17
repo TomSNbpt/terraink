@@ -1005,9 +1005,15 @@
 
   .mobile-location-row-wrap .dsk-loc-bar .location-search-main-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto;
+    justify-content: start;
     align-items: center;
     gap: 8px;
+  }
+
+  .mobile-location-row-wrap .dsk-loc-bar.show-search .location-search-main-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-content: stretch;
   }
 
   .mobile-location-row-wrap .dsk-loc-bar .location-search-row {
@@ -1032,11 +1038,15 @@
     flex-shrink: 0;
     width: 24px;
     height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(183, 215, 235, 0.52);
-    pointer-events: none;
+    color: rgba(183, 215, 235, 0.72);
+    cursor: pointer;
+    pointer-events: auto;
   }
 
   .mobile-location-row-wrap .dsk-loc-bar .location-input-wrap {
@@ -1444,6 +1454,11 @@
 
   /* Routes tab: show only the routes section */
   [data-mobile-tab="routes"] .mobile-section:not(.mobile-section--routes) {
+    display: none;
+  }
+
+  /* Presets tab: show only the presets section */
+  [data-mobile-tab="presets"] .mobile-section:not(.mobile-section--presets) {
     display: none;
   }
 
