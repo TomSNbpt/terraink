@@ -493,6 +493,58 @@
           "minor_low": "#CCCCDA"
         }
       }
+    },
+    "chicago_marathon": {
+      "name": "Chicago Marathon",
+      "description": "Option 1 - colors adjusted for Printful",
+      "ui": {
+        "bg": "#E8ECF2",
+        "text": "#D91E36"
+      },
+      "map": {
+        "land": "#E8ECF2",
+        "landcover": "#E1E6EE",
+        "water": "#13316E",
+        "waterway": "#13316E",
+        "parks": "#D4DFEC",
+        "buildings": "#D5DCE8",
+        "aeroway": "#DCE2EC",
+        "rail": "#5A6B8C",
+        "roads": {
+          "major": "#8C9BB8",
+          "path": "#CBD4E3",
+          "outline": "#DCE2EC",
+          "minor_high": "#A4B2CC",
+          "minor_mid": "#B8C3D9",
+          "minor_low": "#C6D0E3"
+        }
+      }
+    },
+    "chicago_marathon_navy": {
+      "name": "Chicago Marathon - Alt",
+      "description": "Option 2 - colors adjusted for Printful",
+      "ui": {
+        "bg": "#13316E",
+        "text": "#FFFFFF"
+      },
+      "map": {
+        "land": "#13316E",
+        "landcover": "#163678",
+        "water": "#0A1C42",
+        "waterway": "#0A1C42",
+        "parks": "#1A408A",
+        "buildings": "#193B80",
+        "aeroway": "#18397C",
+        "rail": "#5C7EC2",
+        "roads": {
+          "major": "#4B6CB0",
+          "path": "#1E3F82",
+          "outline": "#0E2554",
+          "minor_high": "#39599C",
+          "minor_mid": "#2B4B8C",
+          "minor_low": "#224180"
+        }
+      }
     }
   }
 }

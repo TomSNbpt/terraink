@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapInstanceRef } from "@/features/map/domain/types";
 import {
   MAP_CENTER_SYNC_EPSILON,
+  MAP_FINE_WHEEL_ZOOM_STEP,
   MAP_ZOOM_SYNC_EPSILON,
 } from "@/features/map/infrastructure";
 
@@ -110,6 +111,7 @@ export default function MapPreview({
   containerStyle,
   overzoomScale = 1,
 }: MapPreviewProps) {
+  const outerContainerRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isSyncing = useRef(false);
   const hasMountedStyleRef = useRef(false);
@@ -117,8 +119,11 @@ export default function MapPreview({
   const lastPresetLoadSeqRef = useRef(presetLoadSeq);
   const onMoveEndRef = useRef(onMoveEnd);
   const onMoveRef = useRef(onMove);
+  const overzoomScaleRef = useRef(overzoomScale);
+  const fineWheelDeltaAccumRef = useRef(0);
   onMoveEndRef.current = onMoveEnd;
   onMoveRef.current = onMove;
+  overzoomScaleRef.current = overzoomScale;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -193,6 +198,83 @@ export default function MapPreview({
       map.dragRotate.disable();
     }
   }, [interactive, allowRotation, mapRef]);
+
+  useEffect(() => {
+    const outerContainer = outerContainerRef.current;
+    if (!outerContainer || !interactive) {
+      fineWheelDeltaAccumRef.current = 0;
+      return;
+    }
+
+    const FINE_WHEEL_PIXEL_THRESHOLD = 40;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.shiftKey) return;
+
+      const map = mapRef.current;
+      if (!map) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Some browsers convert Shift + vertical wheel into deltaX.
+      const rawDelta =
+        Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+          ? event.deltaY
+          : event.deltaX;
+      if (!Number.isFinite(rawDelta) || rawDelta === 0) return;
+
+      let steps = 0;
+      if (event.deltaMode !== 0) {
+        steps = -Math.sign(rawDelta);
+        fineWheelDeltaAccumRef.current = 0;
+      } else {
+        if (
+          fineWheelDeltaAccumRef.current !== 0 &&
+          Math.sign(fineWheelDeltaAccumRef.current) !== Math.sign(rawDelta)
+        ) {
+          fineWheelDeltaAccumRef.current = 0;
+        }
+        fineWheelDeltaAccumRef.current += rawDelta;
+
+        if (Math.abs(fineWheelDeltaAccumRef.current) >= FINE_WHEEL_PIXEL_THRESHOLD) {
+          steps = -Math.sign(fineWheelDeltaAccumRef.current);
+          fineWheelDeltaAccumRef.current = 0;
+        }
+      }
+
+      if (steps === 0) return;
+
+      const rect = outerContainer.getBoundingClientRect();
+      const scale = Math.max(1, overzoomScaleRef.current);
+      const internalX = (event.clientX - rect.left) * scale;
+      const internalY = (event.clientY - rect.top) * scale;
+      const around = map.unproject([internalX, internalY]);
+
+      const currentZoom = map.getZoom();
+      const targetZoom = Math.min(
+        map.getMaxZoom(),
+        Math.max(
+          map.getMinZoom(),
+          currentZoom + steps * MAP_FINE_WHEEL_ZOOM_STEP,
+        ),
+      );
+      if (Math.abs(targetZoom - currentZoom) < 0.0001) return;
+
+      map.zoomTo(targetZoom, { duration: 0, around });
+    };
+
+    outerContainer.addEventListener("wheel", handleWheel, {
+      passive: false,
+      capture: true,
+    });
+    return () => {
+      fineWheelDeltaAccumRef.current = 0;
+      outerContainer.removeEventListener("wheel", handleWheel, {
+        capture: true,
+      });
+    };
+  }, [interactive, mapRef]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -301,7 +383,11 @@ export default function MapPreview({
         };
 
   return (
-    <div className="map-container" style={{ ...containerStyle, overflow: "hidden" }}>
+    <div
+      ref={outerContainerRef}
+      className="map-container"
+      style={{ ...containerStyle, overflow: "hidden" }}
+    >
       <div ref={containerRef} style={innerStyle} />
     </div>
   );
