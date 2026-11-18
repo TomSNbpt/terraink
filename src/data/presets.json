@@ -115,7 +115,28 @@
           "startIconId": "circle",
           "finishIconId": "flag"
         },
-        "guides": [],
+        "guides": [
+          {
+            "id": "guide-a1b2c3d4-0501-4000-8000-000000000001",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-a1b2c3d4-0501-4000-8000-000000000002",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-a1b2c3d4-0501-4000-8000-000000000003",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-a1b2c3d4-0501-4000-8000-000000000004",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
         "showGuides": true,
         "bearing": 0
       }
@@ -10307,7 +10328,28 @@
           "startIconId": "circle",
           "finishIconId": "flag"
         },
-        "guides": [],
+        "guides": [
+          {
+            "id": "guide-b2c3d4e5-0502-4000-8000-000000000001",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-b2c3d4e5-0502-4000-8000-000000000002",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-b2c3d4e5-0502-4000-8000-000000000003",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-b2c3d4e5-0502-4000-8000-000000000004",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
         "showGuides": true,
         "bearing": 0
       }

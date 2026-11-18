@@ -15,7 +15,16 @@ export function loadUserDefaults(): UserDefaults {
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return {};
-    return parsed as UserDefaults;
+    const defaults = { ...(parsed as UserDefaults) };
+    if (
+      defaults.bleedInches !== undefined &&
+      (typeof defaults.bleedInches !== "number" ||
+        !Number.isFinite(defaults.bleedInches) ||
+        defaults.bleedInches < 0)
+    ) {
+      delete defaults.bleedInches;
+    }
+    return defaults;
   } catch {
     return {};
   }

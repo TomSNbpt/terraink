@@ -755,6 +755,19 @@
     overflow: visible;
   }
 
+  .app-shell > .preview-panel .poster-frame.is-bleed-preview {
+    box-shadow: none;
+    max-height: calc((84vh - 52px) / var(--bleed-scale-y, 1));
+    max-width: calc((100% - 48px) / var(--bleed-scale-x, 1));
+    width: min(
+      calc((100% - 48px) / var(--bleed-scale-x, 1)),
+      calc(
+        ((84vh - 52px) / var(--bleed-scale-y, 1)) *
+          var(--poster-aspect, 0.6666667)
+      )
+    );
+  }
+
   .app-shell > .preview-panel .poster-frame .map-container {
     border-radius: inherit;
     overflow: hidden;
@@ -800,6 +813,12 @@
     align-items: center;
     gap: 6px;
     flex-wrap: nowrap;
+  }
+
+  .app-shell > .preview-panel .poster-frame.is-bleed-preview .map-controls {
+    top: calc(100% + var(--bleed-bottom-pct, 0%) + 12px);
+    bottom: auto;
+    transform: translateX(-50%);
   }
 
   .app-shell > .preview-panel .poster-frame .map-controls .map-control-group {

@@ -45,3 +45,6 @@ export { FiRefreshCw as RefreshIcon } from "react-icons/fi";
 export { FiPlus as AddIcon } from "react-icons/fi";
 export { FiEye as EyeIcon } from "react-icons/fi";
 export { FiEyeOff as EyeOffIcon } from "react-icons/fi";
+export { FiCrosshair as CrosshairIcon } from "react-icons/fi";
+export { FiMaximize2 as BleedIcon } from "react-icons/fi";
+

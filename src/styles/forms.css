@@ -3733,6 +3733,93 @@ button.confirm-modal-destructive:focus-visible {
   background: rgba(11, 21, 30, 0.7);
 }
 
+.settings-bleed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+button.settings-inline-reset-btn {
+  width: auto;
+  margin: 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(137, 176, 200, 0.35);
+  border-radius: 6px;
+  background: rgba(17, 37, 52, 0.85);
+  color: #cfe6f6;
+  font-family: "Spline Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+button.settings-inline-reset-btn:not(:disabled):hover,
+button.settings-inline-reset-btn:focus-visible {
+  transform: none;
+  filter: none;
+  border-color: rgba(55, 171, 203, 0.75);
+  background: rgba(31, 67, 94, 0.92);
+}
+
+button.settings-inline-reset-btn:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.settings-bleed-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+input.settings-bleed-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid rgba(137, 176, 200, 0.35);
+  border-radius: 8px;
+  background: rgba(8, 17, 26, 0.92);
+  color: #e7f2fb;
+  font-family: "Spline Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+input.settings-bleed-input:focus-visible {
+  outline: 2px solid rgba(55, 171, 203, 0.65);
+  outline-offset: 1px;
+  border-color: rgba(55, 171, 203, 0.85);
+}
+
+.settings-bleed-unit {
+  font-family: "Spline Sans Mono", monospace;
+  font-size: 0.8rem;
+  color: #9cc3da;
+  flex-shrink: 0;
+}
+
+.settings-bleed-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-family: "Spline Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  color: #b7d7ec;
+}
+
+.settings-bleed-hint {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #8fa8b9;
+}
+
 .settings-actions {
   display: flex;
   align-items: center;

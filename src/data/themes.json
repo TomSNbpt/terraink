@@ -545,6 +545,84 @@
           "minor_low": "#224180"
         }
       }
+    },
+    "philadelphia_option_1": {
+      "name": "Philadelphia - Option 1",
+      "description": "Limestone, Ben Franklin Navy & Marathon Crimson — adjusted for Printful matte poster & mug",
+      "ui": {
+        "bg": "#F2EFE9",
+        "text": "#C41E3A"
+      },
+      "map": {
+        "land": "#F2EFE9",
+        "landcover": "#EAE6DE",
+        "water": "#16427A",
+        "waterway": "#16427A",
+        "parks": "#DCE3DA",
+        "buildings": "#DFDBD2",
+        "aeroway": "#E4E0D8",
+        "rail": "#6C7A8E",
+        "roads": {
+          "major": "#7A899E",
+          "path": "#D1D8E2",
+          "outline": "#E6E3DC",
+          "minor_high": "#95A3B6",
+          "minor_mid": "#B0BCCB",
+          "minor_low": "#C5CEDB"
+        }
+      }
+    },
+    "philadelphia_option_2": {
+      "name": "Philadelphia - Option 2",
+      "description": "Deep Philly Navy & Bell Gold — adjusted for Printful matte poster & mug",
+      "ui": {
+        "bg": "#122B54",
+        "text": "#F0C239"
+      },
+      "map": {
+        "land": "#122B54",
+        "landcover": "#15315E",
+        "water": "#0C2042",
+        "waterway": "#0C2042",
+        "parks": "#1A3C70",
+        "buildings": "#183666",
+        "aeroway": "#173462",
+        "rail": "#5377AB",
+        "roads": {
+          "major": "#46699E",
+          "path": "#1B345C",
+          "outline": "#0D2042",
+          "minor_high": "#37568A",
+          "minor_mid": "#2A4675",
+          "minor_low": "#213B66"
+        }
+      }
+    },
+    "philadelphia_option_3": {
+      "name": "Philadelphia - Option 3",
+      "description": "Ben Franklin Blue & Bell Gold — adjusted for Printful matte poster & mug",
+      "ui": {
+        "bg": "#194A84",
+        "text": "#F4C83A"
+      },
+      "map": {
+        "land": "#194A84",
+        "landcover": "#1D5291",
+        "water": "#0E2D59",
+        "waterway": "#0E2D59",
+        "parks": "#235C9E",
+        "buildings": "#215694",
+        "aeroway": "#1F5490",
+        "rail": "#7DA4D4",
+        "roads": {
+          "major": "#648EC2",
+          "path": "#234A7C",
+          "outline": "#123766",
+          "minor_high": "#4E79B0",
+          "minor_mid": "#3A6499",
+          "minor_low": "#2B5387"
+        }
+      }
     }
   }
 }

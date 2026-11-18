@@ -23,10 +23,12 @@ import {
   computeCityFontScale,
   formatCityLabel,
 } from "@/features/poster/domain/textLayout";
+import type { TrimRect } from "@/features/layout/domain/bleed";
 import {
   createOffscreenContainer,
   resolveExportRenderParams,
   waitForMapIdle,
+  type ExportBleedRenderOptions,
 } from "./exportUtils";
 
 interface VectorSvgOptions {
@@ -44,6 +46,8 @@ interface VectorSvgOptions {
   markers: MarkerItem[];
   markerIcons: MarkerIconDefinition[];
   routes?: Route[];
+  trimRect?: TrimRect;
+  bleedOptions?: ExportBleedRenderOptions;
 }
 
 interface Point2D {
@@ -567,6 +571,8 @@ export async function createVectorSvgBlobFromMap({
   markers,
   markerIcons,
   routes = [],
+  trimRect,
+  bleedOptions,
 }: VectorSvgOptions): Promise<Blob> {
   await waitForMapIdle(map);
 
@@ -583,7 +589,7 @@ export async function createVectorSvgBlobFromMap({
     markerScaleX,
     markerScaleY,
     markerSizeScale,
-  } = resolveExportRenderParams(map, exportWidth, exportHeight);
+  } = resolveExportRenderParams(map, exportWidth, exportHeight, bleedOptions);
 
   const offscreenContainer = createOffscreenContainer(renderWidth, renderHeight);
   document.body.appendChild(offscreenContainer);
@@ -775,6 +781,11 @@ export async function createVectorSvgBlobFromMap({
     ];
     const overlayGroups: string[] = [];
 
+    const tx = trimRect?.x ?? 0;
+    const ty = trimRect?.y ?? 0;
+    const tw = trimRect?.width ?? exportWidth;
+    const th = trimRect?.height ?? exportHeight;
+
     if (showOverlay) {
       const fadeColor = escapeXml(theme.ui.bg || "#ffffff");
       defs.push(
@@ -784,8 +795,27 @@ export async function createVectorSvgBlobFromMap({
         `  <linearGradient id="poster-fade-bottom" x1="0" y1="1" x2="0" y2="0">\n    <stop offset="0%" stop-color="${fadeColor}" stop-opacity="1" />\n    <stop offset="100%" stop-color="${fadeColor}" stop-opacity="0" />\n  </linearGradient>`,
       );
 
+      const fadeRects: string[] = [];
+      if (ty > 0) {
+        fadeRects.push(
+          `  <rect x="0" y="0" width="${fmt(exportWidth)}" height="${fmt(ty)}" fill="${fadeColor}" />`,
+        );
+      }
+      fadeRects.push(
+        `  <rect x="0" y="${fmt(ty)}" width="${fmt(exportWidth)}" height="${fmt(th * 0.25)}" fill="url(#poster-fade-top)" />`,
+      );
+      fadeRects.push(
+        `  <rect x="0" y="${fmt(ty + th * 0.75)}" width="${fmt(exportWidth)}" height="${fmt(th * 0.25)}" fill="url(#poster-fade-bottom)" />`,
+      );
+      const bottomTrimEdge = ty + th;
+      if (bottomTrimEdge < exportHeight) {
+        fadeRects.push(
+          `  <rect x="0" y="${fmt(bottomTrimEdge)}" width="${fmt(exportWidth)}" height="${fmt(exportHeight - bottomTrimEdge)}" fill="${fadeColor}" />`,
+        );
+      }
+
       overlayGroups.push(
-        `<g id="overlay-layer-fades">\n  <rect x="0" y="0" width="${fmt(exportWidth)}" height="${fmt(exportHeight * 0.25)}" fill="url(#poster-fade-top)" />\n  <rect x="0" y="${fmt(exportHeight * 0.75)}" width="${fmt(exportWidth)}" height="${fmt(exportHeight * 0.25)}" fill="url(#poster-fade-bottom)" />\n</g>`,
+        `<g id="overlay-layer-fades">\n${fadeRects.join("\n")}\n</g>`,
       );
     }
 
@@ -875,7 +905,7 @@ export async function createVectorSvgBlobFromMap({
 
     const dimScale = Math.max(
       0.45,
-      Math.min(exportWidth, exportHeight) / TEXT_DIMENSION_REFERENCE_PX,
+      Math.min(tw, th) / TEXT_DIMENSION_REFERENCE_PX,
     );
 
     if (showPosterText) {
@@ -884,28 +914,44 @@ export async function createVectorSvgBlobFromMap({
         CITY_FONT_BASE_PX * dimScale * computeCityFontScale(displayCity);
       const countryFontSize = COUNTRY_FONT_BASE_PX * dimScale;
       const coordinateFontSize = COORDS_FONT_BASE_PX * dimScale;
-      const cityY = exportHeight * TEXT_CITY_Y_RATIO;
-      const lineY = exportHeight * TEXT_DIVIDER_Y_RATIO;
-      const countryY = exportHeight * TEXT_COUNTRY_Y_RATIO;
-      const coordinatesY = exportHeight * TEXT_COORDS_Y_RATIO;
+      const centerX = tx + tw * 0.5;
+      const cityY = ty + th * TEXT_CITY_Y_RATIO;
+      const lineY = ty + th * TEXT_DIVIDER_Y_RATIO;
+      const countryY = ty + th * TEXT_COUNTRY_Y_RATIO;
+      const coordinatesY = ty + th * TEXT_COORDS_Y_RATIO;
 
       textElements.push(
-        `  <text x="${fmt(exportWidth * 0.5)}" y="${fmt(cityY)}" dy="0.35em" text-anchor="middle" fill="${escapeXml(textColor)}" font-family="${escapeXml(titleFontFamily)}" font-size="${fmt(cityFontSize)}" font-weight="700">${escapeXml(cityLabel)}</text>`,
+        `  <text x="${fmt(centerX)}" y="${fmt(cityY)}" dy="0.35em" text-anchor="middle" fill="${escapeXml(textColor)}" font-family="${escapeXml(titleFontFamily)}" font-size="${fmt(cityFontSize)}" font-weight="700">${escapeXml(cityLabel)}</text>`,
       );
       textElements.push(
-        `  <line x1="${fmt(exportWidth * 0.4)}" y1="${fmt(lineY)}" x2="${fmt(exportWidth * 0.6)}" y2="${fmt(lineY)}" stroke="${escapeXml(textColor)}" stroke-width="${fmt(3 * dimScale)}" />`,
+        `  <line x1="${fmt(tx + tw * 0.4)}" y1="${fmt(lineY)}" x2="${fmt(tx + tw * 0.6)}" y2="${fmt(lineY)}" stroke="${escapeXml(textColor)}" stroke-width="${fmt(3 * dimScale)}" />`,
       );
       textElements.push(
-        `  <text x="${fmt(exportWidth * 0.5)}" y="${fmt(countryY)}" dy="0.35em" text-anchor="middle" fill="${escapeXml(textColor)}" font-family="${escapeXml(titleFontFamily)}" font-size="${fmt(countryFontSize)}" font-weight="300">${escapeXml(displayCountry.toUpperCase())}</text>`,
+        `  <text x="${fmt(centerX)}" y="${fmt(countryY)}" dy="0.35em" text-anchor="middle" fill="${escapeXml(textColor)}" font-family="${escapeXml(titleFontFamily)}" font-size="${fmt(countryFontSize)}" font-weight="300">${escapeXml(displayCountry.toUpperCase())}</text>`,
       );
       textElements.push(
-        `  <text x="${fmt(exportWidth * 0.5)}" y="${fmt(coordinatesY)}" dy="0.35em" text-anchor="middle" fill="${escapeXml(textColor)}" fill-opacity="0.75" font-family="${escapeXml(bodyFontFamily)}" font-size="${fmt(coordinateFontSize)}" font-weight="400">${escapeXml(formatCoordinates(center.lat, center.lon))}</text>`,
+        `  <text x="${fmt(centerX)}" y="${fmt(coordinatesY)}" dy="0.35em" text-anchor="middle" fill="${escapeXml(textColor)}" fill-opacity="0.75" font-family="${escapeXml(bodyFontFamily)}" font-size="${fmt(coordinateFontSize)}" font-weight="400">${escapeXml(formatCoordinates(center.lat, center.lon))}</text>`,
       );
     }
 
     if (textElements.length > 0) {
       overlayGroups.push(
         `<g id="overlay-layer-text">\n${textElements.join("\n")}\n</g>`,
+      );
+    }
+
+    const hasBleedArea =
+      Boolean(trimRect) &&
+      ((bleedOptions?.bleedRatioX ?? 0) > 0 ||
+        (bleedOptions?.bleedRatioY ?? 0) > 0 ||
+        tx > 0.01 ||
+        ty > 0.01 ||
+        tw < exportWidth - 0.01 ||
+        th < exportHeight - 0.01);
+
+    if (hasBleedArea) {
+      overlayGroups.push(
+        `<g id="TRIM_AREA" data-name="TRIM AREA">\n  <rect x="${fmt(tx)}" y="${fmt(ty)}" width="${fmt(tw)}" height="${fmt(th)}" fill="none" stroke="none" />\n</g>`,
       );
     }
 

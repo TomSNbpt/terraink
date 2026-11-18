@@ -36,6 +36,7 @@ export async function compositeExport(
     markerScaleY = 1,
     markerSizeScale = 1,
     routes = [],
+    trimRect,
   } = options;
 
   const width = mapCanvas.width;
@@ -53,7 +54,7 @@ export async function compositeExport(
 
   // 2. Gradient fades
   if (showOverlay) {
-    applyFades(ctx, width, height, theme.ui.bg);
+    applyFades(ctx, width, height, theme.ui.bg, trimRect);
   }
 
   // 3. Routes (below markers)
@@ -110,6 +111,7 @@ export async function compositeExport(
     showPosterText,
     showOverlay,
     includeCredits,
+    trimRect,
   );
 
   const size: CanvasSize = {

@@ -11,6 +11,7 @@ import {
 } from "@/features/layout/domain/layoutMatcher";
 import {
   getLayoutOption,
+  instantiateLayoutGuides,
 } from "@/features/layout/infrastructure/layoutRepository";
 import {
   MIN_DISTANCE_METERS,
@@ -111,6 +112,7 @@ export function useFormHandlers() {
         layoutId: layoutOption.id,
         widthCm: formatLayoutCm(layoutOption.widthCm),
         heightCm: formatLayoutCm(layoutOption.heightCm),
+        guides: instantiateLayoutGuides(layoutOption),
       });
     },
     [dispatch, state.form.height, state.form.width],

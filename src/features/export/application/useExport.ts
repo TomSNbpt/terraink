@@ -16,10 +16,14 @@ import {
   triggerDownloadBlob,
 } from "@/core/services";
 import {
-  CM_PER_INCH,
   DEFAULT_POSTER_WIDTH_CM,
   DEFAULT_POSTER_HEIGHT_CM,
 } from "@/core/config";
+import {
+  computeBleedLayoutMetrics,
+  computeExportTrimRect,
+  resolveBleedInches,
+} from "@/features/layout/domain/bleed";
 import { trackEvent, setUserProperty } from "@/core/services";
 
 const EXPORT_COUNT_STORAGE_KEY = "terraink.poster.count";
@@ -142,8 +146,14 @@ export function useExport() {
         const widthCm = Number(form.width) || DEFAULT_POSTER_WIDTH_CM;
         const heightCm = Number(form.height) || DEFAULT_POSTER_HEIGHT_CM;
         const dpi = 300;
-        const widthInches = widthCm / CM_PER_INCH;
-        const heightInches = heightCm / CM_PER_INCH;
+        const bleedInches = resolveBleedInches(state.userDefaults);
+        const bleedMetrics = computeBleedLayoutMetrics(
+          widthCm,
+          heightCm,
+          bleedInches,
+        );
+        const isBleedPreviewActive =
+          state.showBleedPreview && bleedMetrics.bleedInches > 0;
 
         // Aggregate, non-personal export data. Use only the structured city /
         // country — never raw input (form.location) or coordinates.
@@ -167,7 +177,20 @@ export function useExport() {
             : {}),
         };
 
-        const size = resolveCanvasSize(widthInches, heightInches);
+        const size = resolveCanvasSize(
+          bleedMetrics.totalWidthInches,
+          bleedMetrics.totalHeightInches,
+        );
+        const trimRect = computeExportTrimRect(
+          size.width,
+          size.height,
+          bleedMetrics,
+        );
+        const bleedOptions = {
+          bleedRatioX: bleedMetrics.bleedRatioX,
+          bleedRatioY: bleedMetrics.bleedRatioY,
+          isBleedPreviewActive,
+        };
 
         const lat = Number(form.latitude) || 0;
         const lon = Number(form.longitude) || 0;
@@ -194,6 +217,8 @@ export function useExport() {
               ? getAllMarkerIcons(state.customMarkerIcons)
               : [],
             routes: visibleRoutes,
+            trimRect,
+            bleedOptions,
           });
           const svgFilename = createPosterFilename(
             form.displayCity || form.location,
@@ -214,14 +239,19 @@ export function useExport() {
           markerScaleX,
           markerScaleY,
           markerSizeScale,
-        } = await captureMapAsCanvas(map, size.width, size.height);
+        } = await captureMapAsCanvas(
+          map,
+          size.width,
+          size.height,
+          bleedOptions,
+        );
 
         // 2. Composite fades + text
         const { canvas } = await compositeExport(mapCanvas, {
           theme: effectiveTheme,
           center: { lat, lon },
-          widthInches,
-          heightInches,
+          widthInches: bleedMetrics.totalWidthInches,
+          heightInches: bleedMetrics.totalHeightInches,
           displayCity: form.displayCity || form.location || "",
           displayCountry: form.displayCountry || "",
           fontFamily: form.fontFamily.trim(),
@@ -237,6 +267,7 @@ export function useExport() {
           markerScaleY: hasVisibleOverlays ? markerScaleY : undefined,
           markerSizeScale: hasVisibleOverlays ? markerSizeScale : undefined,
           routes: visibleRoutes,
+          trimRect,
         });
 
         // 3. Download
@@ -248,8 +279,8 @@ export function useExport() {
 
         if (format === "pdf") {
           const pdfBlob = createPdfBlobFromCanvas(canvas, {
-            widthCm,
-            heightCm,
+            widthCm: bleedMetrics.totalWidthCm,
+            heightCm: bleedMetrics.totalHeightCm,
           });
           await triggerDownloadBlob(pdfBlob, filename);
         } else {
@@ -277,6 +308,8 @@ export function useExport() {
       registerSuccessfulExport,
       state.markers,
       state.customMarkerIcons,
+      state.userDefaults,
+      state.showBleedPreview,
     ],
   );
 

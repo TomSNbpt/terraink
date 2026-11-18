@@ -31,6 +31,7 @@ import {
   ensureDefaultPresetFirst,
 } from "@/features/presets/infrastructure/presetsStorage";
 import type { LayoutGuide } from "@/features/layout/domain/types";
+import { normalizeBleedInches } from "@/features/layout/domain/bleed";
 
 /* ────── Form state ────── */
 
@@ -86,6 +87,8 @@ export interface PosterState {
   routeDefaults: RouteDefaults;
   guides: LayoutGuide[];
   showGuides: boolean;
+  showCenterGuides: boolean;
+  showBleedPreview: boolean;
   error: string;
   isExporting: boolean;
   isLocationFocused: boolean;
@@ -107,7 +110,13 @@ export type PosterAction =
       resetDisplayNameOverrides?: boolean;
     }
   | { type: "SET_THEME"; themeId: string }
-  | { type: "SET_LAYOUT"; layoutId: string; widthCm: string; heightCm: string }
+  | {
+      type: "SET_LAYOUT";
+      layoutId: string;
+      widthCm: string;
+      heightCm: string;
+      guides?: LayoutGuide[];
+    }
   | { type: "SET_COLOR"; key: string; value: string }
   | { type: "SET_CUSTOM_COLORS"; colors: Record<string, string> }
   | { type: "RESET_COLORS" }
@@ -154,6 +163,9 @@ export type PosterAction =
   | { type: "REMOVE_GUIDE"; guideId: string }
   | { type: "CLEAR_GUIDES" }
   | { type: "SET_SHOW_GUIDES"; show: boolean }
+  | { type: "CYCLE_GUIDE_MODE" }
+  | { type: "TOGGLE_BLEED_PREVIEW" }
+  | { type: "SET_BLEED_INCHES"; bleedInches: number }
   | { type: "SET_PRESETS"; presets: UserPreset[] }
   | { type: "ADD_PRESET"; preset: UserPreset; setActive?: boolean }
   | {
@@ -231,6 +243,12 @@ export function posterReducer(
           width: action.widthCm,
           height: action.heightCm,
         },
+        ...(action.guides !== undefined
+          ? {
+              guides: action.guides,
+              ...(action.guides.length > 0 ? { showGuides: true } : {}),
+            }
+          : {}),
       };
 
     case "SET_COLOR":
@@ -729,7 +747,48 @@ export function posterReducer(
       return {
         ...state,
         showGuides: action.show,
+        ...(action.show ? {} : { showCenterGuides: false }),
       };
+
+    case "CYCLE_GUIDE_MODE": {
+      if (!state.showGuides && !state.showCenterGuides) {
+        return {
+          ...state,
+          showGuides: true,
+          showCenterGuides: false,
+        };
+      }
+      if (state.showGuides && !state.showCenterGuides) {
+        return {
+          ...state,
+          showGuides: true,
+          showCenterGuides: true,
+        };
+      }
+      return {
+        ...state,
+        showGuides: false,
+        showCenterGuides: false,
+      };
+    }
+
+    case "TOGGLE_BLEED_PREVIEW":
+      return {
+        ...state,
+        showBleedPreview: !state.showBleedPreview,
+      };
+
+    case "SET_BLEED_INCHES": {
+      const normalized = normalizeBleedInches(action.bleedInches);
+      return {
+        ...state,
+        userDefaults: {
+          ...state.userDefaults,
+          bleedInches: normalized,
+        },
+        ...(normalized <= 0 ? { showBleedPreview: false } : {}),
+      };
+    }
 
     default:
       return state;

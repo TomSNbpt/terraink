@@ -72,6 +72,12 @@ export interface ExportRenderParams {
   markerSizeScale: number;
 }
 
+export interface ExportBleedRenderOptions {
+  bleedRatioX?: number;
+  bleedRatioY?: number;
+  isBleedPreviewActive?: boolean;
+}
+
 /**
  * Derives all render dimensions and marker projection data needed to create
  * an offscreen export map that matches the live preview framing.
@@ -80,9 +86,21 @@ export function resolveExportRenderParams(
   map: MaplibreMap,
   exportWidth: number,
   exportHeight: number,
+  bleedOptions: ExportBleedRenderOptions = {},
 ): ExportRenderParams {
   const internalMapContainer = map.getContainer();
   const visibleContainer = internalMapContainer.parentElement;
+
+  const bleedRatioX = Math.max(0, Number(bleedOptions.bleedRatioX) || 0);
+  const bleedRatioY = Math.max(0, Number(bleedOptions.bleedRatioY) || 0);
+  const exportScaleFactorX = 1 + 2 * bleedRatioX;
+  const exportScaleFactorY = 1 + 2 * bleedRatioY;
+  const previewScaleFactorX = bleedOptions.isBleedPreviewActive
+    ? exportScaleFactorX
+    : 1;
+  const previewScaleFactorY = bleedOptions.isBleedPreviewActive
+    ? exportScaleFactorY
+    : 1;
 
   // Derive the actual overzoom scale from the DOM so the export matches the
   // live preview even when adaptive overzoom has scaled beyond the static
@@ -92,14 +110,15 @@ export function resolveExportRenderParams(
       ? internalMapContainer.clientWidth / visibleContainer.clientWidth
       : MAP_OVERZOOM_SCALE;
 
-  const visiblePreviewWidth =
+  const rawVisibleWidth =
     visibleContainer?.clientWidth ||
     Math.round(internalMapContainer.clientWidth / actualOverzoomScale);
-  const visiblePreviewHeight =
+  const rawVisibleHeight =
     visibleContainer?.clientHeight ||
     Math.round(internalMapContainer.clientHeight / actualOverzoomScale);
-  const previewWidth = Math.max(visiblePreviewWidth, 1);
-  const previewHeight = Math.max(visiblePreviewHeight, 1);
+
+  const previewWidth = Math.max(rawVisibleWidth / previewScaleFactorX, 1);
+  const previewHeight = Math.max(rawVisibleHeight / previewScaleFactorY, 1);
 
   const center = map.getCenter();
   const zoom = map.getZoom();
@@ -107,12 +126,20 @@ export function resolveExportRenderParams(
   const bearing = map.getBearing();
   const style = map.getStyle() as StyleSpecification;
 
-  const widthScale = Math.max(exportWidth / previewWidth, 1);
-  const heightScale = Math.max(exportHeight / previewHeight, 1);
+  const trimExportWidth = exportWidth / exportScaleFactorX;
+  const trimExportHeight = exportHeight / exportScaleFactorY;
+  const widthScale = Math.max(trimExportWidth / previewWidth, 1);
+  const heightScale = Math.max(trimExportHeight / previewHeight, 1);
   const basePixelRatio = Math.max(widthScale, heightScale, 1);
 
-  const renderWidth = Math.max(1, Math.round(previewWidth * actualOverzoomScale));
-  const renderHeight = Math.max(1, Math.round(previewHeight * actualOverzoomScale));
+  const renderWidth = Math.max(
+    1,
+    Math.round(previewWidth * actualOverzoomScale * exportScaleFactorX),
+  );
+  const renderHeight = Math.max(
+    1,
+    Math.round(previewHeight * actualOverzoomScale * exportScaleFactorY),
+  );
   const pixelRatio = Math.max(basePixelRatio / actualOverzoomScale, 1);
 
   const markerProjection: MarkerProjectionInput = {

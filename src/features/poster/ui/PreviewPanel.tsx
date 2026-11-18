@@ -16,7 +16,10 @@ import RouteEndpointsOverlay from "@/features/routes/ui/RouteEndpointsOverlay";
 import GradientFades from "./GradientFades";
 import PosterTextOverlay from "./PosterTextOverlay";
 import GuidesOverlay from "@/features/layout/ui/GuidesOverlay";
-import MapPrimaryControls from "./MapPrimaryControls";
+import BleedOverlay from "@/features/layout/ui/BleedOverlay";
+import MapPrimaryControls, {
+  type GuideDisplayMode,
+} from "./MapPrimaryControls";
 import {
   PlusIcon,
   MinusIcon,
@@ -43,6 +46,10 @@ import {
   formatLayoutDimensions,
   getLayoutOption,
 } from "@/features/layout/infrastructure/layoutRepository";
+import {
+  computeBleedLayoutMetrics,
+  resolveBleedInches,
+} from "@/features/layout/domain/bleed";
 import { DEFAULT_PRESET_ID } from "@/features/presets/domain/types";
 
 const LOCKED_HINT = "Map is locked to prevent unintended movement.";
@@ -173,6 +180,10 @@ export default function PreviewPanel() {
   const widthCm = Number(form.width) || DEFAULT_POSTER_WIDTH_CM;
   const heightCm = Number(form.height) || DEFAULT_POSTER_HEIGHT_CM;
   const aspect = widthCm / heightCm;
+  const bleedInches = resolveBleedInches(state.userDefaults);
+  const bleedMetrics = computeBleedLayoutMetrics(widthCm, heightCm, bleedInches);
+  const isBleedPreviewActive =
+    state.showBleedPreview && bleedMetrics.bleedInches > 0;
   const formLat = Number(form.latitude) || 0;
   const formLon = Number(form.longitude) || 0;
   const layoutOption =
@@ -366,6 +377,21 @@ export default function PreviewPanel() {
       });
   }, [mapRef, selectedLocation, userLocation, state.presets, dispatch]);
 
+  const guideMode: GuideDisplayMode =
+    !state.showGuides && !state.showCenterGuides
+      ? "off"
+      : state.showGuides && !state.showCenterGuides
+        ? "layout"
+        : "layout_and_center";
+
+  const handleCycleGuideMode = useCallback(() => {
+    dispatch({ type: "CYCLE_GUIDE_MODE" });
+  }, [dispatch]);
+
+  const handleToggleBleedPreview = useCallback(() => {
+    dispatch({ type: "TOGGLE_BLEED_PREVIEW" });
+  }, [dispatch]);
+
   const handleMarkerPositionChange = useCallback(
     (markerId: string, lat: number, lon: number) => {
       dispatch({
@@ -410,57 +436,94 @@ export default function PreviewPanel() {
         </div>
         <div
           ref={frameRef}
-          className="poster-frame"
+          className={`poster-frame${isBleedPreviewActive ? " is-bleed-preview" : ""}`}
           style={
             {
               "--poster-aspect": `${aspect}`,
               "--poster-bg": effectiveTheme.ui.bg,
+              "--bleed-bottom-pct": isBleedPreviewActive
+                ? `${bleedMetrics.bleedPercentY}%`
+                : "0%",
+              "--bleed-scale-x": isBleedPreviewActive
+                ? `${1 + 2 * bleedMetrics.bleedRatioX}`
+                : "1",
+              "--bleed-scale-y": isBleedPreviewActive
+                ? `${1 + 2 * bleedMetrics.bleedRatioY}`
+                : "1",
+              "--bleed-ratio-x": isBleedPreviewActive
+                ? `${bleedMetrics.bleedRatioX}`
+                : "0",
+              "--bleed-ratio-y": isBleedPreviewActive
+                ? `${bleedMetrics.bleedRatioY}`
+                : "0",
             } as CSSProperties
           }
         >
-          <MapPreview
-            style={mapStyle}
-            center={mapCenter}
-            zoom={mapZoom}
-            bearing={state.targetBearing}
-            presetLoadSeq={state.presetLoadSeq}
-            mapRef={mapRef}
-            interactive={isEditing && !isMarkerEditorActive}
-            allowRotation={isEditing && isRotationEnabled}
-            minZoom={mapMinZoom}
-            maxZoom={mapMaxZoom}
-            overzoomScale={overzoomScale}
-            onMove={handleMove}
-            onMoveEnd={handleMoveEnd}
-          />
-          {form.showMarkers ? (
-            <GradientFades color={effectiveTheme.ui.bg} />
-          ) : null}
-          <RouteOverlay
-            routes={state.routes}
-            mapRef={mapRef}
-            visible={form.showRoutes}
-            overzoomScale={overzoomScale}
-          />
-          <RouteEndpointsOverlay
-            routes={state.routes}
-            customIcons={state.customMarkerIcons}
-            mapRef={mapRef}
-            visible={form.showRoutes}
-            overzoomScale={overzoomScale}
-          />
-          {hasVisibleMarkers ? (
-            <MarkerOverlay
-              markers={state.markers}
-              customIcons={state.customMarkerIcons}
+          <div
+            className={`poster-map-stage${isBleedPreviewActive ? " is-bleed-active" : ""}`}
+            style={
+              isBleedPreviewActive
+                ? {
+                    left: `${-bleedMetrics.bleedPercentX}%`,
+                    top: `${-bleedMetrics.bleedPercentY}%`,
+                    width: `${100 + 2 * bleedMetrics.bleedPercentX}%`,
+                    height: `${100 + 2 * bleedMetrics.bleedPercentY}%`,
+                  }
+                : { inset: 0 }
+            }
+          >
+            <MapPreview
+              style={mapStyle}
+              center={mapCenter}
+              zoom={mapZoom}
+              bearing={state.targetBearing}
+              presetLoadSeq={state.presetLoadSeq}
               mapRef={mapRef}
-              isMarkerEditMode={isMarkerEditorActive}
-              activeMarkerId={activeMarkerId}
-              onActiveMarkerChange={handleMarkerActiveChange}
-              onMarkerPositionChange={handleMarkerPositionChange}
-              onMarkerSizeChange={handleMarkerSizeChange}
+              interactive={isEditing && !isMarkerEditorActive}
+              allowRotation={isEditing && isRotationEnabled}
+              minZoom={mapMinZoom}
+              maxZoom={mapMaxZoom}
+              overzoomScale={overzoomScale}
+              onMove={handleMove}
+              onMoveEnd={handleMoveEnd}
+            />
+            {form.showMarkers ? (
+              <GradientFades
+                color={effectiveTheme.ui.bg}
+                bleedRatioY={
+                  isBleedPreviewActive ? bleedMetrics.bleedRatioY : 0
+                }
+              />
+            ) : null}
+            <RouteOverlay
+              routes={state.routes}
+              mapRef={mapRef}
+              visible={form.showRoutes}
               overzoomScale={overzoomScale}
             />
+            <RouteEndpointsOverlay
+              routes={state.routes}
+              customIcons={state.customMarkerIcons}
+              mapRef={mapRef}
+              visible={form.showRoutes}
+              overzoomScale={overzoomScale}
+            />
+            {hasVisibleMarkers ? (
+              <MarkerOverlay
+                markers={state.markers}
+                customIcons={state.customMarkerIcons}
+                mapRef={mapRef}
+                isMarkerEditMode={isMarkerEditorActive}
+                activeMarkerId={activeMarkerId}
+                onActiveMarkerChange={handleMarkerActiveChange}
+                onMarkerPositionChange={handleMarkerPositionChange}
+                onMarkerSizeChange={handleMarkerSizeChange}
+                overzoomScale={overzoomScale}
+              />
+            ) : null}
+          </div>
+          {isBleedPreviewActive ? (
+            <BleedOverlay metrics={bleedMetrics} />
           ) : null}
           <PosterTextOverlay
             city={cityLabel}
@@ -477,6 +540,7 @@ export default function PreviewPanel() {
           <GuidesOverlay
             guides={state.guides}
             visible={state.showGuides}
+            showCenter={state.showCenterGuides}
             widthCm={widthCm}
             heightCm={heightCm}
             unit={form.customSizeUnit ?? "in"}
@@ -489,8 +553,13 @@ export default function PreviewPanel() {
                   <MapPrimaryControls
                     isMapEditing={false}
                     isMarkerEditorActive={isMarkerEditorActive}
+                    guideMode={guideMode}
+                    showBleedPreview={state.showBleedPreview}
+                    bleedInches={bleedInches}
                     recenterHint={RECENTER_HINT}
                     unlockHint={UNLOCK_HINT}
+                    onCycleGuideMode={handleCycleGuideMode}
+                    onToggleBleedPreview={handleToggleBleedPreview}
                     onRecenter={handleRecenter}
                     onStartEditing={handleStartEditing}
                     onFinishEditing={handleFinishEditing}
@@ -503,8 +572,13 @@ export default function PreviewPanel() {
                   <MapPrimaryControls
                     isMapEditing
                     isMarkerEditorActive={isMarkerEditorActive}
+                    guideMode={guideMode}
+                    showBleedPreview={state.showBleedPreview}
+                    bleedInches={bleedInches}
                     recenterHint={RECENTER_HINT}
                     unlockHint={UNLOCK_HINT}
+                    onCycleGuideMode={handleCycleGuideMode}
+                    onToggleBleedPreview={handleToggleBleedPreview}
                     onRecenter={handleRecenter}
                     onStartEditing={handleStartEditing}
                     onFinishEditing={handleFinishEditing}

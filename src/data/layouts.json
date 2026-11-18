@@ -81,7 +81,13 @@
           "height": 10,
           "unit": "in",
           "posterWidthCm": 20.32,
-          "posterHeightCm": 25.4
+          "posterHeightCm": 25.4,
+          "guides": [
+            { "axis": "x", "offset": 0.5, "unit": "in" },
+            { "axis": "x", "offset": 7.5, "unit": "in" },
+            { "axis": "y", "offset": 0.5, "unit": "in" },
+            { "axis": "y", "offset": 9.5, "unit": "in" }
+          ]
         },
         {
           "id": "poster_small_landscape",
@@ -91,7 +97,13 @@
           "height": 8,
           "unit": "in",
           "posterWidthCm": 25.4,
-          "posterHeightCm": 20.32
+          "posterHeightCm": 20.32,
+          "guides": [
+            { "axis": "x", "offset": 0.5, "unit": "in" },
+            { "axis": "x", "offset": 9.5, "unit": "in" },
+            { "axis": "y", "offset": 0.5, "unit": "in" },
+            { "axis": "y", "offset": 7.5, "unit": "in" }
+          ]
         },
         {
           "id": "poster_large_portrait",
@@ -101,7 +113,13 @@
           "height": 16,
           "unit": "in",
           "posterWidthCm": 30.48,
-          "posterHeightCm": 40.64
+          "posterHeightCm": 40.64,
+          "guides": [
+            { "axis": "x", "offset": 0.5, "unit": "in" },
+            { "axis": "x", "offset": 11.5, "unit": "in" },
+            { "axis": "y", "offset": 0.5, "unit": "in" },
+            { "axis": "y", "offset": 15.5, "unit": "in" }
+          ]
         },
         {
           "id": "poster_large_landscape",
@@ -111,7 +129,13 @@
           "height": 12,
           "unit": "in",
           "posterWidthCm": 40.64,
-          "posterHeightCm": 30.48
+          "posterHeightCm": 30.48,
+          "guides": [
+            { "axis": "x", "offset": 0.5, "unit": "in" },
+            { "axis": "x", "offset": 15.5, "unit": "in" },
+            { "axis": "y", "offset": 0.5, "unit": "in" },
+            { "axis": "y", "offset": 11.5, "unit": "in" }
+          ]
         }
       ]
     }

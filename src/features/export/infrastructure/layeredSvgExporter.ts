@@ -11,10 +11,12 @@ import { routeEndpointMarkerItems } from "@/features/routes/infrastructure/helpe
 import { applyFades } from "@/features/poster/infrastructure/renderer/layers";
 import { drawPosterText } from "@/features/poster/infrastructure/renderer/typography";
 import type { ResolvedTheme } from "@/features/theme/domain/types";
+import type { TrimRect } from "@/features/layout/domain/bleed";
 import {
   waitForMapIdle,
   createOffscreenContainer,
   resolveExportRenderParams,
+  type ExportBleedRenderOptions,
 } from "./exportUtils";
 
 interface LayeredSvgOptions {
@@ -32,6 +34,8 @@ interface LayeredSvgOptions {
   markers: MarkerItem[];
   markerIcons: MarkerIconDefinition[];
   routes?: Route[];
+  trimRect?: TrimRect;
+  bleedOptions?: ExportBleedRenderOptions;
 }
 
 function renderMapCanvasToDataUrl(
@@ -87,6 +91,8 @@ export async function createLayeredSvgBlobFromMap({
   markers,
   markerIcons,
   routes = [],
+  trimRect,
+  bleedOptions,
 }: LayeredSvgOptions): Promise<Blob> {
   await waitForMapIdle(map);
 
@@ -103,7 +109,7 @@ export async function createLayeredSvgBlobFromMap({
     markerScaleX,
     markerScaleY,
     markerSizeScale,
-  } = resolveExportRenderParams(map, exportWidth, exportHeight);
+  } = resolveExportRenderParams(map, exportWidth, exportHeight, bleedOptions);
 
   const offscreenContainer = createOffscreenContainer(renderWidth, renderHeight);
   document.body.appendChild(offscreenContainer);
@@ -168,7 +174,7 @@ export async function createLayeredSvgBlobFromMap({
       overlayLayers.push({
         id: "fades",
         dataUrl: canvasToDataUrl(exportWidth, exportHeight, (ctx) => {
-          applyFades(ctx, exportWidth, exportHeight, theme.ui.bg);
+          applyFades(ctx, exportWidth, exportHeight, theme.ui.bg, trimRect);
         }),
       });
     }
@@ -257,6 +263,7 @@ export async function createLayeredSvgBlobFromMap({
           showPosterText,
           showOverlay,
           includeCredits,
+          trimRect,
         );
       }),
     });

@@ -45,6 +45,7 @@ import {
 import {
   defaultLayoutId,
   getLayoutOption,
+  instantiateLayoutGuides,
 } from "@/features/layout/infrastructure/layoutRepository";
 import { formatLayoutCm } from "@/features/layout/domain/layoutMatcher";
 import { defaultThemeName } from "@/features/theme/infrastructure/themeRepository";
@@ -115,7 +116,7 @@ export function createFallbackPresetSnapshot(): PresetSnapshot {
       ...createDefaultRouteSettings(),
       color: defaultThemeTextColor,
     },
-    guides: [],
+    guides: instantiateLayoutGuides(defaultLayoutOption),
     showGuides: true,
     bearing: 0,
   };
@@ -157,6 +158,8 @@ function buildInitialState(): PosterState {
     routeDefaults: initialSnap.routeDefaults,
     guides: initialSnap.guides,
     showGuides: initialSnap.showGuides,
+    showCenterGuides: false,
+    showBleedPreview: false,
     error: "",
     isExporting: false,
     isLocationFocused: false,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_FORM,
   usePosterContext,
@@ -6,7 +6,19 @@ import {
 import { useFormHandlers } from "@/features/poster/application/useFormHandlers";
 import { themeOptions } from "@/features/theme/infrastructure/themeRepository";
 import { layoutOptions } from "@/features/layout/infrastructure/layoutRepository";
-import { FONT_OPTIONS } from "@/core/config";
+import {
+  DEFAULT_POSTER_HEIGHT_CM,
+  DEFAULT_POSTER_WIDTH_CM,
+  FONT_OPTIONS,
+} from "@/core/config";
+import { DEFAULT_BLEED_INCHES } from "@/features/settings/domain/types";
+import {
+  computeBleedLayoutMetrics,
+  formatInchesNumber,
+  normalizeBleedInches,
+  resolveBleedInches,
+} from "@/features/layout/domain/bleed";
+import { OUTPUT_DPI } from "@/features/poster/infrastructure/renderer/constants";
 import ConfirmModal from "@/shared/ui/ConfirmModal";
 
 function findFontLabel(fontFamily: string | undefined): string {
@@ -16,13 +28,32 @@ function findFontLabel(fontFamily: string | undefined): string {
 }
 
 export default function SettingsSection() {
-  const { state } = usePosterContext();
+  const { state, dispatch } = usePosterContext();
   const { handleSaveCurrentAsDefaults, handleResetUserDefaults } =
     useFormHandlers();
 
   const [confirmOpen, setConfirmOpen] = useState<"save" | "reset" | null>(null);
 
   const { userDefaults, savedThemes, form } = state;
+  const bleedInches = resolveBleedInches(userDefaults);
+  const [bleedDraft, setBleedDraft] = useState(() =>
+    formatInchesNumber(bleedInches),
+  );
+  const isBleedFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isBleedFocusedRef.current) {
+      setBleedDraft(formatInchesNumber(bleedInches));
+    }
+  }, [bleedInches]);
+
+  const trimWidthCm = Number(form.width) || DEFAULT_POSTER_WIDTH_CM;
+  const trimHeightCm = Number(form.height) || DEFAULT_POSTER_HEIGHT_CM;
+  const bleedMetrics = useMemo(
+    () => computeBleedLayoutMetrics(trimWidthCm, trimHeightCm, bleedInches),
+    [trimWidthCm, trimHeightCm, bleedInches],
+  );
+  const bleedPxPerEdge = Math.round(bleedInches * OUTPUT_DPI);
 
   // Effective defaults: user-set values fall back to built-in DEFAULT_FORM.
   const effectiveThemeId = userDefaults.theme ?? DEFAULT_FORM.theme;
@@ -47,8 +78,6 @@ export default function SettingsSection() {
 
   const fontLabel = findFontLabel(effectiveFontFamily);
 
-  const hasAnyDefaults = Object.keys(userDefaults).length > 0;
-
   const currentSummary: { label: string; value: string }[] = [
     {
       label: "Theme",
@@ -64,6 +93,36 @@ export default function SettingsSection() {
     },
     { label: "Font", value: findFontLabel(form.fontFamily) },
   ];
+
+  function handleBleedInputChange(rawValue: string) {
+    setBleedDraft(rawValue);
+    const trimmed = rawValue.trim();
+    if (!trimmed) return;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0) return;
+    dispatch({
+      type: "SET_BLEED_INCHES",
+      bleedInches: normalizeBleedInches(parsed),
+    });
+  }
+
+  function handleBleedInputBlur() {
+    isBleedFocusedRef.current = false;
+    const trimmed = bleedDraft.trim();
+    const parsed = Number(trimmed);
+    if (!trimmed || !Number.isFinite(parsed) || parsed < 0) {
+      setBleedDraft(formatInchesNumber(bleedInches));
+      return;
+    }
+    const normalized = normalizeBleedInches(parsed);
+    dispatch({ type: "SET_BLEED_INCHES", bleedInches: normalized });
+    setBleedDraft(formatInchesNumber(normalized));
+  }
+
+  function handleResetBleed() {
+    dispatch({ type: "SET_BLEED_INCHES", bleedInches: DEFAULT_BLEED_INCHES });
+    setBleedDraft(formatInchesNumber(DEFAULT_BLEED_INCHES));
+  }
 
   function handleSaveClick() {
     setConfirmOpen("save");
@@ -85,6 +144,66 @@ export default function SettingsSection() {
   return (
     <section className="panel-block settings-section">
       <h2>Settings</h2>
+
+      <div className="settings-defaults-list">
+        <div className="settings-default-row">
+          <div className="settings-bleed-header">
+            <label className="settings-default-label" htmlFor="settings-bleed-input">
+              Print bleed (all 4 edges)
+            </label>
+            <button
+              type="button"
+              className="settings-inline-reset-btn"
+              onClick={handleResetBleed}
+              disabled={Math.abs(bleedInches - DEFAULT_BLEED_INCHES) < 0.001}
+              title={`Reset print bleed to ${DEFAULT_BLEED_INCHES} inches`}
+            >
+              Reset ({DEFAULT_BLEED_INCHES}&Prime;)
+            </button>
+          </div>
+
+          <div className="settings-bleed-input-row">
+            <input
+              id="settings-bleed-input"
+              type="number"
+              className="settings-bleed-input"
+              min={0}
+              max={24}
+              step="any"
+              value={bleedDraft}
+              onFocus={() => {
+                isBleedFocusedRef.current = true;
+              }}
+              onChange={(event) => handleBleedInputChange(event.target.value)}
+              onBlur={handleBleedInputBlur}
+            />
+            <span className="settings-bleed-unit">in</span>
+          </div>
+
+          <p className="settings-bleed-meta">
+            <span>
+              Trim {formatInchesNumber(bleedMetrics.trimWidthInches)} &times;{" "}
+              {formatInchesNumber(bleedMetrics.trimHeightInches)} in
+            </span>
+            <span aria-hidden="true">&middot;</span>
+            <span>
+              Export {formatInchesNumber(bleedMetrics.totalWidthInches)} &times;{" "}
+              {formatInchesNumber(bleedMetrics.totalHeightInches)} in
+            </span>
+            <span aria-hidden="true">&middot;</span>
+            <span>
+              {bleedInches > 0
+                ? `${bleedPxPerEdge} px/edge @ 300 DPI`
+                : "Bleed disabled"}
+            </span>
+          </p>
+          <p className="settings-bleed-hint">
+            Added around all four edges on SVG, RSVG, PNG, and PDF exports. Use
+            the Bleed toggle under the preview to inspect it on screen.
+          </p>
+        </div>
+      </div>
+
       <p className="settings-note">
         Startup defaults are now managed by the <strong>DEFAULT</strong> preset
         in the <strong>Presets</strong> menu.

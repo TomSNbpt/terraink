@@ -5,6 +5,7 @@ import type {
   MarkerProjectionInput,
 } from "@/features/markers/domain/types";
 import type { Route } from "@/features/routes/domain/types";
+import type { TrimRect } from "@/features/layout/domain/bleed";
 
 export interface CanvasSize {
   width: number;
@@ -34,6 +35,7 @@ export interface ExportOptions {
   markerScaleY?: number;
   markerSizeScale?: number;
   routes?: Route[];
+  trimRect?: TrimRect;
 }
 
 export interface Typography {

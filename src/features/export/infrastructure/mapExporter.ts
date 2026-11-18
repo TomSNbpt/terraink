@@ -5,6 +5,7 @@ import {
   waitForMapIdle,
   createOffscreenContainer,
   resolveExportRenderParams,
+  type ExportBleedRenderOptions,
 } from "./exportUtils";
 
 export interface CapturedMapResult {
@@ -23,6 +24,7 @@ export async function captureMapAsCanvas(
   map: MaplibreMap,
   exportWidth: number,
   exportHeight: number,
+  bleedOptions?: ExportBleedRenderOptions,
 ): Promise<CapturedMapResult> {
   await waitForMapIdle(map);
 
@@ -39,7 +41,7 @@ export async function captureMapAsCanvas(
     markerScaleX,
     markerScaleY,
     markerSizeScale,
-  } = resolveExportRenderParams(map, exportWidth, exportHeight);
+  } = resolveExportRenderParams(map, exportWidth, exportHeight, bleedOptions);
 
   const offscreenContainer = createOffscreenContainer(renderWidth, renderHeight);
   document.body.appendChild(offscreenContainer);

@@ -1,3 +1,9 @@
+export interface LayoutGuideTemplate {
+  axis: GuideAxis;
+  /** Offset from the top-left (0, 0) corner, stored canonically in centimeters. */
+  offsetCm: number;
+}
+
 export interface Layout {
   id: string;
   name: string;
@@ -10,6 +16,7 @@ export interface Layout {
   symbol: string;
   categoryId: string;
   categoryName: string;
+  defaultGuides?: LayoutGuideTemplate[];
 }
 
 export interface LayoutGroup {
