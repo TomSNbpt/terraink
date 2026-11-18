@@ -13,6 +13,7 @@ import {
   createFallbackThemeOption,
 } from "@/features/theme/domain/colorSuggestions";
 import LayoutCard from "@/features/layout/ui/LayoutCard";
+import LayoutGuidesSection from "@/features/layout/ui/LayoutGuidesSection";
 import MapDimensionFields from "./MapDimensionFields";
 import ColorPicker from "@/features/theme/ui/ColorPicker";
 import ThemeColorEditor from "@/features/theme/ui/ThemeColorEditor";
@@ -645,6 +646,8 @@ export default function MapSettingsSection({
             ))}
           </div>
         )}
+
+        <LayoutGuidesSection />
       </div>
     </section>
   );

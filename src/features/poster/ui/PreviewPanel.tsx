@@ -15,6 +15,7 @@ import RouteOverlay from "@/features/routes/ui/RouteOverlay";
 import RouteEndpointsOverlay from "@/features/routes/ui/RouteEndpointsOverlay";
 import GradientFades from "./GradientFades";
 import PosterTextOverlay from "./PosterTextOverlay";
+import GuidesOverlay from "@/features/layout/ui/GuidesOverlay";
 import MapPrimaryControls from "./MapPrimaryControls";
 import {
   PlusIcon,
@@ -472,6 +473,13 @@ export default function PreviewPanel() {
             showPosterText={form.showPosterText}
             includeCredits={form.includeCredits}
             showOverlay={form.showMarkers}
+          />
+          <GuidesOverlay
+            guides={state.guides}
+            visible={state.showGuides}
+            widthCm={widthCm}
+            heightCm={heightCm}
+            unit={form.customSizeUnit ?? "in"}
           />
 
           <div className="map-controls" aria-label="Map controls">

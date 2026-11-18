@@ -97,6 +97,70 @@
   container-type: size;
 }
 
+.poster-guides-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.poster-guide-line {
+  position: absolute;
+  pointer-events: none;
+  filter: drop-shadow(0 0 1px rgba(4, 10, 18, 0.92));
+}
+
+.poster-guide-line--x {
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed rgba(56, 189, 248, 0.95);
+}
+
+.poster-guide-line--y {
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed rgba(56, 189, 248, 0.95);
+}
+
+.poster-guide-label {
+  position: absolute;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(7, 15, 24, 0.82);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #e0f4ff;
+  font-family: "Spline Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.poster-guide-label--x {
+  top: 6px;
+  left: 4px;
+}
+
+.poster-guide-label--x.is-flipped {
+  left: auto;
+  right: 4px;
+}
+
+.poster-guide-label--y {
+  left: 6px;
+  top: 4px;
+}
+
+.poster-guide-label--y.is-flipped {
+  top: auto;
+  bottom: 4px;
+}
+
 .poster-marker-overlay {
   position: absolute;
   inset: 0;

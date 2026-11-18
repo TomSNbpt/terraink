@@ -6,6 +6,7 @@ import {
   type PresetSnapshot,
   type UserPreset,
 } from "../domain/types";
+import type { LayoutGuide } from "@/features/layout/domain/types";
 
 const STORAGE_KEY = "terraink:presets";
 
@@ -169,6 +170,28 @@ function normalizeSnapshot(
       }
     : { ...fallbackSnapshot.routeDefaults };
 
+  const guides: LayoutGuide[] = Array.isArray(raw.guides)
+    ? raw.guides
+        .filter(
+          (item): item is LayoutGuide =>
+            isObject(item) &&
+            typeof item.id === "string" &&
+            item.id.trim().length > 0 &&
+            (item.axis === "x" || item.axis === "y") &&
+            typeof item.offsetCm === "number" &&
+            Number.isFinite(item.offsetCm) &&
+            item.offsetCm >= 0,
+        )
+        .map((item) => ({
+          id: item.id,
+          axis: item.axis,
+          offsetCm: item.offsetCm,
+        }))
+    : [];
+
+  const showGuides =
+    typeof raw.showGuides === "boolean" ? raw.showGuides : true;
+
   const bearing =
     typeof raw.bearing === "number" && Number.isFinite(raw.bearing)
       ? raw.bearing
@@ -190,6 +213,8 @@ function normalizeSnapshot(
     markerDefaults,
     routes,
     routeDefaults,
+    guides,
+    showGuides,
     bearing,
     ...(savedThemeFallback ? { savedThemeFallback } : {}),
   };

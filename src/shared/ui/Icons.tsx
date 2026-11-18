@@ -43,3 +43,5 @@ export { FiCopy as CopyIcon } from "react-icons/fi";
 export { FiUpload as UploadIcon } from "react-icons/fi";
 export { FiRefreshCw as RefreshIcon } from "react-icons/fi";
 export { FiPlus as AddIcon } from "react-icons/fi";
+export { FiEye as EyeIcon } from "react-icons/fi";
+export { FiEyeOff as EyeOffIcon } from "react-icons/fi";

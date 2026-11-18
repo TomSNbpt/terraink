@@ -4069,3 +4069,337 @@ button.preset-action-btn--delete:focus-visible {
   color: #ffe8db;
 }
 
+/* ── Layout alignment guides ── */
+
+.layout-guides-block {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(151, 183, 207, 0.18);
+  display: grid;
+  gap: 10px;
+}
+
+.layout-guides-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.layout-guides-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.layout-guides-title-group h3 {
+  margin: 0;
+  font-family: "Spline Sans Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.74rem;
+  color: #88b7d5;
+}
+
+.layout-guides-origin {
+  font-family: "Spline Sans Mono", monospace;
+  font-size: 0.72rem;
+  color: #8ca8bd;
+}
+
+.layout-guides-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layout-guides-unit-switch,
+.layout-guides-axis-switch {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgba(151, 183, 207, 0.24);
+  border-radius: 9px;
+  background: rgba(9, 18, 27, 0.84);
+}
+
+button.layout-guides-unit-btn,
+button.layout-guides-axis-btn,
+button.layout-guides-visibility-btn,
+button.layout-guides-add-btn,
+button.layout-guides-clear-btn,
+button.layout-guide-remove-btn {
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+button.layout-guides-unit-btn {
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #9cb8cc;
+  font-family: "Spline Sans Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+button.layout-guides-unit-btn.is-active {
+  border-color: rgba(112, 184, 222, 0.7);
+  background: rgba(34, 65, 88, 0.96);
+  color: #edf6fc;
+}
+
+button.layout-guides-visibility-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid rgba(151, 183, 207, 0.28);
+  border-radius: 9px;
+  background: rgba(13, 27, 39, 0.86);
+  color: #b4cde0;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+button.layout-guides-visibility-btn.is-active {
+  border-color: rgba(112, 184, 222, 0.65);
+  background: rgba(24, 52, 74, 0.92);
+  color: #e6f4fd;
+}
+
+.layout-guides-creator {
+  display: grid;
+  gap: 8px;
+}
+
+.layout-guides-axis-switch {
+  width: 100%;
+}
+
+button.layout-guides-axis-btn {
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #9cb8cc;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+button.layout-guides-axis-btn.is-active {
+  border-color: rgba(112, 184, 222, 0.7);
+  background: rgba(34, 65, 88, 0.96);
+  color: #edf6fc;
+}
+
+.layout-guides-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.layout-guides-offset-label {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 0;
+}
+
+.layout-guides-offset-caption {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #bfd4e4;
+}
+
+.layout-guides-offset-input {
+  width: 100%;
+  margin: 0;
+  min-height: 40px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  border: 1px solid rgba(151, 183, 207, 0.28);
+  background: rgba(9, 18, 27, 0.88);
+  color: #edf6fc;
+  font-family: "Spline Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+
+.layout-guides-offset-input:focus-visible,
+.layout-guide-value-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+button.layout-guides-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid rgba(112, 184, 222, 0.65);
+  border-radius: 9px;
+  background: rgba(30, 68, 94, 0.95);
+  color: #eaf6ff;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+button.layout-guides-add-btn:not(:disabled):hover,
+button.layout-guides-add-btn:focus-visible {
+  border-color: rgba(145, 206, 238, 0.95);
+  background: rgba(41, 88, 120, 0.98);
+  transform: none;
+  filter: none;
+}
+
+.layout-guides-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: "Spline Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.71rem;
+  color: #87a3b8;
+}
+
+.layout-guides-error {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #ffb8a8;
+}
+
+.layout-guides-empty {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #8ba7bc;
+}
+
+.layout-guides-list-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.layout-guides-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.73rem;
+  color: #8ca8bd;
+  font-variant-numeric: tabular-nums;
+}
+
+button.layout-guides-clear-btn {
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  color: #9dc7e2;
+  font-size: 0.73rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+button.layout-guides-clear-btn:hover,
+button.layout-guides-clear-btn:focus-visible {
+  color: #e4f3fc;
+  transform: none;
+  filter: none;
+}
+
+.layout-guides-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.layout-guide-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid rgba(151, 183, 207, 0.18);
+  border-radius: 9px;
+  background: rgba(10, 21, 31, 0.64);
+}
+
+.layout-guide-row.is-outside {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  border-color: rgba(255, 193, 128, 0.36);
+}
+
+.layout-guide-axis {
+  font-family: "Spline Sans Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9fd0ec;
+  min-width: 58px;
+}
+
+.layout-guide-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.layout-guide-value-input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(151, 183, 207, 0.24);
+  background: rgba(7, 15, 23, 0.85);
+  color: #eef7fd;
+  font-family: "Spline Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.layout-guide-unit {
+  font-family: "Spline Sans Mono", monospace;
+  font-size: 0.72rem;
+  color: #8ca8bd;
+}
+
+.layout-guide-outside-note {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f6c086;
+}
+
+button.layout-guide-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 177, 142, 0.35);
+  border-radius: 7px;
+  background: rgba(48, 23, 17, 0.72);
+  color: #ffd7c2;
+}
+
+button.layout-guide-remove-btn:not(:disabled):hover,
+button.layout-guide-remove-btn:focus-visible {
+  border-color: rgba(255, 177, 142, 0.85);
+  background: rgba(88, 38, 26, 0.94);
+  color: #ffe8db;
+  transform: none;
+  filter: none;
+}

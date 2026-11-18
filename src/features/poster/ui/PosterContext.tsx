@@ -115,6 +115,8 @@ export function createFallbackPresetSnapshot(): PresetSnapshot {
       ...createDefaultRouteSettings(),
       color: defaultThemeTextColor,
     },
+    guides: [],
+    showGuides: true,
     bearing: 0,
   };
 }
@@ -153,6 +155,8 @@ function buildInitialState(): PosterState {
     activeMarkerId: null,
     routes: initialSnap.routes,
     routeDefaults: initialSnap.routeDefaults,
+    guides: initialSnap.guides,
+    showGuides: initialSnap.showGuides,
     error: "",
     isExporting: false,
     isLocationFocused: false,

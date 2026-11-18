@@ -19,3 +19,12 @@ export interface LayoutGroup {
 }
 
 export const CUSTOM_LAYOUT_ID = "custom";
+
+export type GuideAxis = "x" | "y";
+
+export interface LayoutGuide {
+  id: string;
+  axis: GuideAxis;
+  /** Offset from the top-left (0, 0) corner, stored canonically in centimeters. */
+  offsetCm: number;
+}

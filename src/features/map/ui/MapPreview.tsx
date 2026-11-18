@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, type CSSProperties } from "react";
 import maplibregl from "maplibre-gl";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -117,13 +117,27 @@ export default function MapPreview({
   const hasMountedStyleRef = useRef(false);
   const prevStyleRef = useRef<StyleSpecification | null>(null);
   const lastPresetLoadSeqRef = useRef(presetLoadSeq);
+  const centerRef = useRef(center);
+  const zoomRef = useRef(zoom);
   const onMoveEndRef = useRef(onMoveEnd);
   const onMoveRef = useRef(onMove);
   const overzoomScaleRef = useRef(overzoomScale);
   const fineWheelDeltaAccumRef = useRef(0);
+  centerRef.current = center;
+  zoomRef.current = zoom;
   onMoveEndRef.current = onMoveEnd;
   onMoveRef.current = onMove;
   overzoomScaleRef.current = overzoomScale;
+
+  const runSyncing = useCallback((fn: () => void) => {
+    const prev = isSyncing.current;
+    isSyncing.current = true;
+    try {
+      fn();
+    } finally {
+      isSyncing.current = prev;
+    }
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -136,6 +150,7 @@ export default function MapPreview({
       bearing,
       interactive: false,
       attributionControl: false,
+      trackResize: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
     });
 
@@ -152,14 +167,26 @@ export default function MapPreview({
       onMoveRef.current?.([currentCenter.lng, currentCenter.lat], map.getZoom());
     });
 
-    // Tell MapLibre to re-measure its canvas whenever the container resizes.
-    // On mobile the container may start at 0 / partial size while CSS
-    // aspect-ratio is still being resolved, so the initial render can be
-    // blank.  This observer ensures the map repaints once the real
-    // dimensions are known.
+    // Tell MapLibre to re-measure its canvas whenever the outer frame or
+    // overzoomed container resizes, and re-anchor the controlled camera so
+    // layout/aspect-ratio transitions never leave the map off-center or emit
+    // spurious moveend updates back into form state.
     const resizeObserver = new ResizeObserver(() => {
-      map.resize();
+      runSyncing(() => {
+        map.resize();
+        if (!map.isMoving()) {
+          map.jumpTo({
+            center: centerRef.current,
+            zoom: zoomRef.current,
+            bearing: map.getBearing(),
+            pitch: 0,
+          });
+        }
+      });
     });
+    if (outerContainerRef.current) {
+      resizeObserver.observe(outerContainerRef.current);
+    }
     resizeObserver.observe(containerRef.current);
 
     return () => {
@@ -343,8 +370,19 @@ export default function MapPreview({
     const zoomDelta = Math.abs(map.getZoom() - zoom);
     const bearingDelta = Math.abs(map.getBearing() - bearing);
 
+    const container = containerRef.current;
+    const canvas = map.getCanvas();
+    const needsResize = Boolean(
+      container &&
+        container.clientWidth > 0 &&
+        container.clientHeight > 0 &&
+        (Math.abs(container.clientWidth - canvas.clientWidth) > 1 ||
+          Math.abs(container.clientHeight - canvas.clientHeight) > 1),
+    );
+
     if (
       !presetChanged &&
+      !needsResize &&
       centerDelta < MAP_CENTER_SYNC_EPSILON &&
       zoomDelta < MAP_ZOOM_SYNC_EPSILON
     ) {
@@ -353,6 +391,7 @@ export default function MapPreview({
 
     if (
       presetChanged &&
+      !needsResize &&
       centerDelta < MAP_CENTER_SYNC_EPSILON &&
       zoomDelta < MAP_ZOOM_SYNC_EPSILON &&
       bearingDelta < 0.05
@@ -360,16 +399,18 @@ export default function MapPreview({
       return;
     }
 
-    isSyncing.current = true;
-    map.jumpTo({
-      center,
-      zoom,
-      ...(presetChanged ? { bearing, pitch: 0 } : {}),
+    runSyncing(() => {
+      map.stop();
+      if (needsResize) {
+        map.resize();
+      }
+      map.jumpTo({
+        center,
+        zoom,
+        ...(presetChanged ? { bearing, pitch: 0 } : {}),
+      });
     });
-    requestAnimationFrame(() => {
-      isSyncing.current = false;
-    });
-  }, [center, zoom, bearing, presetLoadSeq, mapRef]);
+  }, [center, zoom, bearing, presetLoadSeq, overzoomScale, mapRef, runSyncing]);
 
   const normalizedOverzoomScale = Math.max(1, overzoomScale);
   const innerStyle: CSSProperties =

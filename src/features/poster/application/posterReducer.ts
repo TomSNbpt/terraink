@@ -30,6 +30,7 @@ import {
   cloneSnapshot,
   ensureDefaultPresetFirst,
 } from "@/features/presets/infrastructure/presetsStorage";
+import type { LayoutGuide } from "@/features/layout/domain/types";
 
 /* ────── Form state ────── */
 
@@ -83,6 +84,8 @@ export interface PosterState {
   activeMarkerId: string | null;
   routes: Route[];
   routeDefaults: RouteDefaults;
+  guides: LayoutGuide[];
+  showGuides: boolean;
   error: string;
   isExporting: boolean;
   isLocationFocused: boolean;
@@ -146,6 +149,11 @@ export type PosterAction =
       defaults: Partial<RouteDefaults>;
       applyToRoutes?: boolean;
     }
+  | { type: "ADD_GUIDE"; guide: LayoutGuide }
+  | { type: "UPDATE_GUIDE"; guideId: string; offsetCm: number }
+  | { type: "REMOVE_GUIDE"; guideId: string }
+  | { type: "CLEAR_GUIDES" }
+  | { type: "SET_SHOW_GUIDES"; show: boolean }
   | { type: "SET_PRESETS"; presets: UserPreset[] }
   | { type: "ADD_PRESET"; preset: UserPreset; setActive?: boolean }
   | {
@@ -549,6 +557,8 @@ export function posterReducer(
         markerDefaults: state.markerDefaults,
         routes: state.routes,
         routeDefaults: state.routeDefaults,
+        guides: state.guides,
+        showGuides: state.showGuides,
         bearing: state.targetBearing,
       };
       const normalized = ensureDefaultPresetFirst(
@@ -665,6 +675,8 @@ export function posterReducer(
         markerDefaults: snap.markerDefaults,
         routes: snap.routes,
         routeDefaults: snap.routeDefaults,
+        guides: snap.guides,
+        showGuides: snap.showGuides,
         targetBearing:
           typeof snap.bearing === "number" && Number.isFinite(snap.bearing)
             ? snap.bearing
@@ -677,6 +689,47 @@ export function posterReducer(
         error: "",
       };
     }
+
+    case "ADD_GUIDE":
+      return {
+        ...state,
+        guides: [...state.guides, action.guide],
+        showGuides: true,
+      };
+
+    case "UPDATE_GUIDE":
+      return {
+        ...state,
+        guides: state.guides.map((guide) =>
+          guide.id === action.guideId
+            ? {
+                ...guide,
+                offsetCm:
+                  Number.isFinite(action.offsetCm) && action.offsetCm >= 0
+                    ? action.offsetCm
+                    : guide.offsetCm,
+              }
+            : guide,
+        ),
+      };
+
+    case "REMOVE_GUIDE":
+      return {
+        ...state,
+        guides: state.guides.filter((guide) => guide.id !== action.guideId),
+      };
+
+    case "CLEAR_GUIDES":
+      return {
+        ...state,
+        guides: [],
+      };
+
+    case "SET_SHOW_GUIDES":
+      return {
+        ...state,
+        showGuides: action.show,
+      };
 
     default:
       return state;

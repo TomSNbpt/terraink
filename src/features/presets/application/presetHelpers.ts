@@ -38,6 +38,8 @@ export function captureSnapshotFromState(
     markerDefaults: state.markerDefaults,
     routes: state.routes,
     routeDefaults: state.routeDefaults,
+    guides: state.guides,
+    showGuides: state.showGuides,
     bearing: Number.isFinite(bearing) ? bearing : 0,
     ...(savedTheme ? { savedThemeFallback: savedTheme } : {}),
   });
