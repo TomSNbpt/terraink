@@ -1,5 +1,5 @@
 import type { PosterForm } from "@/features/poster/application/posterReducer";
-import seededPresetsManifest from "@/data/presets.json";
+import seededPresetsManifest from "@/data/config.json";
 import {
   DEFAULT_PRESET_ID,
   DEFAULT_PRESET_NAME,
@@ -7,8 +7,15 @@ import {
   type UserPreset,
 } from "../domain/types";
 import type { LayoutGuide } from "@/features/layout/domain/types";
+import type { Route } from "@/features/routes/domain/types";
+import {
+  doesRouteMatchBundledGpx,
+  getBundledGpxSegments,
+  normalizeGpxFilename,
+} from "@/features/routes/infrastructure/gpxLibrary";
 
 const STORAGE_KEY = "terraink:presets";
+const DISMISSED_SEEDED_STORAGE_KEY = "terraink:dismissed-seeded-presets";
 
 function isBrowserStorageAvailable(): boolean {
   return (
@@ -142,8 +149,47 @@ function normalizeSnapshot(
       }
     : { ...fallbackSnapshot.markerDefaults };
 
-  const routes = Array.isArray(raw.routes)
-    ? cloneSnapshot({ ...fallbackSnapshot, routes: raw.routes }).routes
+  const routes: Route[] = Array.isArray(raw.routes)
+    ? raw.routes
+        .map((item): Route | null => {
+          if (!isObject(item)) return null;
+          const cloned = JSON.parse(JSON.stringify(item)) as Partial<Route> & {
+            gpxFile?: unknown;
+          };
+          const rawGpxFile =
+            typeof cloned.gpxFile === "string" && cloned.gpxFile.trim().length > 0
+              ? cloned.gpxFile.trim()
+              : typeof cloned.sourceFilename === "string" &&
+                  cloned.sourceFilename.trim().length > 0
+                ? cloned.sourceFilename.trim()
+                : undefined;
+
+          const hasInlineSegments =
+            Array.isArray(cloned.segments) &&
+            cloned.segments.some((seg) => Array.isArray(seg) && seg.length >= 2);
+
+          const resolvedSegments = hasInlineSegments
+            ? cloned.segments!
+            : rawGpxFile
+              ? getBundledGpxSegments(rawGpxFile)
+              : null;
+
+          if (!resolvedSegments || resolvedSegments.length === 0) {
+            return null;
+          }
+
+          return {
+            ...(cloned as Route),
+            ...(rawGpxFile
+              ? {
+                  sourceFilename: cloned.sourceFilename ?? rawGpxFile,
+                  gpxFile: rawGpxFile,
+                }
+              : {}),
+            segments: resolvedSegments,
+          };
+        })
+        .filter((route): route is Route => route !== null)
     : [];
 
   const routeDefaults = isObject(raw.routeDefaults)
@@ -312,6 +358,121 @@ export function buildSeededPresets(
   return ensureDefaultPresetFirst(normalized, fallbackSnapshot);
 }
 
+function loadDismissedSeededIds(): Set<string> {
+  if (!isBrowserStorageAvailable()) return new Set();
+  try {
+    const raw = window.localStorage.getItem(DISMISSED_SEEDED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(
+      parsed.filter((item): item is string => typeof item === "string" && item.length > 0),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDismissedSeededIds(ids: Set<string>): void {
+  if (!isBrowserStorageAvailable()) return;
+  try {
+    if (ids.size === 0) {
+      window.localStorage.removeItem(DISMISSED_SEEDED_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(
+        DISMISSED_SEEDED_STORAGE_KEY,
+        JSON.stringify(Array.from(ids)),
+      );
+    }
+  } catch {
+    // Ignore quota / serialization errors.
+  }
+}
+
+function getSeededNonDefaultIds(): Set<string> {
+  const rawList = Array.isArray((seededPresetsManifest as { presets?: unknown }).presets)
+    ? (seededPresetsManifest as { presets: unknown[] }).presets
+    : Array.isArray(seededPresetsManifest)
+      ? (seededPresetsManifest as unknown[])
+      : [];
+
+  const ids = new Set<string>();
+  for (const item of rawList) {
+    if (!isObject(item) || typeof item.id !== "string") continue;
+    const trimmedName = typeof item.name === "string" ? item.name.trim() : "";
+    const isDefault =
+      item.id === DEFAULT_PRESET_ID ||
+      trimmedName.toUpperCase() === DEFAULT_PRESET_NAME;
+    if (!isDefault) {
+      ids.add(item.id);
+    }
+  }
+  return ids;
+}
+
+function syncDismissedSeededIds(presets: UserPreset[]): void {
+  const seededIds = getSeededNonDefaultIds();
+  if (seededIds.size === 0) return;
+
+  const presentIds = new Set(presets.map((preset) => preset.id));
+  const dismissed = loadDismissedSeededIds();
+
+  for (const seededId of seededIds) {
+    if (presentIds.has(seededId)) {
+      dismissed.delete(seededId);
+    } else {
+      dismissed.add(seededId);
+    }
+  }
+
+  saveDismissedSeededIds(dismissed);
+}
+
+function isNewerTimestamp(candidateIso: string, existingIso: string): boolean {
+  const candidateMs = Date.parse(candidateIso);
+  const existingMs = Date.parse(existingIso);
+  return (
+    Number.isFinite(candidateMs) &&
+    Number.isFinite(existingMs) &&
+    candidateMs > existingMs
+  );
+}
+
+function mergeSeededPresets(
+  cachedPresets: UserPreset[],
+  seededPresets: UserPreset[],
+  dismissedSeededIds: Set<string>,
+): { presets: UserPreset[]; changed: boolean } {
+  const next = cachedPresets.slice();
+  const indexById = new Map<string, number>();
+  next.forEach((preset, index) => {
+    indexById.set(preset.id, index);
+  });
+
+  let changed = false;
+
+  for (const seeded of seededPresets) {
+    const existingIndex = indexById.get(seeded.id);
+    if (existingIndex === undefined) {
+      if (seeded.id !== DEFAULT_PRESET_ID && dismissedSeededIds.has(seeded.id)) {
+        continue;
+      }
+      indexById.set(seeded.id, next.length);
+      next.push(seeded);
+      changed = true;
+      continue;
+    }
+
+    const existing = next[existingIndex];
+    if (isNewerTimestamp(seeded.updatedAt, existing.updatedAt)) {
+      next[existingIndex] = seeded;
+      changed = true;
+    }
+  }
+
+  return { presets: next, changed };
+}
+
 export function loadPresets(fallbackSnapshot: PresetSnapshot): UserPreset[] {
   const fallbackList = buildSeededPresets(fallbackSnapshot);
   if (!isBrowserStorageAvailable()) {
@@ -340,8 +501,14 @@ export function loadPresets(fallbackSnapshot: PresetSnapshot): UserPreset[] {
       return fallbackList;
     }
 
-    const ordered = ensureDefaultPresetFirst(normalized, fallbackSnapshot);
-    if (ordered.length !== normalized.length) {
+    const dismissedSeededIds = loadDismissedSeededIds();
+    const { presets: merged, changed } = mergeSeededPresets(
+      normalized,
+      fallbackList,
+      dismissedSeededIds,
+    );
+    const ordered = ensureDefaultPresetFirst(merged, fallbackSnapshot);
+    if (changed || ordered.length !== normalized.length) {
       savePresets(ordered);
     }
     return ordered;
@@ -350,65 +517,45 @@ export function loadPresets(fallbackSnapshot: PresetSnapshot): UserPreset[] {
   }
 }
 
+function compactPresetsForStorage(presets: UserPreset[]): unknown[] {
+  return presets.map((preset) => {
+    const routes = preset.snapshot.routes.map((route) => {
+      if (route.source !== "gpx") return route;
+      const gpxFilename = route.gpxFile ?? route.sourceFilename;
+      if (
+        gpxFilename &&
+        doesRouteMatchBundledGpx(gpxFilename, route.segments)
+      ) {
+        const canonicalFilename = normalizeGpxFilename(gpxFilename, route.label);
+        const { segments: _omitted, ...rest } = route;
+        return {
+          ...rest,
+          sourceFilename: route.sourceFilename ?? canonicalFilename,
+          gpxFile: canonicalFilename,
+        };
+      }
+      return route;
+    });
+
+    return {
+      ...preset,
+      snapshot: {
+        ...preset.snapshot,
+        routes,
+      },
+    };
+  });
+}
+
 export function savePresets(presets: UserPreset[]): void {
   if (!isBrowserStorageAvailable()) return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(compactPresetsForStorage(presets)),
+    );
   } catch {
     // Ignore quota / serialization errors.
   }
-}
-
-export function serializePresetsForExport(presets: UserPreset[]): string {
-  return JSON.stringify(
-    {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      presets,
-    },
-    null,
-    2,
-  );
-}
-
-export function parseImportedPresets(
-  jsonText: string,
-  fallbackSnapshot: PresetSnapshot,
-): { ok: true; presets: UserPreset[] } | { ok: false; error: string } {
-  try {
-    const parsed: unknown = JSON.parse(jsonText);
-    const listCandidate = Array.isArray(parsed)
-      ? parsed
-      : isObject(parsed) && Array.isArray(parsed.presets)
-        ? parsed.presets
-        : null;
-
-    if (!listCandidate) {
-      return {
-        ok: false,
-        error: "Invalid presets file. Expected a JSON array or { presets: [...] }.",
-      };
-    }
-
-    const normalized = listCandidate
-      .map((item) => normalizePreset(item, fallbackSnapshot))
-      .filter((item): item is UserPreset => item !== null);
-
-    if (normalized.length === 0) {
-      return {
-        ok: false,
-        error: "No valid presets were found in the selected JSON file.",
-      };
-    }
-
-    return {
-      ok: true,
-      presets: normalized,
-    };
-  } catch {
-    return {
-      ok: false,
-      error: "Could not parse JSON file. Please check the file format.",
-    };
-  }
+  syncDismissedSeededIds(presets);
 }

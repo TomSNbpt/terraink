@@ -174,6 +174,7 @@ export type PosterAction =
       snapshot: PresetSnapshot;
       name?: string;
     }
+  | { type: "RENAME_PRESET"; presetId: string; name: string }
   | { type: "REMOVE_PRESET"; presetId: string }
   | { type: "SET_DEFAULT_PRESET"; snapshot: PresetSnapshot }
   | { type: "APPLY_PRESET"; presetId: string };
@@ -619,6 +620,45 @@ export function posterReducer(
                   : {}),
                 updatedAt: now,
                 snapshot: cloned,
+              }
+            : preset,
+        ),
+      };
+    }
+
+    case "RENAME_PRESET": {
+      if (action.presetId === DEFAULT_PRESET_ID) {
+        return state;
+      }
+      const trimmedName = action.name.trim();
+      if (
+        !trimmedName ||
+        trimmedName.toUpperCase() === DEFAULT_PRESET_NAME
+      ) {
+        return state;
+      }
+      const target = state.presets.find((p) => p.id === action.presetId);
+      if (!target || target.name === trimmedName) {
+        return state;
+      }
+      const lowerName = trimmedName.toLowerCase();
+      const hasDuplicate = state.presets.some(
+        (p) =>
+          p.id !== action.presetId &&
+          p.name.trim().toLowerCase() === lowerName,
+      );
+      if (hasDuplicate) {
+        return state;
+      }
+      const now = new Date().toISOString();
+      return {
+        ...state,
+        presets: state.presets.map((preset) =>
+          preset.id === action.presetId
+            ? {
+                ...preset,
+                name: trimmedName,
+                updatedAt: now,
               }
             : preset,
         ),

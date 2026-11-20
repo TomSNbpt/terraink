@@ -4,7 +4,6 @@ import {
   MAX_MARKER_SIZE,
   MIN_MARKER_SIZE,
 } from "@/features/markers/domain/constants";
-import GeneralHeader from "@/shared/ui/GeneralHeader";
 import DesktopNavBar from "@/shared/ui/DesktopNavBar";
 import PreviewPanel from "@/features/poster/ui/PreviewPanel";
 import MobileNavBar, { type MobileTab } from "@/shared/ui/MobileNavBar";
@@ -183,7 +182,6 @@ export default function AppShell() {
       data-mobile-tab={mobileTab}
       data-desktop-tab={desktopTab}
     >
-      <GeneralHeader />
       <InstallPrompt />
 
       <DesktopNavBar

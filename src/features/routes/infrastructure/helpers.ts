@@ -67,6 +67,9 @@ export function createRoute(input: {
     label: input.label ?? input.parsed.label,
     source,
     sourceFilename: input.sourceFilename,
+    ...(source === "gpx" && input.sourceFilename
+      ? { gpxFile: input.sourceFilename }
+      : {}),
     segments: input.parsed.segments,
     color: input.defaults.color,
     strokeWidth: input.defaults.strokeWidth,

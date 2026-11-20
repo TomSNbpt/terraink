@@ -1,0 +1,1997 @@
+{
+  "version": 1,
+  "themes": {
+    "carrara": {
+      "name": "Carrara",
+      "description": "White marble — pale stone with soft charcoal veining",
+      "ui": {
+        "bg": "#F4F1EA",
+        "text": "#2E2A26"
+      },
+      "map": {
+        "land": "#F4F1EA",
+        "landcover": "#ECE7DD",
+        "water": "#C7CDD0",
+        "waterway": "#C7CDD0",
+        "parks": "#E6E3D8",
+        "buildings": "#E0DACD",
+        "aeroway": "#DAD4C7",
+        "rail": "#2E2A26",
+        "roads": {
+          "major": "#3A3631",
+          "minor_high": "#565049",
+          "minor_mid": "#6E675E",
+          "minor_low": "#8B8378",
+          "path": "#A89F92",
+          "outline": "#F4F1EA"
+        }
+      }
+    },
+    "blush": {
+      "name": "Blush",
+      "description": "Dusty rose on warm white",
+      "ui": {
+        "bg": "#F9F1F0",
+        "text": "#7A4351"
+      },
+      "map": {
+        "land": "#F9F1F0",
+        "landcover": "#F1E1E0",
+        "water": "#E0BFC4",
+        "waterway": "#E0BFC4",
+        "parks": "#EDD6D6",
+        "buildings": "#E9CCCE",
+        "aeroway": "#E3C6C8",
+        "rail": "#7A4351",
+        "roads": {
+          "major": "#9C5566",
+          "minor_high": "#B27180",
+          "minor_mid": "#C68F9B",
+          "minor_low": "#DBB2BB",
+          "path": "#E8CDD3",
+          "outline": "#F9F1F0"
+        }
+      }
+    },
+    "sandstone": {
+      "name": "Sandstone",
+      "description": "Warm beige with muted brown lines",
+      "ui": {
+        "bg": "#F1E9DB",
+        "text": "#6B5436"
+      },
+      "map": {
+        "land": "#F1E9DB",
+        "landcover": "#E8DCC8",
+        "water": "#CDBC9C",
+        "waterway": "#CDBC9C",
+        "parks": "#E0D2B8",
+        "buildings": "#DCCBAB",
+        "aeroway": "#D5C5A6",
+        "rail": "#6B5436",
+        "roads": {
+          "major": "#8A6E45",
+          "minor_high": "#A0855C",
+          "minor_mid": "#B59C76",
+          "minor_low": "#CBB694",
+          "path": "#DBC9AC",
+          "outline": "#F1E9DB"
+        }
+      }
+    },
+    "heatwave": {
+      "name": "Heatwave",
+      "description": "Charred dark base with glowing orange roads and sunlit highlights.",
+      "ui": {
+        "bg": "#1C0E09",
+        "text": "#FFD78A"
+      },
+      "map": {
+        "land": "#1C0E09",
+        "landcover": "#28140C",
+        "water": "#2C140C",
+        "waterway": "#2C140C",
+        "parks": "#381A10",
+        "buildings": "#D2A55E",
+        "aeroway": "#381A10",
+        "rail": "#ffd78a",
+        "roads": {
+          "major": "#FF5F1F",
+          "path": "#59442c",
+          "outline": "#695235",
+          "minor_high": "#B04010",
+          "minor_mid": "#493623",
+          "minor_low": "#3c2a1b"
+        }
+      }
+    },
+    "ruby": {
+      "name": "Ruby",
+      "description": "Garnet-inspired palette with rich reds over deep plum city blocks.",
+      "ui": {
+        "bg": "#1A070F",
+        "text": "#F6D7BC"
+      },
+      "map": {
+        "land": "#1A070F",
+        "landcover": "#280C18",
+        "water": "#2A0D17",
+        "waterway": "#2A0D17",
+        "parks": "#351021",
+        "buildings": "#EE8EA4",
+        "aeroway": "#351021",
+        "rail": "#f6d7bc",
+        "roads": {
+          "major": "#C0103C",
+          "path": "#553f3e",
+          "outline": "#654e4a",
+          "minor_high": "#780C2C",
+          "minor_mid": "#463132",
+          "minor_low": "#392427"
+        }
+      }
+    },
+    "sage": {
+      "name": "Sage",
+      "description": "Muted botanical tones with cool green roads and gentle contrast.",
+      "ui": {
+        "bg": "#DDE8DD",
+        "text": "#2D4739"
+      },
+      "map": {
+        "land": "#DDE8DD",
+        "landcover": "#D8E4DA",
+        "water": "#C5D4CB",
+        "waterway": "#C5D4CB",
+        "parks": "#D3DFD7",
+        "buildings": "#8BAD9B",
+        "aeroway": "#D3DFD7",
+        "rail": "#2d4739",
+        "roads": {
+          "major": "#3F624F",
+          "path": "#BECCBF",
+          "outline": "#C8D8CC",
+          "minor_high": "#587A68",
+          "minor_mid": "#92B4A2",
+          "minor_low": "#AABFB4"
+        }
+      }
+    },
+    "rustic": {
+      "name": "Rustic",
+      "description": "Earthy paper-like base with wood and clay road tones.",
+      "ui": {
+        "bg": "#DFD5C8",
+        "text": "#44362C"
+      },
+      "map": {
+        "land": "#DFD5C8",
+        "landcover": "#D9CEC0",
+        "water": "#C4B8A8",
+        "waterway": "#C4B8A8",
+        "parks": "#D2C6B7",
+        "buildings": "#9E7A62",
+        "aeroway": "#D2C6B7",
+        "rail": "#44362c",
+        "roads": {
+          "major": "#563A2A",
+          "path": "#C6A898",
+          "outline": "#CCB0A0",
+          "minor_high": "#7A5040",
+          "minor_mid": "#A68070",
+          "minor_low": "#B89080"
+        }
+      }
+    },
+    "midnight_blue": {
+      "name": "Midnight Blue",
+      "description": "Deep navy background with gold/copper roads - luxury atlas aesthetic",
+      "ui": {
+        "bg": "#0A1628",
+        "text": "#D6B352"
+      },
+      "map": {
+        "land": "#0A1628",
+        "landcover": "#0D1C2F",
+        "water": "#061020",
+        "waterway": "#061020",
+        "parks": "#0F2235",
+        "buildings": "#6E5A45",
+        "aeroway": "#0F2235",
+        "rail": "#d6b352",
+        "roads": {
+          "major": "#C99C37",
+          "path": "#414033",
+          "outline": "#4f4b36",
+          "minor_high": "#8A6820",
+          "minor_mid": "#333530",
+          "minor_low": "#272c2e"
+        }
+      }
+    },
+    "neon": {
+      "name": "Neon",
+      "description": "Neon-drenched high-contrast palette with magenta and cyan accents.",
+      "ui": {
+        "bg": "#0B0F1A",
+        "text": "#00F5FF"
+      },
+      "map": {
+        "land": "#0B0F1A",
+        "landcover": "#130D22",
+        "water": "#001433",
+        "waterway": "#002044",
+        "parks": "#1A0B2A",
+        "buildings": "#FF2D95",
+        "aeroway": "#1A0B2A",
+        "rail": "#00F5FF",
+        "roads": {
+          "major": "#FF2D95",
+          "path": "#21203A",
+          "outline": "#0B0F1A",
+          "minor_high": "#FF6EB4",
+          "minor_mid": "#8A33FF",
+          "minor_low": "#4A0099"
+        }
+      }
+    },
+    "terracotta": {
+      "name": "Terracotta",
+      "description": "Mediterranean warmth - burnt orange and clay tones on cream",
+      "ui": {
+        "bg": "#F5EDE4",
+        "text": "#8B4513"
+      },
+      "map": {
+        "land": "#F5EDE4",
+        "landcover": "#EFE7DA",
+        "water": "#A8C4C4",
+        "waterway": "#A8C4C4",
+        "parks": "#E8E0D0",
+        "buildings": "#D9A08A",
+        "aeroway": "#E8E0D0",
+        "rail": "#8b4513",
+        "roads": {
+          "major": "#A0522D",
+          "path": "#E4C8B0",
+          "outline": "#EAD4C0",
+          "minor_high": "#C07048",
+          "minor_mid": "#DCA882",
+          "minor_low": "#D8B898"
+        }
+      }
+    },
+    "blueprint": {
+      "name": "Blueprint",
+      "description": "Classic architectural blueprint - technical drawing aesthetic",
+      "ui": {
+        "bg": "#1A3A5C",
+        "text": "#E8F4FF"
+      },
+      "map": {
+        "land": "#1A3A5C",
+        "landcover": "#1D4066",
+        "water": "#0E2740",
+        "waterway": "#0E2740",
+        "parks": "#1F466F",
+        "buildings": "#6EA4CC",
+        "aeroway": "#1F466F",
+        "rail": "#e8f4ff",
+        "roads": {
+          "major": "#D8EEFA",
+          "path": "#526c88",
+          "outline": "#607993",
+          "minor_high": "#7AAED0",
+          "minor_mid": "#435f7d",
+          "minor_low": "#375473"
+        }
+      }
+    },
+    "contrast_zones": {
+      "name": "Contrast",
+      "description": "Strong contrast showing urban density - darker in center, lighter at edges",
+      "ui": {
+        "bg": "#FFFFFF",
+        "text": "#111111"
+      },
+      "map": {
+        "land": "#FFFFFF",
+        "landcover": "#F6F6F6",
+        "water": "#B0B0B0",
+        "waterway": "#B0B0B0",
+        "parks": "#ECECEC",
+        "buildings": "#6C6C6C",
+        "aeroway": "#ECECEC",
+        "rail": "#111111",
+        "roads": {
+          "major": "#1A1A1A",
+          "path": "#CCCCCC",
+          "outline": "#D8D8D8",
+          "minor_high": "#484848",
+          "minor_mid": "#989898",
+          "minor_low": "#B8B8B8"
+        }
+      }
+    },
+    "copper_patina": {
+      "name": "Copper Patina",
+      "description": "Oxidized copper aesthetic - teal-green patina with copper accents",
+      "ui": {
+        "bg": "#E8F0F0",
+        "text": "#2A5A5A"
+      },
+      "map": {
+        "land": "#E8F0F0",
+        "landcover": "#E0ECE8",
+        "water": "#C0D8D8",
+        "waterway": "#C0D8D8",
+        "parks": "#D8E8E0",
+        "buildings": "#8AB6B6",
+        "aeroway": "#D8E8E0",
+        "rail": "#2a5a5a",
+        "roads": {
+          "major": "#B87333",
+          "path": "#C8DEDE",
+          "outline": "#D2E6E6",
+          "minor_high": "#629898",
+          "minor_mid": "#A8CACA",
+          "minor_low": "#B8D4D4"
+        }
+      }
+    },
+    "emerald": {
+      "name": "Emerald City",
+      "description": "Lush dark green aesthetic with mint accents",
+      "ui": {
+        "bg": "#062C22",
+        "text": "#E3F9F1"
+      },
+      "map": {
+        "land": "#062C22",
+        "landcover": "#0B3F30",
+        "water": "#0D4536",
+        "waterway": "#0D4536",
+        "parks": "#0F523E",
+        "buildings": "#1A785B",
+        "aeroway": "#0F523E",
+        "rail": "#e3f9f1",
+        "roads": {
+          "major": "#4ADEB0",
+          "path": "#42635a",
+          "outline": "#517268",
+          "minor_high": "#18A070",
+          "minor_mid": "#32554b",
+          "minor_low": "#25493f"
+        }
+      }
+    },
+    "forest": {
+      "name": "Forest",
+      "description": "Deep greens and sage tones - organic botanical aesthetic",
+      "ui": {
+        "bg": "#F0F4F0",
+        "text": "#2D4A3E"
+      },
+      "map": {
+        "land": "#F0F4F0",
+        "landcover": "#E2EEE2",
+        "water": "#B8D4D4",
+        "waterway": "#B8D4D4",
+        "parks": "#D4E8D4",
+        "buildings": "#8AB19A",
+        "aeroway": "#D4E8D4",
+        "rail": "#2d4a3e",
+        "roads": {
+          "major": "#3A5E4D",
+          "path": "#C2D4CA",
+          "outline": "#CEDBD2",
+          "minor_high": "#527A66",
+          "minor_mid": "#90B4A0",
+          "minor_low": "#A8C4B4"
+        }
+      }
+    },
+    "japanese_ink": {
+      "name": "Japanese Ink",
+      "description": "Traditional ink wash inspired - minimalist with subtle red accent",
+      "ui": {
+        "bg": "#FAF8F5",
+        "text": "#2C2C2C"
+      },
+      "map": {
+        "land": "#FAF8F5",
+        "landcover": "#F5F3EE",
+        "water": "#E8E4E0",
+        "waterway": "#E8E4E0",
+        "parks": "#F0EDE8",
+        "buildings": "#959595",
+        "aeroway": "#F0EDE8",
+        "rail": "#2c2c2c",
+        "roads": {
+          "major": "#8B2500",
+          "path": "#D0CECA",
+          "outline": "#DDDBD8",
+          "minor_high": "#505050",
+          "minor_mid": "#A8A8A8",
+          "minor_low": "#BCBAB6"
+        }
+      }
+    },
+    "noir": {
+      "name": "Noir",
+      "description": "Pure black background with white/gray roads - modern gallery aesthetic",
+      "ui": {
+        "bg": "#000000",
+        "text": "#FFFFFF"
+      },
+      "map": {
+        "land": "#000000",
+        "landcover": "#0E0E0E",
+        "water": "#0B0B0B",
+        "waterway": "#0B0B0B",
+        "parks": "#171717",
+        "buildings": "#6F6F6F",
+        "aeroway": "#171717",
+        "rail": "#ffffff",
+        "roads": {
+          "major": "#E8E8E8",
+          "path": "#454545",
+          "outline": "#575757",
+          "minor_high": "#A0A0A0",
+          "minor_mid": "#333333",
+          "minor_low": "#242424"
+        }
+      }
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Various blues and teals - perfect for coastal cities",
+      "ui": {
+        "bg": "#F0F8FA",
+        "text": "#1A5F7A"
+      },
+      "map": {
+        "land": "#F0F8FA",
+        "landcover": "#E4F1F1",
+        "water": "#B8D8E8",
+        "waterway": "#B8D8E8",
+        "parks": "#D8EAE8",
+        "buildings": "#67AED0",
+        "aeroway": "#D8EAE8",
+        "rail": "#1a5f7a",
+        "roads": {
+          "major": "#14536A",
+          "path": "#BCD8E8",
+          "outline": "#CCE4F0",
+          "minor_high": "#2878A0",
+          "minor_mid": "#7ABCD4",
+          "minor_low": "#AACCE0"
+        }
+      }
+    },
+    "pastel_dream": {
+      "name": "Pastel Dream",
+      "description": "Soft muted pastels with dusty blues and mauves - dreamy artistic aesthetic",
+      "ui": {
+        "bg": "#FAF7F2",
+        "text": "#5D5A6D"
+      },
+      "map": {
+        "land": "#FAF7F2",
+        "landcover": "#F1F2EB",
+        "water": "#D4E4ED",
+        "waterway": "#D4E4ED",
+        "parks": "#E8EDE4",
+        "buildings": "#CEC3CB",
+        "aeroway": "#E8EDE4",
+        "rail": "#5d5a6d",
+        "roads": {
+          "major": "#6870A0",
+          "path": "#D8D8E2",
+          "outline": "#E0E0E8",
+          "minor_high": "#9898B8",
+          "minor_mid": "#C4C2D0",
+          "minor_low": "#CCCCDA"
+        }
+      }
+    },
+    "chicago_marathon": {
+      "name": "Chicago Marathon",
+      "description": "Option 1 - colors adjusted for Printful",
+      "ui": {
+        "bg": "#E8ECF2",
+        "text": "#D91E36"
+      },
+      "map": {
+        "land": "#E8ECF2",
+        "landcover": "#E1E6EE",
+        "water": "#13316E",
+        "waterway": "#13316E",
+        "parks": "#D4DFEC",
+        "buildings": "#D5DCE8",
+        "aeroway": "#DCE2EC",
+        "rail": "#5A6B8C",
+        "roads": {
+          "major": "#8C9BB8",
+          "path": "#CBD4E3",
+          "outline": "#DCE2EC",
+          "minor_high": "#A4B2CC",
+          "minor_mid": "#B8C3D9",
+          "minor_low": "#C6D0E3"
+        }
+      }
+    },
+    "chicago_marathon_navy": {
+      "name": "Chicago Marathon - Alt",
+      "description": "Option 2 - colors adjusted for Printful",
+      "ui": {
+        "bg": "#13316E",
+        "text": "#FFFFFF"
+      },
+      "map": {
+        "land": "#13316E",
+        "landcover": "#163678",
+        "water": "#0A1C42",
+        "waterway": "#0A1C42",
+        "parks": "#1A408A",
+        "buildings": "#193B80",
+        "aeroway": "#18397C",
+        "rail": "#5C7EC2",
+        "roads": {
+          "major": "#4B6CB0",
+          "path": "#1E3F82",
+          "outline": "#0E2554",
+          "minor_high": "#39599C",
+          "minor_mid": "#2B4B8C",
+          "minor_low": "#224180"
+        }
+      }
+    },
+    "philadelphia_option_1": {
+      "name": "Philadelphia - Option 1",
+      "description": "Limestone, Ben Franklin Navy & Marathon Crimson — adjusted for Printful matte poster & mug",
+      "ui": {
+        "bg": "#F2EFE9",
+        "text": "#C41E3A"
+      },
+      "map": {
+        "land": "#F2EFE9",
+        "landcover": "#EAE6DE",
+        "water": "#16427A",
+        "waterway": "#16427A",
+        "parks": "#DCE3DA",
+        "buildings": "#DFDBD2",
+        "aeroway": "#E4E0D8",
+        "rail": "#6C7A8E",
+        "roads": {
+          "major": "#7A899E",
+          "path": "#D1D8E2",
+          "outline": "#E6E3DC",
+          "minor_high": "#95A3B6",
+          "minor_mid": "#B0BCCB",
+          "minor_low": "#C5CEDB"
+        }
+      }
+    },
+    "philadelphia_option_2": {
+      "name": "Philadelphia - Option 2",
+      "description": "Deep Philly Navy & Bell Gold — adjusted for Printful matte poster & mug",
+      "ui": {
+        "bg": "#122B54",
+        "text": "#F0C239"
+      },
+      "map": {
+        "land": "#122B54",
+        "landcover": "#15315E",
+        "water": "#0C2042",
+        "waterway": "#0C2042",
+        "parks": "#1A3C70",
+        "buildings": "#183666",
+        "aeroway": "#173462",
+        "rail": "#5377AB",
+        "roads": {
+          "major": "#46699E",
+          "path": "#1B345C",
+          "outline": "#0D2042",
+          "minor_high": "#37568A",
+          "minor_mid": "#2A4675",
+          "minor_low": "#213B66"
+        }
+      }
+    },
+    "philadelphia_option_3": {
+      "name": "Philadelphia - Option 3",
+      "description": "Ben Franklin Blue & Bell Gold — adjusted for Printful matte poster & mug",
+      "ui": {
+        "bg": "#194A84",
+        "text": "#F4C83A"
+      },
+      "map": {
+        "land": "#194A84",
+        "landcover": "#1D5291",
+        "water": "#0E2D59",
+        "waterway": "#0E2D59",
+        "parks": "#235C9E",
+        "buildings": "#215694",
+        "aeroway": "#1F5490",
+        "rail": "#7DA4D4",
+        "roads": {
+          "major": "#648EC2",
+          "path": "#234A7C",
+          "outline": "#123766",
+          "minor_high": "#4E79B0",
+          "minor_mid": "#3A6499",
+          "minor_low": "#2B5387"
+        }
+      }
+    },
+    "london": {
+      "name": "London",
+      "description": "Royal Navy, Thames Sky Blue & Marathon Pink — adjusted for CMYK print",
+      "ui": {
+        "bg": "#143E7D",
+        "text": "#E8649A"
+      },
+      "map": {
+        "land": "#143E7D",
+        "landcover": "#174280",
+        "water": "#6B9FD0",
+        "waterway": "#6B9FD0",
+        "parks": "#1C4886",
+        "buildings": "#1A4583",
+        "aeroway": "#194482",
+        "rail": "#4574AB",
+        "roads": {
+          "major": "#3E6DA5",
+          "path": "#1B4784",
+          "outline": "#103062",
+          "minor_high": "#32609A",
+          "minor_mid": "#27538F",
+          "minor_low": "#204C88"
+        }
+      }
+    },
+    "coral": {
+      "name": "Coral",
+      "description": "Soft ivory base with warm coral roads and muted pink-blue features.",
+      "ui": {
+        "bg": "#F3E1DA",
+        "text": "#6E2F28"
+      },
+      "map": {
+        "land": "#F3E1DA",
+        "landcover": "#EFD8D0",
+        "water": "#DFC0B5",
+        "waterway": "#DFC0B5",
+        "parks": "#EACFC6",
+        "buildings": "#E39B89",
+        "aeroway": "#EACFC6",
+        "rail": "#6e2f28",
+        "roads": {
+          "major": "#B9473A",
+          "path": "#E8C4B8",
+          "outline": "#EDD2C8",
+          "minor_high": "#C86050",
+          "minor_mid": "#E09888",
+          "minor_low": "#DDAA9A"
+        }
+      }
+    },
+    "copper": {
+      "name": "Copper",
+      "description": "Oxidized cream and copper tones with warm metallic road accents.",
+      "ui": {
+        "bg": "#E1D2C6",
+        "text": "#4E2F22"
+      },
+      "map": {
+        "land": "#E1D2C6",
+        "landcover": "#DCCCBE",
+        "water": "#CBB5A1",
+        "waterway": "#CBB5A1",
+        "parks": "#D8C6B5",
+        "buildings": "#C88B72",
+        "aeroway": "#D8C6B5",
+        "rail": "#4e2f22",
+        "roads": {
+          "major": "#7C452E",
+          "path": "#CEBAA6",
+          "outline": "#D4C2AE",
+          "minor_high": "#9E5A3C",
+          "minor_mid": "#C49078",
+          "minor_low": "#C8A890"
+        }
+      }
+    },
+    "old_navy": {
+      "name": "Old Navy",
+      "description": "Deep navy map fields with gold-accented typography and roads.",
+      "ui": {
+        "bg": "#061327",
+        "text": "#E2B85C"
+      },
+      "map": {
+        "land": "#061327",
+        "water": "#0B1E3B",
+        "waterway": "#0B1E3B",
+        "parks": "#0F2240",
+        "buildings": "#2A3F5C",
+        "aeroway": "#0F2240",
+        "rail": "#c9983a",
+        "roads": {
+          "major": "#D4A030",
+          "path": "#414035",
+          "outline": "#514b39",
+          "minor_high": "#8A6020",
+          "minor_mid": "#323432",
+          "minor_low": "#252a2e"
+        }
+      }
+    },
+    "gradient_roads": {
+      "name": "Gradient Roads",
+      "description": "Smooth gradient from dark center to light edges with subtle features",
+      "ui": {
+        "bg": "#FFFFFF",
+        "text": "#000000"
+      },
+      "map": {
+        "land": "#FFFFFF",
+        "water": "#D0D0D0",
+        "waterway": "#D0D0D0",
+        "parks": "#F0F0F0",
+        "buildings": "#505050",
+        "aeroway": "#F0F0F0",
+        "rail": "#111111",
+        "roads": {
+          "major": "#111111",
+          "path": "#C8C8C8",
+          "outline": "#D8D8D8",
+          "minor_high": "#444444",
+          "minor_mid": "#909090",
+          "minor_low": "#B4B4B4"
+        }
+      }
+    },
+    "monochrome_blue": {
+      "name": "Monochrome Blue",
+      "description": "Single blue color family with varying saturation - clean and cohesive",
+      "ui": {
+        "bg": "#F5F8FA",
+        "text": "#1A3A5C"
+      },
+      "map": {
+        "land": "#F5F8FA",
+        "water": "#C8DCF0",
+        "waterway": "#C8DCF0",
+        "parks": "#DDE8F2",
+        "buildings": "#8EB0CC",
+        "aeroway": "#DDE8F2",
+        "rail": "#1a3a5c",
+        "roads": {
+          "major": "#1A3D6C",
+          "path": "#C0D8EC",
+          "outline": "#CCE2F0",
+          "minor_high": "#3A6890",
+          "minor_mid": "#8AB8D4",
+          "minor_low": "#A8C8E0"
+        }
+      }
+    },
+    "sunset": {
+      "name": "Sunset",
+      "description": "Warm oranges and pinks on soft peach - dreamy golden hour aesthetic",
+      "ui": {
+        "bg": "#FDF5F0",
+        "text": "#C45C3E"
+      },
+      "map": {
+        "land": "#FDF5F0",
+        "water": "#EDD0C4",
+        "waterway": "#EDD0C4",
+        "parks": "#F8E8E2",
+        "buildings": "#EAA898",
+        "aeroway": "#F8E8E2",
+        "rail": "#b84830",
+        "roads": {
+          "major": "#B84830",
+          "path": "#F0C8B8",
+          "outline": "#F5D4C4",
+          "minor_high": "#D87058",
+          "minor_mid": "#ECA898",
+          "minor_low": "#EEB8A8"
+        }
+      }
+    },
+    "autumn": {
+      "name": "Autumn",
+      "description": "Burnt oranges, deep reds, golden yellows - seasonal warmth",
+      "ui": {
+        "bg": "#FBF7F0",
+        "text": "#8B4513"
+      },
+      "map": {
+        "land": "#FBF7F0",
+        "water": "#D4C8B4",
+        "waterway": "#D4C8B4",
+        "parks": "#EDE6D8",
+        "buildings": "#C8943C",
+        "aeroway": "#EDE6D8",
+        "rail": "#8b2500",
+        "roads": {
+          "major": "#8B2500",
+          "path": "#E8CC98",
+          "outline": "#ECD8AA",
+          "minor_high": "#B85820",
+          "minor_mid": "#D99050",
+          "minor_low": "#DEBA80"
+        }
+      }
+    },
+    "warm_beige": {
+      "name": "Warm Beige",
+      "description": "Earthy warm neutrals with sepia tones - vintage map aesthetic",
+      "ui": {
+        "bg": "#F5F0E8",
+        "text": "#6B5B4F"
+      },
+      "map": {
+        "land": "#F5F0E8",
+        "water": "#D8D0C0",
+        "waterway": "#D8D0C0",
+        "parks": "#EAE6DC",
+        "buildings": "#BFB09E",
+        "aeroway": "#EAE6DC",
+        "rail": "#6b5b4f",
+        "roads": {
+          "major": "#6B4828",
+          "path": "#D4B898",
+          "outline": "#DCC4A8",
+          "minor_high": "#9A7050",
+          "minor_mid": "#C09878",
+          "minor_low": "#C8A888"
+        }
+      }
+    }
+  },
+  "layouts": {
+    "defaultLayoutId": "custom_desktop_4k",
+    "categories": [
+      {
+        "id": "custom_presets",
+        "name": "Custom",
+        "layouts": [
+          {
+            "id": "custom_desktop_4k",
+            "name": "Desktop 4K",
+            "description": "4K UHD wallpaper with 16:9 ratio.",
+            "width": 3840,
+            "height": 2160,
+            "unit": "px",
+            "posterWidthCm": 30,
+            "posterHeightCm": 16.88
+          }
+        ]
+      },
+      {
+        "id": "mugs",
+        "name": "Mugs",
+        "layouts": [
+          {
+            "id": "mug_11_oz",
+            "name": "11 oz",
+            "description": "9 x 3.5 inch mug print wrap at 300 DPI.",
+            "width": 9,
+            "height": 3.5,
+            "unit": "in",
+            "posterWidthCm": 22.86,
+            "posterHeightCm": 8.89
+          },
+          {
+            "id": "mug_15_oz",
+            "name": "15 oz",
+            "description": "9 x 3.8 inch mug print wrap at 300 DPI.",
+            "width": 9,
+            "height": 3.8,
+            "unit": "in",
+            "posterWidthCm": 22.86,
+            "posterHeightCm": 9.652
+          },
+          {
+            "id": "mug_20_oz",
+            "name": "20 oz",
+            "description": "10.23 x 4.01 inch mug print wrap at 300 DPI.",
+            "width": 10.23,
+            "height": 4.01,
+            "unit": "in",
+            "posterWidthCm": 25.9842,
+            "posterHeightCm": 10.1854
+          }
+        ]
+      },
+      {
+        "id": "phone_cases",
+        "name": "Phone Cases",
+        "layouts": [
+          {
+            "id": "phone_case_universal",
+            "name": "Universal",
+            "description": "4.65 x 7.68 inch phone case print layout at 300 DPI.",
+            "width": 4.65,
+            "height": 7.68,
+            "unit": "in",
+            "posterWidthCm": 11.811,
+            "posterHeightCm": 19.5072
+          }
+        ]
+      },
+      {
+        "id": "poster",
+        "name": "Poster",
+        "layouts": [
+          {
+            "id": "poster_small_portrait",
+            "name": "Small (Portrait)",
+            "description": "8x10 inch portrait poster at 300 DPI.",
+            "width": 8,
+            "height": 10,
+            "unit": "in",
+            "posterWidthCm": 20.32,
+            "posterHeightCm": 25.4,
+            "guides": [
+              {
+                "axis": "x",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "x",
+                "offset": 7.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 9.5,
+                "unit": "in"
+              }
+            ]
+          },
+          {
+            "id": "poster_small_landscape",
+            "name": "Small (Landscape)",
+            "description": "10x8 inch landscape poster at 300 DPI.",
+            "width": 10,
+            "height": 8,
+            "unit": "in",
+            "posterWidthCm": 25.4,
+            "posterHeightCm": 20.32,
+            "guides": [
+              {
+                "axis": "x",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "x",
+                "offset": 9.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 7.5,
+                "unit": "in"
+              }
+            ]
+          },
+          {
+            "id": "poster_large_portrait",
+            "name": "Large (Portrait)",
+            "description": "12x16 inch portrait poster at 300 DPI.",
+            "width": 12,
+            "height": 16,
+            "unit": "in",
+            "posterWidthCm": 30.48,
+            "posterHeightCm": 40.64,
+            "guides": [
+              {
+                "axis": "x",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "x",
+                "offset": 11.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 15.5,
+                "unit": "in"
+              }
+            ]
+          },
+          {
+            "id": "poster_large_landscape",
+            "name": "Large (Landscape)",
+            "description": "16x12 inch landscape poster at 300 DPI.",
+            "width": 16,
+            "height": 12,
+            "unit": "in",
+            "posterWidthCm": 40.64,
+            "posterHeightCm": 30.48,
+            "guides": [
+              {
+                "axis": "x",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "x",
+                "offset": 15.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 0.5,
+                "unit": "in"
+              },
+              {
+                "axis": "y",
+                "offset": 11.5,
+                "unit": "in"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "presets": [
+    {
+      "id": "default",
+      "name": "DEFAULT",
+      "createdAt": "2026-11-16T23:10:25.677Z",
+      "updatedAt": "2026-11-16T23:15:09.155Z",
+      "snapshot": {
+        "form": {
+          "location": "Newburyport, United States",
+          "latitude": "42.805708",
+          "longitude": "-70.881627",
+          "distance": "8036",
+          "width": "30",
+          "height": "16.88",
+          "customSizeUnit": "in",
+          "theme": "ocean",
+          "layout": "custom_desktop_4k",
+          "displayCity": "Newburyport",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": true,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": true,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#1A5F7A"
+        },
+        "routes": [],
+        "routeDefaults": {
+          "color": "#1A5F7A",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-1135e515-901d-4780-a925-1dc0129e7e94",
+      "name": "Plum Island",
+      "createdAt": "2026-11-17T05:21:35.579Z",
+      "updatedAt": "2026-11-20T17:38:01.427Z",
+      "snapshot": {
+        "form": {
+          "location": "Newbury, United States",
+          "latitude": "42.763077",
+          "longitude": "-70.825124",
+          "distance": "6273",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "ocean",
+          "layout": "poster_large_portrait",
+          "displayCity": "Newbury",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#1A5F7A"
+        },
+        "routes": [],
+        "routeDefaults": {
+          "color": "#1A5F7A",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-4ba880ab-9e42-4d4a-9713-1df388e6c0b2",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-a620a41b-5d21-4f1f-a7bd-e923a674f6d3",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-7c8e6709-79d5-46e1-9b76-1fa2d2a15be5",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-c0dffd23-00e7-44ab-892a-7b78fad20446",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-98863aeb-b2e5-49db-ae9f-cda7e7c5ce2a",
+      "name": "Chicago",
+      "createdAt": "2026-11-17T13:46:40.485Z",
+      "updatedAt": "2026-11-17T16:31:39.218Z",
+      "snapshot": {
+        "form": {
+          "location": "Cook County, United States",
+          "latitude": "41.903701",
+          "longitude": "-87.610082",
+          "distance": "7232",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "chicago_marathon_navy",
+          "layout": "poster_large_portrait",
+          "displayCity": "Cook County",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#FFFFFF"
+        },
+        "routes": [
+          {
+            "id": "gpx-9326cace-226d-431a-8613-66caa053ff89",
+            "label": "chicago2026",
+            "source": "gpx",
+            "sourceFilename": "chicago2026.gpx",
+            "color": "#FFFFFF",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "gpxFile": "chicago2026.gpx"
+          },
+          {
+            "id": "gpx-e7c3a354-8a6e-4770-ab0c-2f1bf39dea47",
+            "label": "chicago2026",
+            "source": "gpx",
+            "sourceFilename": "chicago2026.gpx",
+            "color": "#b8142c",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#FFFFFF",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#FFFFFF",
+              "size": 24
+            },
+            "gpxFile": "chicago2026.gpx"
+          }
+        ],
+        "routeDefaults": {
+          "color": "#FFFFFF",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-c2601976-f5e0-42cb-b928-e9cfdfc90e98",
+      "name": "Chicago Mug",
+      "createdAt": "2026-11-18T05:04:43.569Z",
+      "updatedAt": "2026-11-20T17:38:24.914Z",
+      "snapshot": {
+        "form": {
+          "location": "Cook County, United States",
+          "latitude": "41.894295",
+          "longitude": "-87.505573",
+          "distance": "20639",
+          "width": "22.86",
+          "height": "8.89",
+          "customSizeUnit": "px",
+          "theme": "chicago_marathon_navy",
+          "layout": "mug_11_oz",
+          "displayCity": "Cook County",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#FFFFFF"
+        },
+        "routes": [
+          {
+            "id": "gpx-9326cace-226d-431a-8613-66caa053ff89",
+            "label": "chicago2026",
+            "source": "gpx",
+            "sourceFilename": "chicago2026.gpx",
+            "color": "#FFFFFF",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "gpxFile": "chicago2026.gpx"
+          },
+          {
+            "id": "gpx-e7c3a354-8a6e-4770-ab0c-2f1bf39dea47",
+            "label": "chicago2026",
+            "source": "gpx",
+            "sourceFilename": "chicago2026.gpx",
+            "color": "#b8142c",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#FFFFFF",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#FFFFFF",
+              "size": 24
+            },
+            "gpxFile": "chicago2026.gpx"
+          }
+        ],
+        "routeDefaults": {
+          "color": "#FFFFFF",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-d3553b50-f18b-43ce-a4ba-04aaf71dce78",
+            "axis": "x",
+            "offsetCm": 4.936066666666667
+          },
+          {
+            "id": "guide-404ca046-c7e8-420e-8654-2869e753a694",
+            "axis": "x",
+            "offsetCm": 17.923933333333334
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-ead4a0a4-9896-4e2b-b42c-0106fe4bbfe8",
+      "name": "Philadelphia",
+      "createdAt": "2026-11-18T19:03:40.616Z",
+      "updatedAt": "2026-11-18T19:09:08.655Z",
+      "snapshot": {
+        "form": {
+          "location": "Philadelphia, United States",
+          "latitude": "39.989626",
+          "longitude": "-75.177303",
+          "distance": "6099",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "philadelphia_option_1",
+          "layout": "poster_large_portrait",
+          "displayCity": "Philadelphia",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#C41E3A"
+        },
+        "routes": [
+          {
+            "id": "gpx-bc9c9881-370b-464c-bb8c-97311f06aaf1",
+            "label": "philadelphia-marathon-2025-philadelphia-2025-track",
+            "source": "gpx",
+            "sourceFilename": "philadelphia-marathon-2025-philadelphia-2025-track.gpx",
+            "color": "#C41E3A",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "gpxFile": "philadelphia-marathon-2025-philadelphia-2025-track.gpx"
+          }
+        ],
+        "routeDefaults": {
+          "color": "#C41E3A",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-4dd2e6fa-a08f-4b22-a63b-c797f4a07bad",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-ca79fd2b-e7ee-41cf-94aa-27361c99a2db",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-b527face-f380-4bad-93e3-863c4a3ce0c7",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-bb547bd4-bcaf-4ec4-9ecd-df0330420ddd",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-3d705ad2-cf08-4bd6-8fa0-8ab50cc78dbf",
+      "name": "Boston",
+      "createdAt": "2026-11-18T20:57:50.516Z",
+      "updatedAt": "2026-11-18T20:57:50.516Z",
+      "snapshot": {
+        "form": {
+          "location": "Needham, United States",
+          "latitude": "42.280200",
+          "longitude": "-71.239132",
+          "distance": "23187",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "midnight_blue",
+          "layout": "poster_large_portrait",
+          "displayCity": "Needham",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#D6B352"
+        },
+        "routes": [
+          {
+            "id": "gpx-49874995-a7aa-45af-b855-cbc3a5723ab8",
+            "label": "gpx_20250421_id10253_race1_20250406001335",
+            "source": "gpx",
+            "sourceFilename": "gpx_20250421_id10253_race1_20250406001335.gpx",
+            "color": "#D6B352",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": true,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "gpxFile": "gpx_20250421_id10253_race1_20250406001335.gpx"
+          }
+        ],
+        "routeDefaults": {
+          "color": "#D6B352",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-086f37f4-a4f8-4bff-b713-d9896e3a731a",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-c383ec79-7533-46ad-ab39-12ebae89f54b",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-627db6af-0caa-4d10-aa8b-07e98c17c595",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-d6ccd88e-1aa0-498c-9b4b-8fa579d8e8e9",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 55.04022529029249
+      }
+    },
+    {
+      "id": "preset-520b2b36-cf32-4b38-aa11-14aaed4acd5e",
+      "name": "Philadelphia Mug",
+      "createdAt": "2026-11-19T16:01:30.370Z",
+      "updatedAt": "2026-11-19T16:01:30.370Z",
+      "snapshot": {
+        "form": {
+          "location": "Pennsauken Township, United States",
+          "latitude": "39.980657",
+          "longitude": "-75.067969",
+          "distance": "17367",
+          "width": "22.86",
+          "height": "8.89",
+          "customSizeUnit": "px",
+          "theme": "philadelphia_option_2",
+          "layout": "custom",
+          "displayCity": "Pennsauken Township",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#F0C239"
+        },
+        "routes": [
+          {
+            "id": "gpx-bc9c9881-370b-464c-bb8c-97311f06aaf1",
+            "label": "philadelphia-marathon-2025-philadelphia-2025-track",
+            "source": "gpx",
+            "sourceFilename": "philadelphia-marathon-2025-philadelphia-2025-track.gpx",
+            "color": "#c41e3a",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "gpxFile": "philadelphia-marathon-2025-philadelphia-2025-track.gpx"
+          }
+        ],
+        "routeDefaults": {
+          "color": "#F0C239",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-e7069dde-3f5f-4ed8-a48c-c0d3cb04d30c",
+            "axis": "x",
+            "offsetCm": 4.936066666666667
+          },
+          {
+            "id": "guide-f1df0148-1e21-4734-ad4f-53cc51c951fd",
+            "axis": "x",
+            "offsetCm": 17.923933333333334
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-6d4a1088-ea51-4586-b8b3-32a8a8d675b4",
+      "name": "Philadelphia - White",
+      "createdAt": "2026-11-19T16:02:34.170Z",
+      "updatedAt": "2026-11-20T17:38:50.219Z",
+      "snapshot": {
+        "form": {
+          "location": "Philadelphia, United States",
+          "latitude": "39.988051",
+          "longitude": "-75.185466",
+          "distance": "5691",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "px",
+          "theme": "philadelphia_option_2",
+          "layout": "poster_large_portrait",
+          "displayCity": "Philadelphia",
+          "displayCountry": "massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#F0C239"
+        },
+        "routes": [
+          {
+            "id": "gpx-bc9c9881-370b-464c-bb8c-97311f06aaf1",
+            "label": "philadelphia-marathon-2025-philadelphia-2025-track",
+            "source": "gpx",
+            "sourceFilename": "philadelphia-marathon-2025-philadelphia-2025-track.gpx",
+            "color": "#c41e3a",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#1A5F7A",
+              "size": 24
+            },
+            "gpxFile": "philadelphia-marathon-2025-philadelphia-2025-track.gpx"
+          }
+        ],
+        "routeDefaults": {
+          "color": "#F0C239",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-81dd936f-7b02-4b12-a3c7-128c1469fb20",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-57037120-ac5f-467d-87d9-8eb4061e74f1",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-50fe1a92-710d-4baf-9ed1-3ff377909c66",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-f0e09761-12a6-41dd-b196-d981ec42c2bc",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-da91e324-20f3-4490-b477-1925624b954b",
+      "name": "MCR Half",
+      "createdAt": "2026-11-19T21:53:26.333Z",
+      "updatedAt": "2026-11-19T21:57:14.581Z",
+      "snapshot": {
+        "form": {
+          "location": "Trafford, United Kingdom",
+          "latitude": "53.443903",
+          "longitude": "-2.296446",
+          "distance": "3749",
+          "width": "11.81",
+          "height": "19.51",
+          "customSizeUnit": "in",
+          "theme": "philadelphia_option_3",
+          "layout": "phone_case_universal",
+          "displayCity": "Trafford",
+          "displayCountry": "United Kingdom",
+          "displayContinent": "Europe",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": false
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#F4C83A"
+        },
+        "routes": [
+          {
+            "id": "gpx-1efb71e6-762a-4ef3-9094-11472ed0085d",
+            "label": "Tom_-_MCR_Half_track",
+            "source": "gpx",
+            "sourceFilename": "Tom_-_MCR_Half_track.gpx",
+            "color": "#F4C83A",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": false,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#F4C83A",
+              "size": 24
+            },
+            "finishMarker": {
+              "iconId": "flag",
+              "color": "#F4C83A",
+              "size": 24
+            },
+            "gpxFile": "Tom_-_MCR_Half_track.gpx"
+          }
+        ],
+        "routeDefaults": {
+          "color": "#F4C83A",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-732c76a6-5783-4f00-898b-cd09f07bf721",
+      "name": "London - Vert",
+      "createdAt": "2026-11-20T15:49:45.064Z",
+      "updatedAt": "2026-11-20T16:37:53.609Z",
+      "snapshot": {
+        "form": {
+          "location": "Greater London, United Kingdom",
+          "latitude": "51.500972",
+          "longitude": "-0.024307",
+          "distance": "7483",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "london",
+          "layout": "poster_large_portrait",
+          "displayCity": "Greater London",
+          "displayCountry": "United Kingdom",
+          "displayContinent": "Europe",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": false
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#E8649A"
+        },
+        "routes": [],
+        "routeDefaults": {
+          "color": "#E8649A",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-3cc979a1-3242-4b22-bb4f-2dd273983a29",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-4e0c3f1a-addb-49c7-a335-7045e6ccbc76",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-ec38a9c1-ad7e-44b9-8db7-dea29168e3f7",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-f8a2abdf-d349-46fa-bec4-cd25012652d7",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 90
+      }
+    }
+  ]
+}

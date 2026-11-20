@@ -61,10 +61,8 @@
     overflow: hidden;
     display: grid;
     grid-template-columns: 64px 1fr;
-    grid-template-rows: 62px 1fr;
-    grid-template-areas:
-      "dheader dheader"
-      "dnav    dmap";
+    grid-template-rows: 1fr;
+    grid-template-areas: "dnav dmap";
   }
 
   /* ── Desktop left panel ── */
@@ -302,18 +300,18 @@
   .desktop-left-panel {
     display: block;
     position: fixed;
-    top: 124px;
+    top: 62px;
     left: 82px; /* 64px nav + 18px gap */
     width: 356px;
     z-index: 45;
     pointer-events: auto;
-    max-height: calc(100vh - 196px);
+    max-height: calc(100vh - 80px);
   }
 
   .desktop-location-row-wrap {
     display: block;
     position: fixed;
-    top: 76px;
+    top: 14px;
     left: 82px; /* 64px nav + 18px gap */
     width: 440px;
     z-index: 46;
@@ -601,7 +599,7 @@
   .desktop-settings-slide {
     display: none;
     height: auto;
-    max-height: calc(100vh - 196px);
+    max-height: calc(100vh - 80px);
     overflow-y: auto;
     overflow-x: hidden;
     pointer-events: auto;
@@ -745,10 +743,10 @@
   /* Ghost frame: poster floats above ghost map; no more 100vmax overlay */
   .app-shell > .preview-panel .poster-frame {
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65);
-    max-height: calc(84vh - 44px);
+    max-height: calc(100vh - 116px);
     width: min(
       calc(100% - 48px),
-      calc((84vh - 44px) * var(--poster-aspect, 0.6666667))
+      calc((100vh - 116px) * var(--poster-aspect, 0.6666667))
     );
     margin-top: var(--poster-frame-margin-top);
     margin-bottom: var(--poster-frame-margin-bottom);
@@ -757,12 +755,12 @@
 
   .app-shell > .preview-panel .poster-frame.is-bleed-preview {
     box-shadow: none;
-    max-height: calc((84vh - 52px) / var(--bleed-scale-y, 1));
+    max-height: calc((100vh - 124px) / var(--bleed-scale-y, 1));
     max-width: calc((100% - 48px) / var(--bleed-scale-x, 1));
     width: min(
       calc((100% - 48px) / var(--bleed-scale-x, 1)),
       calc(
-        ((84vh - 52px) / var(--bleed-scale-y, 1)) *
+        ((100vh - 124px) / var(--bleed-scale-y, 1)) *
           var(--poster-aspect, 0.6666667)
       )
     );
@@ -1038,7 +1036,7 @@
   /* Keep install prompt outside the desktop grid flow for full visibility. */
   .app-shell > .install-prompt {
     position: fixed;
-    top: 76px;
+    top: 14px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 48;

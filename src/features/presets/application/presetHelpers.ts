@@ -11,6 +11,7 @@ import type {
 } from "@/features/theme/domain/types";
 import {
   createCustomLayoutOption,
+  formatLayoutDimensions,
   getLayoutOption,
 } from "@/features/layout/infrastructure/layoutRepository";
 import type { PresetSnapshot } from "../domain/types";
@@ -87,13 +88,17 @@ export function resolveSnapshotPalette(
 
 export function resolveSnapshotLayoutName(snapshot: PresetSnapshot): string {
   const match = getLayoutOption(snapshot.form.layout);
-  if (match) return match.name;
+  if (match) {
+    return match.categoryName
+      ? `${match.categoryName} - ${match.name}`
+      : match.name;
+  }
   const fallback = createCustomLayoutOption(
     Number(snapshot.form.width),
     Number(snapshot.form.height),
     snapshot.form.customSizeUnit,
   );
-  return fallback.name;
+  return `${fallback.categoryName} - ${formatLayoutDimensions(fallback)}`;
 }
 
 export function createPresetId(): string {

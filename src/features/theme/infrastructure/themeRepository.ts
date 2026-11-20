@@ -1,6 +1,4 @@
-// NOTE: additional_themes.json exists in src/data/ but is currently unused.
-// It is preserved for potential future expansion of the theme registry.
-import themesManifest from "@/data/themes.json";
+import themesManifest from "@/data/config.json";
 import { blendHex, normalizeHexColor } from "@/shared/utils/color";
 import { getThemeColorByPath } from "../domain/colorPaths";
 import type { ResolvedTheme, ThemeColorKey, ThemeOption } from "../domain/types";

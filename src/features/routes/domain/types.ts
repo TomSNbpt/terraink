@@ -16,6 +16,7 @@ export interface Route {
   label: string;
   source: RouteSource;
   sourceFilename?: string;
+  gpxFile?: string;
   segments: Coordinate[][];
   color: string;
   strokeWidth: number;

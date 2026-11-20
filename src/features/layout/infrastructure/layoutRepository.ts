@@ -1,4 +1,4 @@
-import layoutsManifest from "@/data/layouts.json";
+import appConfig from "@/data/config.json";
 import { CM_PER_INCH } from "@/core/config";
 import { OUTPUT_DPI } from "@/features/poster/infrastructure/renderer/constants";
 import { toPositiveNumber } from "@/shared/utils/number";
@@ -161,6 +161,8 @@ function normalizeLayout(
     defaultGuides,
   };
 }
+
+const layoutsManifest = (appConfig as any)?.layouts ?? appConfig;
 
 const rawCategories = Array.isArray((layoutsManifest as any)?.categories)
   ? (layoutsManifest as any).categories

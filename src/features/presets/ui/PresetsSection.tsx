@@ -1,21 +1,16 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
-import { createPortal } from "react-dom";
-import {
-  createFallbackPresetSnapshot,
-  usePosterContext,
-} from "@/features/poster/ui/PosterContext";
+import { useMemo, useState } from "react";
+import { usePosterContext } from "@/features/poster/ui/PosterContext";
 import {
   AddIcon,
   CheckIcon,
-  CloseIcon,
   CopyIcon,
-  DownloadIcon,
+  EditIcon,
   RefreshIcon,
   StarIcon,
   TrashIcon,
-  UploadIcon,
 } from "@/shared/ui/Icons";
 import ConfirmModal from "@/shared/ui/ConfirmModal";
+import RenamePresetModal from "./RenamePresetModal";
 import SavePresetModal from "./SavePresetModal";
 import {
   DEFAULT_PRESET_ID,
@@ -28,11 +23,7 @@ import {
   resolveSnapshotLayoutName,
   resolveSnapshotPalette,
 } from "../application/presetHelpers";
-import {
-  cloneSnapshot,
-  parseImportedPresets,
-  serializePresetsForExport,
-} from "../infrastructure/presetsStorage";
+import { cloneSnapshot } from "../infrastructure/presetsStorage";
 
 type SaveModalState =
   | { mode: "create"; suggestedName: string; snapshot: PresetSnapshot }
@@ -49,25 +40,16 @@ type ConfirmState =
   | { kind: "set-default"; preset: UserPreset }
   | { kind: "delete"; preset: UserPreset };
 
-interface ImportPreviewState {
-  filename: string;
-  presets: UserPreset[];
-}
-
 export default function PresetsSection() {
   const { state, dispatch, mapRef } = usePosterContext();
   const { presets, activePresetId, savedThemes } = state;
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [highlightedPresetId, setHighlightedPresetId] = useState<string | null>(
     null,
   );
   const [saveModal, setSaveModal] = useState<SaveModalState | null>(null);
+  const [renamePreset, setRenamePreset] = useState<UserPreset | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
-  const [importPreview, setImportPreview] = useState<ImportPreviewState | null>(
-    null,
-  );
-  const [statusError, setStatusError] = useState<string | null>(null);
 
   const presetMetaById = useMemo(() => {
     const map = new Map<
@@ -89,7 +71,6 @@ export default function PresetsSection() {
   }
 
   function handleOpenNewPreset() {
-    setStatusError(null);
     const city = state.form.displayCity.trim();
     const suggestedName = city ? `${city} Preset` : "My Preset";
     setSaveModal({
@@ -100,7 +81,6 @@ export default function PresetsSection() {
   }
 
   function handleOpenDuplicate(preset: UserPreset) {
-    setStatusError(null);
     setSaveModal({
       mode: "duplicate",
       sourceName: preset.name,
@@ -164,77 +144,6 @@ export default function PresetsSection() {
     setConfirmState(null);
   }
 
-  function handleExportJson() {
-    setStatusError(null);
-    const json = serializePresetsForExport(presets);
-    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "terraink-presets.json";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function handleImportClick() {
-    setStatusError(null);
-    fileInputRef.current?.click();
-  }
-
-  async function handleImportFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const parsed = parseImportedPresets(
-        text,
-        createFallbackPresetSnapshot(),
-      );
-      if (parsed.ok === false) {
-        setStatusError(parsed.error);
-        return;
-      }
-      setStatusError(null);
-      setImportPreview({
-        filename: file.name,
-        presets: parsed.presets,
-      });
-    } catch {
-      setStatusError("Could not read the selected JSON file.");
-    }
-  }
-
-  function handleImportReplace() {
-    if (!importPreview) return;
-    dispatch({ type: "SET_PRESETS", presets: importPreview.presets });
-    setImportPreview(null);
-  }
-
-  function handleImportMerge() {
-    if (!importPreview) return;
-    const existingById = new Set(presets.map((p) => p.id));
-    const existingByName = new Set(
-      presets.map((p) => p.name.trim().toLowerCase()),
-    );
-    const additions: UserPreset[] = [];
-    for (const candidate of importPreview.presets) {
-      if (candidate.id === DEFAULT_PRESET_ID) continue;
-      if (existingByName.has(candidate.name.trim().toLowerCase())) continue;
-      const safeId = existingById.has(candidate.id)
-        ? createPresetId()
-        : candidate.id;
-      existingById.add(safeId);
-      existingByName.add(candidate.name.trim().toLowerCase());
-      additions.push({ ...candidate, id: safeId });
-    }
-    dispatch({ type: "SET_PRESETS", presets: [...presets, ...additions] });
-    setImportPreview(null);
-  }
-
   return (
     <section className="panel-block presets-section">
       <h2>Presets</h2>
@@ -253,42 +162,7 @@ export default function PresetsSection() {
           <AddIcon aria-hidden="true" />
           <span>New Preset</span>
         </button>
-
-        <div className="presets-io-actions">
-          <button
-            type="button"
-            className="presets-io-btn"
-            onClick={handleImportClick}
-            title="Import presets from JSON file"
-          >
-            <UploadIcon aria-hidden="true" />
-            <span>Import</span>
-          </button>
-          <button
-            type="button"
-            className="presets-io-btn"
-            onClick={handleExportJson}
-            title="Export all presets to JSON file"
-          >
-            <DownloadIcon aria-hidden="true" />
-            <span>Export</span>
-          </button>
-        </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          className="presets-file-input"
-          onChange={(e) => void handleImportFileChange(e)}
-        />
       </div>
-
-      {statusError ? (
-        <p className="save-theme-error" role="alert">
-          {statusError}
-        </p>
-      ) : null}
 
       <div className="presets-list" role="list" aria-label="Saved presets">
         {presets.map((preset) => {
@@ -338,7 +212,9 @@ export default function PresetsSection() {
                       <span className="preset-active-badge">Loaded</span>
                     ) : null}
                   </div>
-                  <span className="preset-card-layout">{layoutName}</span>
+                  <span className="preset-card-layout" title={layoutName}>
+                    {layoutName}
+                  </span>
                 </div>
               </button>
 
@@ -377,6 +253,18 @@ export default function PresetsSection() {
                   >
                     <StarIcon aria-hidden="true" />
                     <span>Set Default</span>
+                  </button>
+                ) : null}
+
+                {!isDefault ? (
+                  <button
+                    type="button"
+                    className="preset-action-btn preset-action-btn--icon"
+                    onClick={() => setRenamePreset(preset)}
+                    title={`Rename "${preset.name}"`}
+                    aria-label={`Rename ${preset.name}`}
+                  >
+                    <EditIcon aria-hidden="true" />
                   </button>
                 ) : null}
 
@@ -419,6 +307,22 @@ export default function PresetsSection() {
           onCreate={handleSaveModalCreate}
           onOverwrite={handleSaveModalOverwrite}
           onCancel={() => setSaveModal(null)}
+        />
+      ) : null}
+
+      {renamePreset ? (
+        <RenamePresetModal
+          preset={renamePreset}
+          existingPresets={presets}
+          onRename={(newName) => {
+            dispatch({
+              type: "RENAME_PRESET",
+              presetId: renamePreset.id,
+              name: newName,
+            });
+            setRenamePreset(null);
+          }}
+          onCancel={() => setRenamePreset(null)}
         />
       ) : null}
 
@@ -467,65 +371,6 @@ export default function PresetsSection() {
         />
       ) : null}
 
-      {importPreview
-        ? createPortal(
-            <div
-              className="picker-modal-backdrop"
-              role="presentation"
-              onClick={() => setImportPreview(null)}
-            >
-              <div
-                className="picker-modal save-choice-modal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="import-presets-modal-title"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="picker-modal-header">
-                  <h3 id="import-presets-modal-title">Import Presets</h3>
-                  <button
-                    type="button"
-                    className="picker-modal-close"
-                    onClick={() => setImportPreview(null)}
-                    aria-label="Cancel"
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
-                <p className="save-choice-message">
-                  Found <strong>{importPreview.presets.length}</strong> preset(s)
-                  in <strong>{importPreview.filename}</strong>. Replace all
-                  existing presets (including DEFAULT), or merge new presets into
-                  your current list?
-                </p>
-                <div className="save-choice-actions">
-                  <button
-                    type="button"
-                    className="save-theme-cancel"
-                    onClick={() => setImportPreview(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="save-theme-cancel"
-                    onClick={handleImportMerge}
-                  >
-                    Merge New
-                  </button>
-                  <button
-                    type="button"
-                    className="save-theme-confirm"
-                    onClick={handleImportReplace}
-                  >
-                    Overwrite All
-                  </button>
-                </div>
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
     </section>
   );
 }
