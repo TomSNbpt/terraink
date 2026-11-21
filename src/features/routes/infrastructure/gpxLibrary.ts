@@ -1,5 +1,13 @@
+import { haversineMeters } from "@/shared/geo/math";
 import type { Coordinate } from "@/shared/geo/types";
 import { gpxParser } from "./gpxParser";
+
+export interface BundledGpxEntry {
+  filename: string;
+  label: string;
+  distanceMeters: number;
+  pointCount: number;
+}
 
 const rawBundledGpxModules = import.meta.glob("/src/data/gpx/*.gpx", {
   query: "?raw",
@@ -89,6 +97,48 @@ export function listBundledGpxFilenames(): string[] {
   return Array.from(bundledXmlByFilename.keys()).sort((a, b) =>
     a.localeCompare(b),
   );
+}
+
+export function getBundledGpxXml(filename: string | undefined): string | null {
+  if (!filename) return null;
+  const canonical = resolveCanonicalBundledFilename(filename);
+  if (!canonical) return null;
+  return bundledXmlByFilename.get(canonical) ?? null;
+}
+
+let cachedBundledEntries: BundledGpxEntry[] | null = null;
+
+function computeSegmentsLengthMeters(segments: Coordinate[][]): number {
+  let total = 0;
+  for (const segment of segments) {
+    for (let i = 1; i < segment.length; i += 1) {
+      total += haversineMeters(segment[i - 1]!, segment[i]!);
+    }
+  }
+  return total;
+}
+
+export function listBundledGpxEntries(): BundledGpxEntry[] {
+  if (cachedBundledEntries) {
+    return cachedBundledEntries;
+  }
+
+  const entries: BundledGpxEntry[] = [];
+  for (const filename of listBundledGpxFilenames()) {
+    const segments = getBundledGpxSegments(filename);
+    if (!segments || segments.length === 0) continue;
+    const pointCount = segments.reduce((sum, seg) => sum + seg.length, 0);
+    const label = filename.replace(/\.gpx$/i, "").trim() || filename;
+    entries.push({
+      filename,
+      label,
+      distanceMeters: computeSegmentsLengthMeters(segments),
+      pointCount,
+    });
+  }
+
+  cachedBundledEntries = entries;
+  return entries;
 }
 
 export function hasBundledGpxFile(filename: string | undefined): boolean {

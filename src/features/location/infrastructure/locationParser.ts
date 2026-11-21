@@ -7,7 +7,9 @@ interface NominatimEntry {
   label?: string;
   place_id?: number | string;
   city?: string;
+  state?: string;
   country?: string;
+  countryCode?: string;
   address?: Record<string, string>;
 }
 
@@ -69,10 +71,16 @@ export function normalizeLocationResult(
       "county",
       "state",
     ]) || String(entry.city ?? "").trim();
+  const state =
+    pickFirstAddressValue(address, ["state"]) ||
+    String(entry.state ?? "").trim();
   const country =
     pickFirstAddressValue(address, ["country"]) ||
     String(entry.country ?? "").trim();
-  const countryCode = pickFirstAddressValue(address, ["country_code"]).toUpperCase();
+  const countryCode = (
+    pickFirstAddressValue(address, ["country_code"]) ||
+    String(entry.countryCode ?? "").trim()
+  ).toUpperCase();
   const continent =
     pickFirstAddressValue(address, ["continent"]) ||
     inferContinentFromCoordinates(lat, lon);
@@ -81,6 +89,7 @@ export function normalizeLocationResult(
     id: String(entry.place_id ?? label),
     label,
     city,
+    state,
     country,
     countryCode,
     continent,

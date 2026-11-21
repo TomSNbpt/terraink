@@ -12,6 +12,7 @@ import {
   MIN_MARKER_SIZE,
 } from "@/features/markers/domain/constants";
 import { routeLengthMeters } from "@/features/routes/infrastructure/helpers";
+import { listBundledGpxEntries } from "@/features/routes/infrastructure/gpxLibrary";
 import {
   ROUTE_LINE_STYLES,
   MAX_ROUTE_OPACITY,
@@ -50,13 +51,16 @@ function formatRouteDistance(meters: number): string {
 interface PendingConfirmation {
   pendingRoute: Route;
   newBounds: RouteBounds;
+  replaceOnly?: boolean;
 }
 
 function RouteBoundsWarningModal({
+  replaceOnly = false,
   onCancel,
   onContinue,
   onReplace,
 }: {
+  replaceOnly?: boolean;
   onCancel: () => void;
   onContinue: () => void;
   onReplace: () => void;
@@ -82,8 +86,9 @@ function RouteBoundsWarningModal({
             This route is far from your current area
           </p>
           <p className="marker-delete-modal__text">
-            Adding it will zoom the poster out to fit everything. You can also
-            replace your existing routes with this one to keep a tighter view.
+            {replaceOnly
+              ? "This route is too far from your existing routes to show together. Replace your existing routes with this one?"
+              : "Adding it will zoom the poster out to fit everything. You can also replace your existing routes with this one to keep a tighter view."}
           </p>
           <div className="marker-delete-modal__actions">
             <button
@@ -95,18 +100,24 @@ function RouteBoundsWarningModal({
             </button>
             <button
               type="button"
-              className="marker-delete-modal__cancel"
+              className={
+                replaceOnly
+                  ? "marker-delete-modal__confirm"
+                  : "marker-delete-modal__cancel"
+              }
               onClick={onReplace}
             >
               Replace existing
             </button>
-            <button
-              type="button"
-              className="marker-delete-modal__confirm"
-              onClick={onContinue}
-            >
-              Add anyway
-            </button>
+            {!replaceOnly ? (
+              <button
+                type="button"
+                className="marker-delete-modal__confirm"
+                onClick={onContinue}
+              >
+                Add anyway
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -118,12 +129,17 @@ function RouteBoundsWarningModal({
 export default function RoutesSection() {
   const { state, dispatch, effectiveTheme } = usePosterContext();
   const { form, routes, customMarkerIcons } = state;
-  const { uploadGpxFile, confirmAddRoute, confirmReplaceRoutes } =
-    useGpxUpload();
+  const {
+    uploadGpxFile,
+    addBundledGpxFile,
+    confirmAddRoute,
+    confirmReplaceRoutes,
+  } = useGpxUpload();
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [openRouteId, setOpenRouteId] = useState<string | null>(null);
   const [openColorPickerId, setOpenColorPickerId] = useState<string | null>(
     null,
@@ -134,6 +150,19 @@ export default function RoutesSection() {
   const [isEndpointColorOpen, setIsEndpointColorOpen] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] =
     useState<PendingConfirmation | null>(null);
+
+  const bundledGpxEntries = useMemo(() => listBundledGpxEntries(), []);
+
+  const activeGpxFilenames = useMemo(() => {
+    const set = new Set<string>();
+    for (const route of routes) {
+      const candidate = route.gpxFile ?? route.sourceFilename;
+      if (candidate) {
+        set.add(candidate.trim().toLowerCase());
+      }
+    }
+    return set;
+  }, [routes]);
 
   const palette = useMemo(
     () =>
@@ -161,6 +190,7 @@ export default function RoutesSection() {
           setPendingConfirmation({
             pendingRoute: result.pendingRoute,
             newBounds: result.newBounds,
+            replaceOnly: result.replaceOnly,
           });
         }
       } catch (err) {
@@ -170,6 +200,27 @@ export default function RoutesSection() {
       }
     },
     [uploadGpxFile],
+  );
+
+  const handleSelectBundledGpx = useCallback(
+    (filename: string) => {
+      setUploadError(null);
+      try {
+        const result = addBundledGpxFile(filename);
+        if (result.status === "needs-confirmation") {
+          setPendingConfirmation({
+            pendingRoute: result.pendingRoute,
+            newBounds: result.newBounds,
+            replaceOnly: result.replaceOnly,
+          });
+        }
+      } catch (err) {
+        setUploadError(
+          err instanceof Error ? err.message : "Could not load GPX file.",
+        );
+      }
+    },
+    [addBundledGpxFile],
   );
 
   const updateRoute = useCallback(
@@ -259,6 +310,7 @@ export default function RoutesSection() {
     <section className="panel-block routes-settings-screen">
       {pendingConfirmation ? (
         <RouteBoundsWarningModal
+          replaceOnly={pendingConfirmation.replaceOnly}
           onCancel={() => setPendingConfirmation(null)}
           onContinue={() => {
             confirmAddRoute(
@@ -291,6 +343,19 @@ export default function RoutesSection() {
               {form.showRoutes ? "Hide All" : "Show All"}
             </span>
           </button>
+          {bundledGpxEntries.length > 0 ? (
+            <button
+              type="button"
+              className={`marker-row__icon-btn marker-header-action-btn${
+                isLibraryOpen ? " is-active" : ""
+              }`}
+              onClick={() => setIsLibraryOpen((open) => !open)}
+              aria-expanded={isLibraryOpen}
+              title="Choose a GPX file from src/data/gpx/"
+            >
+              <span className="marker-row__icon-btn-label">Library</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="marker-row__icon-btn marker-header-action-btn"
@@ -319,11 +384,84 @@ export default function RoutesSection() {
         </p>
       ) : null}
 
+      {isLibraryOpen && bundledGpxEntries.length > 0 ? (
+        <div
+          className="routes-library"
+          role="region"
+          aria-label="Saved GPX library"
+        >
+          <div className="routes-library__header">
+            <span className="routes-library__title">
+              GPX Library (<code>src/data/gpx/</code>)
+            </span>
+            <button
+              type="button"
+              className="routes-library__close"
+              onClick={() => setIsLibraryOpen(false)}
+              title="Close library"
+              aria-label="Close GPX library"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <ul className="routes-library__list">
+            {bundledGpxEntries.map((entry) => {
+              const isAdded = activeGpxFilenames.has(
+                entry.filename.toLowerCase(),
+              );
+              return (
+                <li
+                  key={entry.filename}
+                  className={`routes-library__row${
+                    isAdded ? " is-added" : ""
+                  }`}
+                >
+                  <div className="routes-library__info">
+                    <span
+                      className="routes-library__name"
+                      title={entry.filename}
+                    >
+                      {entry.label}
+                    </span>
+                    <span className="routes-library__meta">
+                      {formatRouteDistance(entry.distanceMeters)} &middot;{" "}
+                      {entry.pointCount.toLocaleString()} pts
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`routes-library__btn${
+                      isAdded ? " is-added" : ""
+                    }`}
+                    onClick={() => handleSelectBundledGpx(entry.filename)}
+                    disabled={isAdded}
+                    title={
+                      isAdded
+                        ? `${entry.filename} is already on the map`
+                        : `Add ${entry.filename}`
+                    }
+                  >
+                    {isAdded ? (
+                      <>
+                        <CheckIcon aria-hidden="true" />
+                        <span>Added</span>
+                      </>
+                    ) : (
+                      <span>Add</span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="routes-section__content">
         {routes.length === 0 ? (
           <p className="routes-section__empty">
-            Upload a <code>.gpx</code> file to draw a route on the poster.
-            Drawing routes manually is coming soon.
+            Choose a saved route from <strong>Library</strong> or upload a{" "}
+            <code>.gpx</code> file to draw a route on the poster.
           </p>
         ) : null}
 

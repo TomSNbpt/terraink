@@ -8,6 +8,7 @@ import {
   requestCurrentPositionWithRetry,
 } from "@/features/location/infrastructure";
 import type { SearchResult } from "@/features/location/domain/types";
+import { resolveDisplaySubtitle } from "@/features/location/domain/displaySubtitle";
 
 interface UseCurrentLocationReturn {
   handleUseCurrentLocation: () => void;
@@ -69,7 +70,7 @@ export function useCurrentLocation(
             fields: {
               location: resolved.label,
               displayCity: String(resolved.city ?? "").trim(),
-              displayCountry: String(resolved.country ?? "").trim(),
+              displayCountry: resolveDisplaySubtitle(resolved),
               displayContinent: String(resolved.continent ?? "").trim(),
             },
           });

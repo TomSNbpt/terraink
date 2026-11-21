@@ -1,4 +1,5 @@
 import type { SearchResult } from "@/features/location/domain/types";
+import { resolveDisplaySubtitle } from "@/features/location/domain/displaySubtitle";
 import type {
   MarkerDefaults,
   MarkerIconDefinition,
@@ -108,6 +109,7 @@ export type PosterAction =
       type: "SET_FORM_FIELDS";
       fields: Partial<PosterForm>;
       resetDisplayNameOverrides?: boolean;
+      clearSelectedLocation?: boolean;
     }
   | { type: "SET_THEME"; themeId: string }
   | {
@@ -226,6 +228,7 @@ export function posterReducer(
         displayNameOverrides: action.resetDisplayNameOverrides
           ? { city: false, country: false }
           : state.displayNameOverrides,
+        ...(action.clearSelectedLocation ? { selectedLocation: null } : {}),
       };
 
     case "SET_THEME":
@@ -307,7 +310,7 @@ export function posterReducer(
           latitude: action.location.lat.toFixed(6),
           longitude: action.location.lon.toFixed(6),
           displayCity: action.location.city,
-          displayCountry: action.location.country,
+          displayCountry: resolveDisplaySubtitle(action.location),
           displayContinent: action.location.continent || "",
         },
       };

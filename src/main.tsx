@@ -50,11 +50,24 @@ if (typeof displayModeQuery.addEventListener === "function") {
 }
 
 if ("serviceWorker" in navigator && !isNativePlatform()) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.warn("Service worker registration failed", error);
+  if (import.meta.env.PROD) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch((error) => {
+        console.warn("Service worker registration failed", error);
+      });
     });
-  });
+  } else {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) => {
+        for (const registration of registrations) {
+          void registration.unregister();
+        }
+      })
+      .catch(() => {
+        // Ignore registration cleanup errors in restricted contexts.
+      });
+  }
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

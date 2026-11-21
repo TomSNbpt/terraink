@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clamp } from "@/shared/geo/math";
 import { reverseGeocodeCoordinates } from "@/core/services";
+import {
+  formatLocationLabel,
+  resolveDisplaySubtitle,
+} from "@/features/location/domain/displaySubtitle";
 import type { MapInstanceRef } from "@/features/map/domain/types";
 import {
   MIN_DISTANCE_METERS,
@@ -191,10 +195,13 @@ export function useMapSync(
           }
           const fallbackLabel = String(nearest.label ?? "").trim();
           const nextCity = String(nearest.city ?? "").trim();
-          const nextCountry = String(nearest.country ?? "").trim();
+          const nextSubtitle = resolveDisplaySubtitle(nearest);
           const nextContinent = String(nearest.continent ?? "").trim();
-          const nextLocation =
-            [nextCity, nextCountry].filter(Boolean).join(", ") || fallbackLabel;
+          const nextLocation = formatLocationLabel(
+            nextCity,
+            nextSubtitle,
+            fallbackLabel,
+          );
 
           if (!nextLocation) {
             return;
@@ -209,7 +216,7 @@ export function useMapSync(
                 ? { displayCity: nextCity }
                 : {}),
               ...(!displayNameOverridesRef.current.country
-                ? { displayCountry: nextCountry }
+                ? { displayCountry: nextSubtitle }
                 : {}),
             },
           });

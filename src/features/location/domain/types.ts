@@ -2,6 +2,7 @@ export interface Location {
   id: string;
   label: string;
   city: string;
+  state?: string;
   country: string;
   countryCode?: string;
   continent?: string;

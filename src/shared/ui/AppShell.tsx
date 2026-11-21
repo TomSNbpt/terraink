@@ -1,23 +1,20 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePosterContext } from "@/features/poster/ui/PosterContext";
 import {
   MAX_MARKER_SIZE,
   MIN_MARKER_SIZE,
 } from "@/features/markers/domain/constants";
 import DesktopNavBar from "@/shared/ui/DesktopNavBar";
+import DesktopLocationBar from "@/shared/ui/DesktopLocationBar";
 import PreviewPanel from "@/features/poster/ui/PreviewPanel";
+import SettingsPanel from "@/features/poster/ui/SettingsPanel";
+import ExportFab from "@/features/export/ui/ExportFab";
+import AnnouncementModal from "@/features/updates/ui/AnnouncementModal";
 import MobileNavBar, { type MobileTab } from "@/shared/ui/MobileNavBar";
 import InstallPrompt from "@/features/install/ui/InstallPrompt";
 import { useSwipeDown } from "@/shared/hooks/useSwipeDown";
 import { CheckIcon } from "@/shared/ui/Icons";
 import { useSessionAnalytics } from "@/features/export/application/useSessionAnalytics";
-
-const SettingsPanel = lazy(() => import("@/features/poster/ui/SettingsPanel"));
-const AnnouncementModal = lazy(
-  () => import("@/features/updates/ui/AnnouncementModal"),
-);
-const ExportFab = lazy(() => import("@/features/export/ui/ExportFab"));
-const DesktopLocationBar = lazy(() => import("@/shared/ui/DesktopLocationBar"));
 
 function SettingsDrawer({
   mobileTab,
@@ -80,23 +77,6 @@ export default function AppShell() {
   const [desktopPanelOpen, setDesktopPanelOpen] = useState(false);
   const [desktopLocationRowVisible, setDesktopLocationRowVisible] =
     useState(true);
-
-  useEffect(() => {
-    const preload = () => {
-      void import("@/features/poster/ui/SettingsPanel");
-      void import("@/shared/ui/DesktopLocationBar");
-      void import("@/features/export/ui/ExportFab");
-      void import("@/features/updates/ui/AnnouncementModal");
-    };
-
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(preload, { timeout: 2000 });
-      return () => window.cancelIdleCallback(idleId);
-    }
-
-    const timer = setTimeout(preload, 300);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -197,17 +177,13 @@ export default function AppShell() {
       <div
         className={`desktop-location-row-wrap${desktopLocationRowVisible ? "" : " is-hidden"}`}
       >
-        <Suspense fallback={null}>
-          <DesktopLocationBar />
-        </Suspense>
+        <DesktopLocationBar />
       </div>
 
       <div
         className={`mobile-location-row-wrap${mobileLocationRowVisible ? "" : " is-hidden"}`}
       >
-        <Suspense fallback={null}>
-          <DesktopLocationBar />
-        </Suspense>
+        <DesktopLocationBar />
       </div>
       {isMobileViewport && isMarkerEditorActive && activeMarker ? (
         <div
@@ -239,9 +215,7 @@ export default function AppShell() {
         <div
           className={`desktop-settings-slide${desktopPanelOpen ? " is-open" : ""}`}
         >
-          <Suspense fallback={null}>
-            <SettingsPanel activeTab={desktopTab} />
-          </Suspense>
+          <SettingsPanel activeTab={desktopTab} />
         </div>
       </div>
 
@@ -275,13 +249,9 @@ export default function AppShell() {
         isLocationVisible={mobileLocationRowVisible}
         onTabChange={handleMobileTabChange}
       />
-      <Suspense fallback={null}>
-        <ExportFab isMobile={isMobileViewport} />
-      </Suspense>
+      <ExportFab isMobile={isMobileViewport} />
 
-      <Suspense fallback={null}>
-        <AnnouncementModal />
-      </Suspense>
+      <AnnouncementModal />
     </div>
   );
 }

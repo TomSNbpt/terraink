@@ -79,7 +79,7 @@ export default function TypographySection({
             />
           </label>
           <label>
-            Display country
+            Display state / country
             <input
               className="form-control-tall"
               name="displayCountry"

@@ -852,6 +852,162 @@
           "minor_low": "#C8A888"
         }
       }
+    },
+    "mcm": {
+      "name": "MCM",
+      "description": "Deep navy land, midnight water, and stepped steel-blue roads with crisp ice-blue typography",
+      "ui": {
+        "bg": "#1A3A5C",
+        "text": "#D8EEFA"
+      },
+      "map": {
+        "land": "#1A3A5C",
+        "landcover": "#173554",
+        "water": "#0E2740",
+        "waterway": "#0E2740",
+        "parks": "#1E4266",
+        "buildings": "#22496E",
+        "aeroway": "#254F76",
+        "rail": "#4C6C81",
+        "roads": {
+          "major": "#76A8C9",
+          "minor_high": "#6792AF",
+          "minor_mid": "#4C6C81",
+          "minor_low": "#3F5A6C",
+          "path": "#364C5B",
+          "outline": "#1A3A5C"
+        }
+      }
+    },
+    "paris": {
+      "name": "Paris",
+      "description": "Printful-safe royal blue canvas, deep navy water, crisp white-tinted infrastructure, and vibrant emerald-teal typography and routes",
+      "ui": {
+        "bg": "#1A529B",
+        "text": "#26B89D"
+      },
+      "map": {
+        "land": "#1A529B",
+        "landcover": "#174B8F",
+        "water": "#0F3366",
+        "waterway": "#0F3366",
+        "parks": "#215CA8",
+        "buildings": "#2665B4",
+        "aeroway": "#2E6EBD",
+        "rail": "#C8DCF0",
+        "roads": {
+          "major": "#F5F9FC",
+          "minor_high": "#DCE8F5",
+          "minor_mid": "#B5CEE8",
+          "minor_low": "#88AED6",
+          "path": "#6490BF",
+          "outline": "#1A529B"
+        }
+      }
+    },
+    "paris_2": {
+      "name": "Paris-2",
+      "description": "Printful-safe royal blue canvas, luminous ice-white water, crisp white-tinted infrastructure, and vibrant emerald-teal typography and routes",
+      "ui": {
+        "bg": "#1A529B",
+        "text": "#26B89D"
+      },
+      "map": {
+        "land": "#1A529B",
+        "landcover": "#174B8F",
+        "water": "#BDD8F2",
+        "waterway": "#BDD8F2",
+        "parks": "#215CA8",
+        "buildings": "#2665B4",
+        "aeroway": "#2E6EBD",
+        "rail": "#C8DCF0",
+        "roads": {
+          "major": "#F5F9FC",
+          "minor_high": "#DCE8F5",
+          "minor_mid": "#B5CEE8",
+          "minor_low": "#88AED6",
+          "path": "#6490BF",
+          "outline": "#1A529B"
+        }
+      }
+    },
+    "paris_3": {
+      "name": "Paris-3",
+      "description": "Paris royal blue & deep navy water with soft tonal-blue roads for balanced, Printful-safe matte contrast",
+      "ui": {
+        "bg": "#1A529B",
+        "text": "#26B89D"
+      },
+      "map": {
+        "land": "#1A529B",
+        "landcover": "#174B8F",
+        "water": "#0F3366",
+        "waterway": "#0F3366",
+        "parks": "#1F5AA4",
+        "buildings": "#2360AD",
+        "aeroway": "#2B69B5",
+        "rail": "#5A8AC0",
+        "roads": {
+          "major": "#7EAAD8",
+          "minor_high": "#6695C7",
+          "minor_mid": "#4E7FB5",
+          "minor_low": "#3D6FA8",
+          "path": "#31639D",
+          "outline": "#1A529B"
+        }
+      }
+    },
+    "paris_4": {
+      "name": "Paris-4",
+      "description": "Paris royal blue & deep navy water with ultra-subtle ghosted blueprint roads so emerald-teal routes dominate",
+      "ui": {
+        "bg": "#1A529B",
+        "text": "#26B89D"
+      },
+      "map": {
+        "land": "#1A529B",
+        "landcover": "#174B8F",
+        "water": "#0F3366",
+        "waterway": "#0F3366",
+        "parks": "#1E57A1",
+        "buildings": "#225CA7",
+        "aeroway": "#2763B0",
+        "rail": "#4474AC",
+        "roads": {
+          "major": "#5C8DC4",
+          "minor_high": "#4B7CB4",
+          "minor_mid": "#3B6DA6",
+          "minor_low": "#2F629D",
+          "path": "#275A96",
+          "outline": "#1A529B"
+        }
+      }
+    },
+    "paris_5": {
+      "name": "Paris-5",
+      "description": "Paris royal blue & deep navy water with muted frost highways and a calm, subdued local street grid",
+      "ui": {
+        "bg": "#1A529B",
+        "text": "#26B89D"
+      },
+      "map": {
+        "land": "#1A529B",
+        "landcover": "#174B8F",
+        "water": "#0F3366",
+        "waterway": "#0F3366",
+        "parks": "#1F5AA4",
+        "buildings": "#2360AD",
+        "aeroway": "#2B69B5",
+        "rail": "#5E8EC2",
+        "roads": {
+          "major": "#A8C6E6",
+          "minor_high": "#78A5D4",
+          "minor_mid": "#4C7EB4",
+          "minor_low": "#386BA4",
+          "path": "#2D5F99",
+          "outline": "#1A529B"
+        }
+      }
     }
   },
   "layouts": {
@@ -1066,10 +1222,10 @@
       "id": "default",
       "name": "DEFAULT",
       "createdAt": "2026-11-16T23:10:25.677Z",
-      "updatedAt": "2026-11-16T23:15:09.155Z",
+      "updatedAt": "2026-11-20T22:45:00.000Z",
       "snapshot": {
         "form": {
-          "location": "Newburyport, United States",
+          "location": "Newburyport, Massachusetts",
           "latitude": "42.805708",
           "longitude": "-70.881627",
           "distance": "8036",
@@ -1079,7 +1235,7 @@
           "theme": "ocean",
           "layout": "custom_desktop_4k",
           "displayCity": "Newburyport",
-          "displayCountry": "massachusetts",
+          "displayCountry": "Massachusetts",
           "displayContinent": "North America",
           "fontFamily": "",
           "showPosterText": true,
@@ -1100,7 +1256,7 @@
         "customColors": {},
         "displayNameOverrides": {
           "city": false,
-          "country": true
+          "country": false
         },
         "markers": [],
         "markerDefaults": {
@@ -1203,9 +1359,9 @@
     },
     {
       "id": "preset-98863aeb-b2e5-49db-ae9f-cda7e7c5ce2a",
-      "name": "Chicago",
+      "name": "Chicago - Blue",
       "createdAt": "2026-11-17T13:46:40.485Z",
-      "updatedAt": "2026-11-17T16:31:39.218Z",
+      "updatedAt": "2026-11-20T17:54:22.038Z",
       "snapshot": {
         "form": {
           "location": "Cook County, United States",
@@ -1991,6 +2147,166 @@
         ],
         "showGuides": true,
         "bearing": 90
+      }
+    },
+    {
+      "id": "preset-7e7faa3e-31d5-41c8-b1a6-f376d0b98523",
+      "name": "Marine Corps Marathon",
+      "createdAt": "2026-11-21T19:44:21.606Z",
+      "updatedAt": "2026-11-21T19:44:21.606Z",
+      "snapshot": {
+        "form": {
+          "location": "Washington, District of Columbia",
+          "latitude": "38.889612",
+          "longitude": "-77.047205",
+          "distance": "5683",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "mcm",
+          "layout": "poster_large_portrait",
+          "displayCity": "Washington",
+          "displayCountry": "District of Columbia",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": false
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#D8EEFA"
+        },
+        "routes": [],
+        "routeDefaults": {
+          "color": "#D8EEFA",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-bfc6eedf-1cba-403a-a3be-b66a90f398db",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-60841dec-ffea-47a9-91e8-e5abdb55adb3",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-95a003d6-1303-4967-8f00-27729208a2d5",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-b14a31ac-796b-4809-b202-d888fde96010",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-268b5840-dc3b-43c5-a5b0-3ef75f314d1c",
+      "name": "Paris",
+      "createdAt": "2026-11-21T19:57:21.639Z",
+      "updatedAt": "2026-11-21T20:00:54.615Z",
+      "snapshot": {
+        "form": {
+          "location": "Paris, France",
+          "latitude": "48.853610",
+          "longitude": "2.336235",
+          "distance": "9435",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "paris_4",
+          "layout": "poster_large_portrait",
+          "displayCity": "Paris",
+          "displayCountry": "France",
+          "displayContinent": "Europe",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": false
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#26B89D"
+        },
+        "routes": [],
+        "routeDefaults": {
+          "color": "#26B89D",
+          "strokeWidth": 3,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-14e97790-c480-45b7-bb0e-535fca740908",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-4b516fe5-92fd-46e9-85c6-dc14bcf214b3",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-a77ef93b-70ed-4b60-802d-1950975b6633",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-ac153ea0-0618-469c-98eb-bfcd9fa5a267",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
       }
     }
   ]

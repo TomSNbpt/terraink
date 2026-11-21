@@ -21,6 +21,7 @@ import {
 } from "@/features/location/application/useRecentLocations";
 import LocationSuggestionsDropdown from "./LocationSuggestionsDropdown";
 import type { SearchResult } from "@/features/location/domain/types";
+import { resolveDisplaySubtitle } from "@/features/location/domain/displaySubtitle";
 
 const CLOSE_ANIMATION_MS = 220;
 const DEFAULT_LOCATION_LABEL = "Hanover, Region Hannover, Lower Saxony, Germany";
@@ -30,7 +31,9 @@ interface PendingLocation {
   lat: number;
   lon: number;
   city: string;
+  state?: string;
   country: string;
+  countryCode?: string;
   continent: string;
 }
 
@@ -93,7 +96,7 @@ export default function StartupLocationModal({
         longitude: location.lon.toFixed(6),
         distance: String(DEFAULT_DISTANCE_METERS),
         displayCity: location.city,
-        displayCountry: location.country,
+        displayCountry: resolveDisplaySubtitle(location),
         displayContinent: location.continent,
       },
     });
@@ -103,7 +106,9 @@ export default function StartupLocationModal({
         id: `startup:${location.lat.toFixed(6)},${location.lon.toFixed(6)}`,
         label: location.label,
         city: location.city,
+        state: location.state,
         country: location.country,
+        countryCode: location.countryCode,
         continent: location.continent,
         lat: location.lat,
         lon: location.lon,
@@ -145,7 +150,9 @@ export default function StartupLocationModal({
           lat,
           lon,
           city: String(resolved.city ?? "").trim(),
+          state: String(resolved.state ?? "").trim(),
           country: String(resolved.country ?? "").trim(),
+          countryCode: String(resolved.countryCode ?? "").trim(),
           continent: String(resolved.continent ?? "").trim(),
         };
         setPendingLocation(pending);
@@ -157,7 +164,9 @@ export default function StartupLocationModal({
           lat,
           lon,
           city: "",
+          state: "",
           country: "",
+          countryCode: "",
           continent: "",
         };
         setPendingLocation(pending);
@@ -174,7 +183,9 @@ export default function StartupLocationModal({
       lat: suggestion.lat,
       lon: suggestion.lon,
       city: suggestion.city,
+      state: suggestion.state,
       country: suggestion.country,
+      countryCode: suggestion.countryCode,
       continent: String(suggestion.continent ?? "").trim(),
     });
     setPendingSuggestion(suggestion);
@@ -216,7 +227,9 @@ export default function StartupLocationModal({
         lat: resolved.lat,
         lon: resolved.lon,
         city: resolved.city,
+        state: resolved.state,
         country: resolved.country,
+        countryCode: resolved.countryCode,
         continent: String(resolved.continent ?? "").trim(),
       });
       closeModal();
