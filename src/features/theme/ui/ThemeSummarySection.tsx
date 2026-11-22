@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 import ThemeCard from "./ThemeCard";
-import { EditIcon } from "@/shared/ui/Icons";
+import { DesignerIcon, EditIcon, TrashIcon } from "@/shared/ui/Icons";
 import {
   DISPLAY_PALETTE_KEYS,
   type SavedTheme,
@@ -15,6 +15,10 @@ interface ThemeSummarySectionProps {
   selectedThemeOption: ThemeOption;
   onThemeSelect: (themeId: string) => void;
   onCustomize: () => void;
+  onOpenThemeDesigner: () => void;
+  generatedThemeCount: number;
+  canDeleteSelectedBuiltin: boolean;
+  onRequestDeleteSelectedBuiltin: () => void;
   savedThemes: SavedTheme[];
   onApplySavedTheme: (themeId: string) => void;
   onDeleteSavedTheme: (themeId: string) => void;
@@ -39,6 +43,10 @@ export default function ThemeSummarySection({
   selectedThemeOption,
   onThemeSelect,
   onCustomize,
+  onOpenThemeDesigner,
+  generatedThemeCount,
+  canDeleteSelectedBuiltin,
+  onRequestDeleteSelectedBuiltin,
   savedThemes,
   onApplySavedTheme,
   onDeleteSavedTheme,
@@ -48,23 +56,55 @@ export default function ThemeSummarySection({
 
   return (
     <div className="theme-summary-view">
+      <div className="theme-designer-launch-row">
+        <button
+          type="button"
+          className="theme-designer-launch-btn"
+          onClick={onOpenThemeDesigner}
+        >
+          <DesignerIcon aria-hidden="true" />
+          <span>
+            Theme Designer
+            {generatedThemeCount > 0 ? ` · ${generatedThemeCount}` : ""}
+          </span>
+        </button>
+      </div>
+
       <div className="theme-summary-head">
         <div className="theme-summary-copy">
           <p className="theme-summary-label">
-            Theme: <span className="theme-summary-label-name">{selectedThemeOption.name}</span>
+            Theme:{" "}
+            <span className="theme-summary-label-name">
+              {selectedThemeOption.name}
+            </span>
           </p>
           <p className="theme-card-description">{description}</p>
         </div>
-        <button
-          type="button"
-          className="theme-customize-btn"
-          onClick={onCustomize}
-          aria-label={`Customize ${selectedThemeOption.name} colors`}
-        >
-          <span className="theme-customize-icon" aria-hidden="true">
-            <EditIcon />
-          </span>
-        </button>
+        <div className="theme-summary-head-actions">
+          <button
+            type="button"
+            className="theme-customize-btn"
+            onClick={onCustomize}
+            title={`Customize ${selectedThemeOption.name} colors`}
+            aria-label={`Customize ${selectedThemeOption.name} colors`}
+          >
+            <span className="theme-customize-icon" aria-hidden="true">
+              <EditIcon />
+            </span>
+          </button>
+          {canDeleteSelectedBuiltin ? (
+            <button
+              type="button"
+              className="theme-delete-builtin-btn"
+              onClick={onRequestDeleteSelectedBuiltin}
+              title={`Delete built-in theme ${selectedThemeOption.name}`}
+              aria-label={`Delete Theme ${selectedThemeOption.name}`}
+            >
+              <TrashIcon aria-hidden="true" />
+              <span>Delete Theme</span>
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <section className="theme-section theme-section--saved">

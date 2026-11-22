@@ -26,7 +26,14 @@ export default function SettingsSection() {
   );
   const copyTimerRef = useRef<number | null>(null);
 
-  const { userDefaults, savedThemes, presets, form, routes } = state;
+  const {
+    userDefaults,
+    savedThemes,
+    deletedBuiltinThemeIds,
+    presets,
+    form,
+    routes,
+  } = state;
   const bleedInches = resolveBleedInches(userDefaults);
   const [bleedDraft, setBleedDraft] = useState(() =>
     formatInchesNumber(bleedInches),
@@ -34,8 +41,14 @@ export default function SettingsSection() {
   const isBleedFocusedRef = useRef(false);
 
   const configSnapshot = useMemo(
-    () => buildConfigSnapshot({ presets, savedThemes, activeRoutes: routes }),
-    [presets, savedThemes, routes],
+    () =>
+      buildConfigSnapshot({
+        presets,
+        savedThemes,
+        deletedBuiltinThemeIds,
+        activeRoutes: routes,
+      }),
+    [presets, savedThemes, deletedBuiltinThemeIds, routes],
   );
   const newGpxFiles = useMemo(
     () => configSnapshot.gpxFiles.filter((file) => !file.isBundled),
@@ -177,6 +190,14 @@ export default function SettingsSection() {
               Includes {configSnapshot.promotedThemeCount} custom theme
               {configSnapshot.promotedThemeCount === 1 ? "" : "s"} merged into{" "}
               <code>themes</code> with preset IDs aligned automatically.
+            </p>
+          ) : null}
+
+          {configSnapshot.deletedThemeCount > 0 ? (
+            <p className="settings-snapshot-note">
+              Excludes {configSnapshot.deletedThemeCount} deleted built-in theme
+              {configSnapshot.deletedThemeCount === 1 ? "" : "s"} from{" "}
+              <code>themes</code>. Copy and save to make permanent.
             </p>
           ) : null}
 

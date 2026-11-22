@@ -168,41 +168,55 @@ export async function createLayeredSvgBlobFromMap({
     }
     await waitForMapIdle(exportMap);
 
-    const overlayLayers: { id: string; dataUrl: string }[] = [];
+    const overlayLayers: { id: string; label?: string; dataUrl: string }[] = [];
 
     if (showOverlay) {
       overlayLayers.push({
         id: "fades",
+        label: "Fades",
         dataUrl: canvasToDataUrl(exportWidth, exportHeight, (ctx) => {
           applyFades(ctx, exportWidth, exportHeight, theme.ui.bg, trimRect);
         }),
       });
     }
 
-    if (routes.length > 0) {
-      const routesCanvas = document.createElement("canvas");
-      routesCanvas.width = exportWidth;
-      routesCanvas.height = exportHeight;
-      const routesCtx = routesCanvas.getContext("2d");
-      if (routesCtx) {
-        drawRoutesOnCanvas(
-          routesCtx,
-          routes,
-          markerProjection,
-          markerScaleX,
-          markerScaleY,
-          markerSizeScale,
-        );
-        overlayLayers.push({
-          id: "routes",
-          dataUrl: routesCanvas.toDataURL("image/png"),
-        });
+    const visibleRoutes = routes.filter(
+      (route) => route.visible && route.segments.length > 0,
+    );
+
+    if (visibleRoutes.length > 0) {
+      for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
+        const route = visibleRoutes[routeIdx];
+        const routesCanvas = document.createElement("canvas");
+        routesCanvas.width = exportWidth;
+        routesCanvas.height = exportHeight;
+        const routesCtx = routesCanvas.getContext("2d");
+        if (routesCtx) {
+          drawRoutesOnCanvas(
+            routesCtx,
+            [route],
+            markerProjection,
+            markerScaleX,
+            markerScaleY,
+            markerSizeScale,
+          );
+          const baseLabel = route.label?.trim() || `Route ${routeIdx + 1}`;
+          const baseSlug =
+            sanitizeLayerId(baseLabel) || `route-${routeIdx + 1}`;
+          overlayLayers.push({
+            id: `route-${routeIdx + 1}-${baseSlug}`,
+            label: `Route: ${baseLabel}`,
+            dataUrl: routesCanvas.toDataURL("image/png"),
+          });
+        }
       }
     }
 
-    if (routes.length > 0 && markerIcons.length > 0) {
-      const endpointItems = routeEndpointMarkerItems(routes);
-      if (endpointItems.length > 0) {
+    if (visibleRoutes.length > 0 && markerIcons.length > 0) {
+      for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
+        const route = visibleRoutes[routeIdx];
+        const endpointItems = routeEndpointMarkerItems([route]);
+        if (endpointItems.length === 0) continue;
         const endpointsCanvas = document.createElement("canvas");
         endpointsCanvas.width = exportWidth;
         endpointsCanvas.height = exportHeight;
@@ -217,8 +231,12 @@ export async function createLayeredSvgBlobFromMap({
             markerScaleY,
             markerSizeScale,
           );
+          const baseLabel = route.label?.trim() || `Route ${routeIdx + 1}`;
+          const baseSlug =
+            sanitizeLayerId(baseLabel) || `route-${routeIdx + 1}`;
           overlayLayers.push({
-            id: "route-endpoints",
+            id: `route-endpoints-${routeIdx + 1}-${baseSlug}`,
+            label: `Route Endpoints: ${baseLabel}`,
             dataUrl: endpointsCanvas.toDataURL("image/png"),
           });
         }
@@ -268,24 +286,35 @@ export async function createLayeredSvgBlobFromMap({
       }),
     });
 
+    const escapeAttr = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
     const mapLayerGroups = mapLayerDataUrls
-      .map(
-        (layer) => `<g id="map-layer-${sanitizeLayerId(layer.id)}">
+      .map((layer) => {
+        const id = sanitizeLayerId(layer.id);
+        const label = escapeAttr(layer.id);
+        return `<g id="map-layer-${id}" inkscape:groupmode="layer" inkscape:label="${label}" data-name="${label}">
   <image href="${layer.dataUrl}" width="${exportWidth}" height="${exportHeight}" preserveAspectRatio="none" />
-</g>`,
-      )
+</g>`;
+      })
       .join("\n");
 
     const overlayGroups = overlayLayers
-      .map(
-        (layer) => `<g id="overlay-layer-${sanitizeLayerId(layer.id)}">
+      .map((layer) => {
+        const id = sanitizeLayerId(layer.id);
+        const label = escapeAttr(layer.label ?? layer.id);
+        return `<g id="overlay-layer-${id}" inkscape:groupmode="layer" inkscape:label="${label}" data-name="${label}">
   <image href="${layer.dataUrl}" width="${exportWidth}" height="${exportHeight}" preserveAspectRatio="none" />
-</g>`,
-      )
+</g>`;
+      })
       .join("\n");
 
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${exportWidth}" height="${exportHeight}" viewBox="0 0 ${exportWidth} ${exportHeight}">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${exportWidth}" height="${exportHeight}" viewBox="0 0 ${exportWidth} ${exportHeight}">
 ${mapLayerGroups}
 ${overlayGroups}
 </svg>`;

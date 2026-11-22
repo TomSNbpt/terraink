@@ -3,7 +3,7 @@ import {
   type ThemeOption,
   type ThemeColorKey,
 } from "../domain/types";
-import { TrashIcon } from "@/shared/ui/Icons";
+import { CheckIcon, SaveIcon, TrashIcon } from "@/shared/ui/Icons";
 
 interface ThemeCardProps {
   themeOption: ThemeOption | null;
@@ -12,6 +12,9 @@ interface ThemeCardProps {
   showFullPalette?: boolean;
   onDelete?: () => void;
   deleteAriaLabel?: string;
+  onSave?: () => void;
+  saveAriaLabel?: string;
+  isSaved?: boolean;
 }
 
 export default function ThemeCard({
@@ -21,6 +24,9 @@ export default function ThemeCard({
   showFullPalette = false,
   onDelete,
   deleteAriaLabel,
+  onSave,
+  saveAriaLabel,
+  isSaved = false,
 }: ThemeCardProps) {
   if (!themeOption) {
     return null;
@@ -51,10 +57,11 @@ export default function ThemeCard({
     }
     return result;
   })();
+  const hasOverlayAction = Boolean(onDelete || onSave);
   const className = [
     "theme-card",
     isSelected ? "is-selected" : "",
-    onDelete ? "theme-card--deletable" : "",
+    hasOverlayAction ? "theme-card--deletable" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -90,22 +97,38 @@ export default function ThemeCard({
     </button>
   );
 
-  if (!onDelete) return cardButton;
+  if (!hasOverlayAction) return cardButton;
 
   return (
     <div className="theme-card-wrap">
       {cardButton}
-      <button
-        type="button"
-        className="theme-card-delete"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        aria-label={deleteAriaLabel ?? `Delete ${themeOption.name}`}
-      >
-        <TrashIcon />
-      </button>
+      {onSave ? (
+        <button
+          type="button"
+          className={`theme-card-save${isSaved ? " is-saved" : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSave();
+          }}
+          title={isSaved ? "Saved — click to save another copy" : "Save as custom theme"}
+          aria-label={saveAriaLabel ?? `Save ${themeOption.name}`}
+        >
+          {isSaved ? <CheckIcon /> : <SaveIcon />}
+        </button>
+      ) : null}
+      {onDelete ? (
+        <button
+          type="button"
+          className="theme-card-delete"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          aria-label={deleteAriaLabel ?? `Delete ${themeOption.name}`}
+        >
+          <TrashIcon />
+        </button>
+      ) : null}
     </div>
   );
 }

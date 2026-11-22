@@ -30,6 +30,16 @@ import {
   saveSavedThemes,
 } from "@/features/theme/infrastructure/savedThemesStorage";
 import {
+  loadDeletedBuiltinThemeIds,
+  saveDeletedBuiltinThemeIds,
+} from "@/features/theme/infrastructure/deletedBuiltinThemesStorage";
+import {
+  clearThemeDesignerSessionStorage,
+  loadThemeDesignerSession,
+  saveThemeDesignerSession,
+} from "@/features/theme-designer/infrastructure/sessionStorage";
+import { themeColorsToOverrides } from "@/features/theme-designer/domain/types";
+import {
   loadUserDefaults,
   saveUserDefaults,
 } from "@/features/settings/infrastructure/userDefaultsStorage";
@@ -125,6 +135,8 @@ export function createFallbackPresetSnapshot(): PresetSnapshot {
 function buildInitialState(): PosterState {
   const userDefaults = loadUserDefaults();
   const savedThemes = loadSavedThemes();
+  const deletedBuiltinThemeIds = loadDeletedBuiltinThemeIds();
+  const themeDesigner = loadThemeDesignerSession();
   const fallbackSnapshot = createFallbackPresetSnapshot();
   const presets = loadPresets(fallbackSnapshot);
   const defaultPreset = presets[0];
@@ -136,10 +148,20 @@ function buildInitialState(): PosterState {
       ? [...savedThemes, initialSnap.savedThemeFallback]
       : savedThemes;
 
+  const activeGenerated = themeDesigner.activeGeneratedThemeId
+    ? themeDesigner.generatedThemes.find(
+        (t) => t.id === themeDesigner.activeGeneratedThemeId,
+      )
+    : undefined;
+
   return {
     form: initialSnap.form,
-    customColors: initialSnap.customColors,
+    customColors: activeGenerated
+      ? themeColorsToOverrides(activeGenerated.colors)
+      : initialSnap.customColors,
     savedThemes: mergedSavedThemes,
+    deletedBuiltinThemeIds,
+    themeDesigner,
     userDefaults,
     presets,
     activePresetId: defaultPreset.id,
@@ -315,6 +337,22 @@ export function PosterProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveSavedThemes(state.savedThemes);
   }, [state.savedThemes]);
+
+  useEffect(() => {
+    saveDeletedBuiltinThemeIds(state.deletedBuiltinThemeIds);
+  }, [state.deletedBuiltinThemeIds]);
+
+  useEffect(() => {
+    if (
+      state.themeDesigner.messages.length === 0 &&
+      state.themeDesigner.generatedThemes.length === 0 &&
+      state.themeDesigner.activeGeneratedThemeId === null
+    ) {
+      clearThemeDesignerSessionStorage();
+      return;
+    }
+    saveThemeDesignerSession(state.themeDesigner);
+  }, [state.themeDesigner]);
 
   useEffect(() => {
     if (state.presets === initialPresetsRef.current) return;

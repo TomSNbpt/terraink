@@ -18,6 +18,7 @@ import MapDimensionFields from "./MapDimensionFields";
 import ColorPicker from "@/features/theme/ui/ColorPicker";
 import ThemeColorEditor from "@/features/theme/ui/ThemeColorEditor";
 import ThemeSummarySection from "@/features/theme/ui/ThemeSummarySection";
+import ThemeDesignerPanel from "@/features/theme-designer/ui/ThemeDesignerPanel";
 import SaveThemeModal from "@/features/theme/ui/SaveThemeModal";
 import SaveChoiceModal from "@/features/theme/ui/SaveChoiceModal";
 import ConfirmModal from "@/shared/ui/ConfirmModal";
@@ -27,6 +28,12 @@ import type {
   SavedTheme,
   ThemeColors,
 } from "@/features/theme/domain/types";
+import type {
+  DesignerMessage,
+  GeneratedTheme,
+  ResolvedRouteOverlay,
+  ThemeDesignerSession,
+} from "@/features/theme-designer/domain/types";
 import type { LayoutGroup } from "@/features/layout/domain/types";
 import type { CustomSizeUnit } from "@/features/poster/application/posterReducer";
 
@@ -69,10 +76,25 @@ interface MapSettingsSectionProps {
   onColorEditorActiveChange?: (active: boolean) => void;
   effectiveTheme: ResolvedTheme;
   savedThemes: SavedTheme[];
+  deletedBuiltinThemeIds: string[];
   onAddSavedTheme: (theme: SavedTheme) => void;
   onUpdateSavedTheme: (themeId: string, changes: Partial<SavedTheme>) => void;
   onRemoveSavedTheme: (themeId: string) => void;
+  onDeleteBuiltinTheme: (themeId: string) => void;
   onSetCustomColors: (colors: Record<string, string>) => void;
+  themeDesigner: ThemeDesignerSession;
+  onAddDesignerMessage: (message: DesignerMessage) => void;
+  onAddDesignerResponse: (
+    message: DesignerMessage,
+    themes: GeneratedTheme[],
+  ) => void;
+  onAddAiRouteOverlay: (overlay: ResolvedRouteOverlay) => void;
+  onSelectGeneratedTheme: (themeId: string | null) => void;
+  onMarkGeneratedThemeSaved: (
+    generatedThemeId: string,
+    savedThemeId: string,
+  ) => void;
+  onClearThemeDesigner: () => void;
 }
 
 export default function MapSettingsSection({
@@ -94,18 +116,30 @@ export default function MapSettingsSection({
   onColorEditorActiveChange,
   effectiveTheme,
   savedThemes,
+  deletedBuiltinThemeIds,
   onAddSavedTheme,
   onUpdateSavedTheme,
   onRemoveSavedTheme,
+  onDeleteBuiltinTheme,
   onSetCustomColors,
+  themeDesigner,
+  onAddDesignerMessage,
+  onAddDesignerResponse,
+  onAddAiRouteOverlay,
+  onSelectGeneratedTheme,
+  onMarkGeneratedThemeSaved,
+  onClearThemeDesigner,
 }: MapSettingsSectionProps) {
   const [isThemeEditing, setIsThemeEditing] = useState(false);
+  const [isThemeDesignerOpen, setIsThemeDesignerOpen] = useState(false);
   const [isLayoutEditing, setIsLayoutEditing] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaveChoiceModalOpen, setIsSaveChoiceModalOpen] = useState(false);
   const [pendingDeleteThemeId, setPendingDeleteThemeId] = useState<
     string | null
   >(null);
+  const [pendingDeleteBuiltinThemeId, setPendingDeleteBuiltinThemeId] =
+    useState<string | null>(null);
   const defaultColorKey: ThemeColorKey = DISPLAY_PALETTE_KEYS[0] ?? "ui.bg";
   const [activeColorKey, setActiveColorKey] = useState<ThemeColorKey | null>(
     null,
@@ -118,8 +152,35 @@ export default function MapSettingsSection({
   const themeListRef = useRef<HTMLDivElement | null>(null);
   const layoutGroupsRef = useRef<HTMLDivElement | null>(null);
 
+  const visibleThemeOptions = useMemo(() => {
+    if (deletedBuiltinThemeIds.length === 0) return themeOptions;
+    const deletedSet = new Set(deletedBuiltinThemeIds);
+    return themeOptions.filter((option) => !deletedSet.has(option.id));
+  }, [deletedBuiltinThemeIds, themeOptions]);
+
+  const activeGeneratedTheme = useMemo(
+    () =>
+      themeDesigner.activeGeneratedThemeId
+        ? (themeDesigner.generatedThemes.find(
+            (t) => t.id === themeDesigner.activeGeneratedThemeId,
+          ) ?? null)
+        : null,
+    [themeDesigner.activeGeneratedThemeId, themeDesigner.generatedThemes],
+  );
+
   const selectedThemeOption = useMemo(() => {
-    const matchingOption = themeOptions.find((t) => t.id === form.theme);
+    if (activeGeneratedTheme) {
+      const palette = DISPLAY_PALETTE_KEYS.map(
+        (key) => getThemeColorByPath(activeGeneratedTheme.colors, key) || "",
+      );
+      return {
+        id: activeGeneratedTheme.id,
+        name: activeGeneratedTheme.name,
+        description: activeGeneratedTheme.description,
+        palette,
+      };
+    }
+    const matchingOption = visibleThemeOptions.find((t) => t.id === form.theme);
     if (matchingOption) return matchingOption;
     const matchingSaved = savedThemes.find((t) => t.id === form.theme);
     if (matchingSaved) {
@@ -134,7 +195,19 @@ export default function MapSettingsSection({
       };
     }
     return createFallbackThemeOption(form.theme, selectedTheme);
-  }, [form.theme, savedThemes, selectedTheme, themeOptions]);
+  }, [
+    activeGeneratedTheme,
+    form.theme,
+    savedThemes,
+    selectedTheme,
+    visibleThemeOptions,
+  ]);
+
+  const canDeleteSelectedBuiltin = useMemo(() => {
+    if (activeGeneratedTheme) return false;
+    if (visibleThemeOptions.length <= 1) return false;
+    return visibleThemeOptions.some((t) => t.id === form.theme);
+  }, [activeGeneratedTheme, form.theme, visibleThemeOptions]);
 
   const currentThemePalette = useMemo(
     () =>
@@ -305,7 +378,9 @@ export default function MapSettingsSection({
       // a built-in base, so the map keeps showing the same colors.
       const deleted = savedThemes.find((t) => t.id === themeId);
       const fallbackBaseThemeId =
-        themeOptions.find((t) => t.id !== themeId)?.id ?? form.theme;
+        visibleThemeOptions.find((t) => t.id !== themeId)?.id ??
+        themeOptions.find((t) => t.id !== themeId)?.id ??
+        form.theme;
       onThemeChange(fallbackBaseThemeId);
       if (deleted) {
         const colorOverrides: Record<string, string> = {};
@@ -319,6 +394,57 @@ export default function MapSettingsSection({
 
     onRemoveSavedTheme(themeId);
     setPendingDeleteThemeId(null);
+  }
+
+  function handleRequestDeleteSelectedBuiltin() {
+    if (!canDeleteSelectedBuiltin) return;
+    setPendingDeleteBuiltinThemeId(form.theme);
+  }
+
+  function handleConfirmDeleteBuiltinTheme() {
+    const themeId = pendingDeleteBuiltinThemeId;
+    if (!themeId) return;
+
+    const remaining = visibleThemeOptions.filter((t) => t.id !== themeId);
+    if (remaining.length === 0) {
+      setPendingDeleteBuiltinThemeId(null);
+      return;
+    }
+
+    if (form.theme === themeId) {
+      onThemeChange(remaining[0].id);
+      clearColorPickerState();
+    }
+
+    onDeleteBuiltinTheme(themeId);
+    setPendingDeleteBuiltinThemeId(null);
+  }
+
+  function handleSaveGeneratedTheme(
+    generatedTheme: GeneratedTheme,
+    name: string,
+    description: string,
+  ) {
+    const colorsSnapshot: ThemeColors = {
+      ui: { ...generatedTheme.colors.ui },
+      map: {
+        ...generatedTheme.colors.map,
+        roads: { ...generatedTheme.colors.map.roads },
+      },
+    };
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? `saved-${crypto.randomUUID()}`
+        : `saved-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const newTheme: SavedTheme = {
+      id,
+      name,
+      description,
+      colors: colorsSnapshot,
+      savedAt: new Date().toISOString(),
+    };
+    onAddSavedTheme(newTheme);
+    onMarkGeneratedThemeSaved(generatedTheme.id, id);
   }
 
   function buildSuggestedThemeName(): string {
@@ -489,7 +615,19 @@ export default function MapSettingsSection({
       <div className="map-settings-theme-part">
         <h2>Theme</h2>
 
-        {isThemeEditing ? (
+        {isThemeDesignerOpen ? (
+          <ThemeDesignerPanel
+            session={themeDesigner}
+            savedThemes={savedThemes}
+            onClose={() => setIsThemeDesignerOpen(false)}
+            onAddUserMessage={onAddDesignerMessage}
+            onAddAssistantResponse={onAddDesignerResponse}
+            onAddAiRouteOverlay={onAddAiRouteOverlay}
+            onSelectGeneratedTheme={onSelectGeneratedTheme}
+            onSaveGeneratedTheme={handleSaveGeneratedTheme}
+            onClearSession={onClearThemeDesigner}
+          />
+        ) : isThemeEditing ? (
           activeColorKey ? (
             <section className="panel-block color-editor-screen">
               <h2>Color Editor</h2>
@@ -529,11 +667,15 @@ export default function MapSettingsSection({
         ) : (
           <ThemeSummarySection
             listRef={themeListRef}
-            themeOptions={themeOptions}
-            selectedThemeId={form.theme}
+            themeOptions={visibleThemeOptions}
+            selectedThemeId={activeGeneratedTheme ? "" : form.theme}
             selectedThemeOption={summaryThemeOption}
             onThemeSelect={handleThemeSelect}
             onCustomize={handleOpenThemeEditor}
+            onOpenThemeDesigner={() => setIsThemeDesignerOpen(true)}
+            generatedThemeCount={themeDesigner.generatedThemes.length}
+            canDeleteSelectedBuiltin={canDeleteSelectedBuiltin}
+            onRequestDeleteSelectedBuiltin={handleRequestDeleteSelectedBuiltin}
             savedThemes={savedThemes}
             onApplySavedTheme={handleApplySavedTheme}
             onDeleteSavedTheme={handleRequestDeleteSavedTheme}
@@ -572,6 +714,22 @@ export default function MapSettingsSection({
           destructive
           onConfirm={handleConfirmDeleteSavedTheme}
           onCancel={handleCancelDeleteSavedTheme}
+        />
+      ) : null}
+
+      {pendingDeleteBuiltinThemeId ? (
+        <ConfirmModal
+          title="Delete built-in theme"
+          message={`Remove "${
+            visibleThemeOptions.find(
+              (t) => t.id === pendingDeleteBuiltinThemeId,
+            )?.name ?? "this theme"
+          }" from Built-in Themes? Export and save src/data/config.json in Settings to make this deletion permanent.`}
+          confirmLabel="Delete Theme"
+          cancelLabel="Cancel"
+          destructive
+          onConfirm={handleConfirmDeleteBuiltinTheme}
+          onCancel={() => setPendingDeleteBuiltinThemeId(null)}
         />
       ) : null}
 

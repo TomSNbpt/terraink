@@ -4,6 +4,7 @@ import { useFormHandlers } from "@/features/poster/application/useFormHandlers";
 import { useLocationAutocomplete } from "@/features/location/application/useLocationAutocomplete";
 import { useCurrentLocation } from "@/features/location/application/useCurrentLocation";
 import { useMapSync } from "@/features/map/application/useMapSync";
+import { useGpxUpload } from "@/features/routes/application/useGpxUpload";
 import type { MobileTab } from "@/shared/ui/MobileNavBar";
 
 import LocationSection from "@/features/location/ui/LocationSection";
@@ -81,6 +82,7 @@ export default function SettingsPanel({
     handleAddSavedTheme,
     handleUpdateSavedTheme,
     handleRemoveSavedTheme,
+    handleDeleteBuiltinTheme,
     handleLocationSelect,
     handleClearLocation,
     setLocationFocused,
@@ -93,6 +95,7 @@ export default function SettingsPanel({
   const { flyToLocation } = useMapSync(state, dispatch, mapRef);
   const { handleUseCurrentLocation, isLocatingUser, locationPermissionMessage } =
     useCurrentLocation(flyToLocation);
+  const { addAiRouteOverlay } = useGpxUpload();
 
   const [isColorEditorActive, setIsColorEditorActive] = useState(false);
   const [openSections, setOpenSections] = useState<Set<SectionId>>(
@@ -116,6 +119,38 @@ export default function SettingsPanel({
   const onLocationSelect = (location: SearchResult) => {
     handleLocationSelect(location);
     flyToLocation(location.lat, location.lon);
+  };
+
+  const handleAddDesignerMessage = (
+    message: import("@/features/theme-designer/domain/types").DesignerMessage,
+  ) => {
+    dispatch({ type: "ADD_DESIGNER_MESSAGE", message });
+  };
+
+  const handleAddDesignerResponse = (
+    message: import("@/features/theme-designer/domain/types").DesignerMessage,
+    themes: import("@/features/theme-designer/domain/types").GeneratedTheme[],
+  ) => {
+    dispatch({ type: "ADD_DESIGNER_RESPONSE", message, themes });
+  };
+
+  const handleSelectGeneratedTheme = (themeId: string | null) => {
+    dispatch({ type: "SELECT_GENERATED_THEME", themeId });
+  };
+
+  const handleMarkGeneratedThemeSaved = (
+    generatedThemeId: string,
+    savedThemeId: string,
+  ) => {
+    dispatch({
+      type: "MARK_GENERATED_THEME_SAVED",
+      generatedThemeId,
+      savedThemeId,
+    });
+  };
+
+  const handleClearThemeDesigner = () => {
+    dispatch({ type: "CLEAR_THEME_DESIGNER" });
   };
 
   if (activeTab === "settings") {
@@ -197,10 +232,19 @@ export default function SettingsPanel({
                 onColorEditorActiveChange={setIsColorEditorActive}
                 effectiveTheme={effectiveTheme}
                 savedThemes={state.savedThemes}
+                deletedBuiltinThemeIds={state.deletedBuiltinThemeIds}
                 onAddSavedTheme={handleAddSavedTheme}
                 onUpdateSavedTheme={handleUpdateSavedTheme}
                 onRemoveSavedTheme={handleRemoveSavedTheme}
+                onDeleteBuiltinTheme={handleDeleteBuiltinTheme}
                 onSetCustomColors={handleSetCustomColors}
+                themeDesigner={state.themeDesigner}
+                onAddDesignerMessage={handleAddDesignerMessage}
+                onAddDesignerResponse={handleAddDesignerResponse}
+                onAddAiRouteOverlay={addAiRouteOverlay}
+                onSelectGeneratedTheme={handleSelectGeneratedTheme}
+                onMarkGeneratedThemeSaved={handleMarkGeneratedThemeSaved}
+                onClearThemeDesigner={handleClearThemeDesigner}
               />
             ) : null}
           </div>
@@ -241,10 +285,19 @@ export default function SettingsPanel({
                 onColorEditorActiveChange={setIsColorEditorActive}
                 effectiveTheme={effectiveTheme}
                 savedThemes={state.savedThemes}
+                deletedBuiltinThemeIds={state.deletedBuiltinThemeIds}
                 onAddSavedTheme={handleAddSavedTheme}
                 onUpdateSavedTheme={handleUpdateSavedTheme}
                 onRemoveSavedTheme={handleRemoveSavedTheme}
+                onDeleteBuiltinTheme={handleDeleteBuiltinTheme}
                 onSetCustomColors={handleSetCustomColors}
+                themeDesigner={state.themeDesigner}
+                onAddDesignerMessage={handleAddDesignerMessage}
+                onAddDesignerResponse={handleAddDesignerResponse}
+                onAddAiRouteOverlay={addAiRouteOverlay}
+                onSelectGeneratedTheme={handleSelectGeneratedTheme}
+                onMarkGeneratedThemeSaved={handleMarkGeneratedThemeSaved}
+                onClearThemeDesigner={handleClearThemeDesigner}
               />
             ) : null}
           </div>

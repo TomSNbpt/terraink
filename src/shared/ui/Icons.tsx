@@ -47,4 +47,7 @@ export { FiEye as EyeIcon } from "react-icons/fi";
 export { FiEyeOff as EyeOffIcon } from "react-icons/fi";
 export { FiCrosshair as CrosshairIcon } from "react-icons/fi";
 export { FiMaximize2 as BleedIcon } from "react-icons/fi";
-
+export { FiSave as SaveIcon } from "react-icons/fi";
+export { FiSend as SendIcon } from "react-icons/fi";
+export { FiArrowLeft as BackIcon } from "react-icons/fi";
+export { FiMessageSquare as DesignerIcon } from "react-icons/fi";

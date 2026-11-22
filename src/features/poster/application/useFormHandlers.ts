@@ -164,6 +164,13 @@ export function useFormHandlers() {
     [dispatch],
   );
 
+  const handleDeleteBuiltinTheme = useCallback(
+    (themeId: string) => {
+      dispatch({ type: "DELETE_BUILTIN_THEME", themeId });
+    },
+    [dispatch],
+  );
+
   const handleSaveCurrentAsDefaults = useCallback(() => {
     const defaults: UserDefaults = {
       theme: state.form.theme,
@@ -220,6 +227,7 @@ export function useFormHandlers() {
     handleAddSavedTheme,
     handleUpdateSavedTheme,
     handleRemoveSavedTheme,
+    handleDeleteBuiltinTheme,
     handleSaveCurrentAsDefaults,
     handleResetUserDefaults,
     handleLocationSelect,

@@ -819,12 +819,17 @@ export async function createVectorSvgBlobFromMap({
       );
     }
 
-    if (routes.length > 0) {
-      const widthScale = ((markerScaleX + markerScaleY) / 2) * markerSizeScale;
-      const routePaths: string[] = [];
+    const visibleRoutes = routes.filter(
+      (route) => route.visible && route.segments.length > 0,
+    );
 
-      for (const route of routes) {
-        if (!route.visible || route.segments.length === 0) continue;
+    if (visibleRoutes.length > 0) {
+      const widthScale = ((markerScaleX + markerScaleY) / 2) * markerSizeScale;
+      const usedRouteLayerIds = new Set<string>();
+
+      for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
+        const route = visibleRoutes[routeIdx];
+        const routePaths: string[] = [];
 
         const width = Math.max(0.5, route.strokeWidth * widthScale);
         const pad = Math.ceil(width) + 2;
@@ -857,27 +862,52 @@ export async function createVectorSvgBlobFromMap({
             }
           }
         }
-      }
 
-      if (routePaths.length > 0) {
-        overlayGroups.push(
-          `<g id="overlay-layer-routes">\n${routePaths.join("\n")}\n</g>`,
-        );
+        if (routePaths.length > 0) {
+          const baseLabel = route.label?.trim() || `Route ${routeIdx + 1}`;
+          const baseSlug = sanitizeLayerId(baseLabel) || `route-${routeIdx + 1}`;
+          let layerId = `overlay-layer-route-${routeIdx + 1}-${baseSlug}`;
+          let suffix = 2;
+          while (usedRouteLayerIds.has(layerId)) {
+            layerId = `overlay-layer-route-${routeIdx + 1}-${baseSlug}-${suffix}`;
+            suffix += 1;
+          }
+          usedRouteLayerIds.add(layerId);
+
+          const layerLabel = escapeXml(`Route: ${baseLabel}`);
+          overlayGroups.push(
+            `<g id="${layerId}" inkscape:groupmode="layer" inkscape:label="${layerLabel}" data-name="${layerLabel}">\n${routePaths.join("\n")}\n</g>`,
+          );
+        }
       }
     }
 
-    if (routes.length > 0 && markerIcons.length > 0) {
-      const endpointItems = routeEndpointMarkerItems(routes);
-      const endpointGroup = await renderMarkerItemsToSvgGroup(
-        "route-endpoints",
-        endpointItems,
-        markerIcons,
-        markerProjection,
-        markerScaleX,
-        markerScaleY,
-        markerSizeScale,
-      );
-      if (endpointGroup) overlayGroups.push(endpointGroup);
+    if (visibleRoutes.length > 0 && markerIcons.length > 0) {
+      for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
+        const route = visibleRoutes[routeIdx];
+        const endpointItems = routeEndpointMarkerItems([route]);
+        if (endpointItems.length === 0) continue;
+        const baseLabel = route.label?.trim() || `Route ${routeIdx + 1}`;
+        const baseSlug = sanitizeLayerId(baseLabel) || `route-${routeIdx + 1}`;
+        const endpointGroup = await renderMarkerItemsToSvgGroup(
+          `route-endpoints-${routeIdx + 1}-${baseSlug}`,
+          endpointItems,
+          markerIcons,
+          markerProjection,
+          markerScaleX,
+          markerScaleY,
+          markerSizeScale,
+        );
+        if (endpointGroup) {
+          const layerLabel = escapeXml(`Route Endpoints: ${baseLabel}`);
+          overlayGroups.push(
+            endpointGroup.replace(
+              /^<g /,
+              `<g inkscape:groupmode="layer" inkscape:label="${layerLabel}" data-name="${layerLabel}" `,
+            ),
+          );
+        }
+      }
     }
 
     if (markers.length > 0 && markerIcons.length > 0) {
@@ -956,11 +986,11 @@ export async function createVectorSvgBlobFromMap({
     }
 
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${fmt(exportWidth)}" height="${fmt(exportHeight)}" viewBox="0 0 ${fmt(exportWidth)} ${fmt(exportHeight)}">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${fmt(exportWidth)}" height="${fmt(exportHeight)}" viewBox="0 0 ${fmt(exportWidth)} ${fmt(exportHeight)}">
 <defs>
 ${defs.join("\n")}
 </defs>
-<g id="poster-artboard" clip-path="url(#poster-bounds)">
+<g id="poster-artboard" inkscape:groupmode="layer" inkscape:label="Poster" clip-path="url(#poster-bounds)">
 ${mapLayerGroups.join("\n")}
 ${overlayGroups.join("\n")}
 </g>

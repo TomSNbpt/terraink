@@ -23,6 +23,7 @@ export interface ConfigSnapshotResult {
   hasChanges: boolean;
   themeCount: number;
   promotedThemeCount: number;
+  deletedThemeCount: number;
   layoutCount: number;
   presetCount: number;
   gpxFiles: SnapshotGpxFile[];
@@ -160,11 +161,20 @@ const BUNDLED_CONFIG_SIGNATURE = normalizeBaselineForComparison();
 export function buildConfigSnapshot(input: {
   presets: UserPreset[];
   savedThemes: SavedTheme[];
+  deletedBuiltinThemeIds?: string[];
   activeRoutes?: Route[];
 }): ConfigSnapshotResult {
   const baseThemes = JSON.parse(
     JSON.stringify((appConfig as { themes?: Record<string, unknown> }).themes ?? {}),
   ) as Record<string, Record<string, unknown>>;
+
+  let deletedThemeCount = 0;
+  for (const deletedId of input.deletedBuiltinThemeIds ?? []) {
+    if (deletedId && deletedId in baseThemes) {
+      delete baseThemes[deletedId];
+      deletedThemeCount += 1;
+    }
+  }
 
   const baseLayouts = JSON.parse(
     JSON.stringify(
@@ -344,6 +354,7 @@ export function buildConfigSnapshot(input: {
     hasChanges,
     themeCount: Object.keys(baseThemes).length,
     promotedThemeCount,
+    deletedThemeCount,
     layoutCount,
     presetCount: exportedPresets.length,
     gpxFiles,

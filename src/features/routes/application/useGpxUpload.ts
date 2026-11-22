@@ -22,7 +22,10 @@ import {
   routeBounds,
 } from "@/features/routes/infrastructure/helpers";
 
+import type { ResolvedRouteOverlay } from "@/features/theme-designer/domain/types";
+
 const MAX_COMBINED_HALF_WIDTH_METERS = 500_000;
+const AI_ROUTE_COMBINED_FIT_MAX_HALF_WIDTH_METERS = 150_000;
 
 export type UploadGpxResult =
   | { status: "added" }
@@ -37,6 +40,7 @@ export type UploadGpxResult =
 interface UseGpxUploadResult {
   uploadGpxFile: (file: File) => Promise<UploadGpxResult>;
   addBundledGpxFile: (filename: string) => UploadGpxResult;
+  addAiRouteOverlay: (overlay: ResolvedRouteOverlay) => void;
   confirmAddRoute: (pendingRoute: Route, newBounds: RouteBounds) => void;
   confirmReplaceRoutes: (pendingRoute: Route, newBounds: RouteBounds) => void;
 }
@@ -187,6 +191,44 @@ export function useGpxUpload(): UseGpxUploadResult {
     [addParsedGpxRoute],
   );
 
+  const addAiRouteOverlay = useCallback(
+    (overlay: ResolvedRouteOverlay) => {
+      const parsed: ParsedGpx = {
+        label: overlay.label,
+        segments: overlay.segments,
+        bounds: overlay.bounds,
+        pointCount: overlay.pointCount,
+      };
+
+      const route = createRoute({
+        parsed,
+        defaults: routeDefaults,
+        source: "gpx",
+        label: overlay.label,
+        sourceFilename: overlay.sourceFilename,
+      });
+
+      dispatch({ type: "ADD_ROUTE", route });
+      if (!form.showRoutes) {
+        dispatch({ type: "SET_FIELD", name: "showRoutes", value: true });
+      }
+
+      if (routes.length > 0) {
+        const combined = combinedRoutesBounds(routes, parsed.bounds);
+        if (
+          combined &&
+          boundsHalfWidthMeters(combined) <=
+            AI_ROUTE_COMBINED_FIT_MAX_HALF_WIDTH_METERS
+        ) {
+          fitBoundsToForm(combined);
+          return;
+        }
+      }
+      fitBoundsToForm(parsed.bounds);
+    },
+    [dispatch, fitBoundsToForm, form.showRoutes, routeDefaults, routes],
+  );
+
   const confirmAddRoute = useCallback(
     (pendingRoute: Route, newBounds: RouteBounds) => {
       dispatch({ type: "ADD_ROUTE", route: pendingRoute });
@@ -207,6 +249,7 @@ export function useGpxUpload(): UseGpxUploadResult {
   return {
     uploadGpxFile,
     addBundledGpxFile,
+    addAiRouteOverlay,
     confirmAddRoute,
     confirmReplaceRoutes,
   };

@@ -20,6 +20,13 @@ import {
   MIN_ROUTE_STROKE_WIDTH,
 } from "@/features/routes/domain/constants";
 import type { SavedTheme } from "@/features/theme/domain/types";
+import {
+  createEmptyThemeDesignerSession,
+  themeColorsToOverrides,
+  type DesignerMessage,
+  type GeneratedTheme,
+  type ThemeDesignerSession,
+} from "@/features/theme-designer/domain/types";
 import type { UserDefaults } from "@/features/settings/domain/types";
 import {
   DEFAULT_PRESET_ID,
@@ -74,6 +81,8 @@ export interface PosterState {
   form: PosterForm;
   customColors: Record<string, string>;
   savedThemes: SavedTheme[];
+  deletedBuiltinThemeIds: string[];
+  themeDesigner: ThemeDesignerSession;
   userDefaults: UserDefaults;
   presets: UserPreset[];
   activePresetId: string | null;
@@ -128,6 +137,20 @@ export type PosterAction =
   | { type: "ADD_SAVED_THEME"; theme: SavedTheme }
   | { type: "UPDATE_SAVED_THEME"; themeId: string; changes: Partial<SavedTheme> }
   | { type: "REMOVE_SAVED_THEME"; themeId: string }
+  | { type: "DELETE_BUILTIN_THEME"; themeId: string }
+  | { type: "ADD_DESIGNER_MESSAGE"; message: DesignerMessage }
+  | {
+      type: "ADD_DESIGNER_RESPONSE";
+      message: DesignerMessage;
+      themes: GeneratedTheme[];
+    }
+  | { type: "SELECT_GENERATED_THEME"; themeId: string | null }
+  | {
+      type: "MARK_GENERATED_THEME_SAVED";
+      generatedThemeId: string;
+      savedThemeId: string;
+    }
+  | { type: "CLEAR_THEME_DESIGNER" }
   | { type: "SELECT_LOCATION"; location: SearchResult }
   | { type: "SET_USER_LOCATION"; location: SearchResult | null }
   | { type: "CLEAR_LOCATION" }
@@ -236,6 +259,10 @@ export function posterReducer(
         ...state,
         form: { ...state.form, theme: action.themeId },
         customColors: {},
+        themeDesigner: {
+          ...state.themeDesigner,
+          activeGeneratedThemeId: null,
+        },
       };
 
     case "SET_LAYOUT":
@@ -296,6 +323,88 @@ export function posterReducer(
       // If user is currently on the deleted saved theme, reducer leaves
       // form.theme alone — caller decides whether to switch themes.
       return { ...state, savedThemes: nextSaved };
+    }
+
+    case "DELETE_BUILTIN_THEME": {
+      if (state.deletedBuiltinThemeIds.includes(action.themeId)) {
+        return state;
+      }
+      return {
+        ...state,
+        deletedBuiltinThemeIds: [
+          ...state.deletedBuiltinThemeIds,
+          action.themeId,
+        ],
+      };
+    }
+
+    case "ADD_DESIGNER_MESSAGE":
+      return {
+        ...state,
+        themeDesigner: {
+          ...state.themeDesigner,
+          messages: [...state.themeDesigner.messages, action.message],
+        },
+      };
+
+    case "ADD_DESIGNER_RESPONSE":
+      return {
+        ...state,
+        themeDesigner: {
+          ...state.themeDesigner,
+          messages: [...state.themeDesigner.messages, action.message],
+          generatedThemes: [
+            ...state.themeDesigner.generatedThemes,
+            ...action.themes,
+          ],
+        },
+      };
+
+    case "SELECT_GENERATED_THEME": {
+      if (!action.themeId) {
+        return {
+          ...state,
+          themeDesigner: {
+            ...state.themeDesigner,
+            activeGeneratedThemeId: null,
+          },
+        };
+      }
+      const target = state.themeDesigner.generatedThemes.find(
+        (t) => t.id === action.themeId,
+      );
+      if (!target) return state;
+      return {
+        ...state,
+        customColors: themeColorsToOverrides(target.colors),
+        themeDesigner: {
+          ...state.themeDesigner,
+          activeGeneratedThemeId: target.id,
+        },
+      };
+    }
+
+    case "MARK_GENERATED_THEME_SAVED":
+      return {
+        ...state,
+        themeDesigner: {
+          ...state.themeDesigner,
+          generatedThemes: state.themeDesigner.generatedThemes.map((t) =>
+            t.id === action.generatedThemeId
+              ? { ...t, savedThemeId: action.savedThemeId }
+              : t,
+          ),
+        },
+      };
+
+    case "CLEAR_THEME_DESIGNER": {
+      const wasPreviewingGenerated =
+        state.themeDesigner.activeGeneratedThemeId !== null;
+      return {
+        ...state,
+        ...(wasPreviewingGenerated ? { customColors: {} } : {}),
+        themeDesigner: createEmptyThemeDesignerSession(),
+      };
     }
 
     case "SELECT_LOCATION":
@@ -747,6 +856,10 @@ export function posterReducer(
         isMarkerEditorActive: false,
         activeMarkerId: null,
         selectedLocation: null,
+        themeDesigner: {
+          ...state.themeDesigner,
+          activeGeneratedThemeId: null,
+        },
         error: "",
       };
     }

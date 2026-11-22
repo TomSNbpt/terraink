@@ -276,6 +276,18 @@ export default function PreviewPanel() {
     [mapRef],
   );
 
+  const handleRotate90Clockwise = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const current = map.getBearing();
+    // In MapLibre, decreasing camera bearing by 90° rotates the map 90° clockwise on screen.
+    const rawTarget = current - 90;
+    const normalized = ((((rawTarget + 180) % 360) + 360) % 360) - 180;
+    const nextBearing = Math.abs(normalized) < 0.001 ? 0 : normalized;
+    setMapBearing(nextBearing);
+    map.rotateTo(rawTarget, { duration: MAP_BUTTON_ZOOM_DURATION_MS });
+  }, [mapRef]);
+
   const handleRecenter = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -584,27 +596,47 @@ export default function PreviewPanel() {
                     onFinishEditing={handleFinishEditing}
                   />
                   {isMobileViewport ? (
-                    <button
-                      type="button"
-                      className={`map-control-btn${isRotationEnabled ? " is-active" : ""}`}
-                      onClick={handleToggleRotation}
-                      title={
-                        isRotationEnabled
-                          ? "Disable rotation"
-                          : "Enable rotation"
-                      }
-                    >
-                      <RotateIcon />
-                      <span>
-                        {isRotationEnabled
-                          ? "Disable Rotation"
-                          : "Enable Rotation"}
-                      </span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="map-control-btn"
+                        onClick={handleRotate90Clockwise}
+                        title="Rotate map 90 degrees clockwise"
+                      >
+                        <RotateRightIcon />
+                        <span>Rotate 90&deg;</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`map-control-btn${isRotationEnabled ? " is-active" : ""}`}
+                        onClick={handleToggleRotation}
+                        title={
+                          isRotationEnabled
+                            ? "Disable rotation"
+                            : "Enable rotation"
+                        }
+                      >
+                        <RotateIcon />
+                        <span>
+                          {isRotationEnabled
+                            ? "Disable Rotation"
+                            : "Enable Rotation"}
+                        </span>
+                      </button>
+                    </>
                   ) : null}
                 </div>
                 {!isMobileViewport ? (
                   <div className="map-control-group">
+                    <button
+                      type="button"
+                      className="map-control-btn"
+                      onClick={handleRotate90Clockwise}
+                      title="Rotate map 90 degrees clockwise"
+                    >
+                      <RotateRightIcon />
+                      <span>Rotate 90&deg;</span>
+                    </button>
                     <button
                       type="button"
                       className={`map-control-btn${isRotationEnabled ? " is-active" : ""}`}
