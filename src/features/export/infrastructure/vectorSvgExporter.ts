@@ -6,9 +6,13 @@ import type {
   MarkerProjectionInput,
 } from "@/features/markers/domain/types";
 import { projectMarkerToCanvas } from "@/features/markers/infrastructure/projection";
+import { buildStrokedSvgIcon } from "@/features/markers/infrastructure/svgStroke";
 import { ROUTE_DASH_PATTERN } from "@/features/routes/domain/constants";
 import type { Route } from "@/features/routes/domain/types";
-import { routeEndpointMarkerItems } from "@/features/routes/infrastructure/helpers";
+import {
+  resolveRouteOutline,
+  routeEndpointMarkerItems,
+} from "@/features/routes/infrastructure/helpers";
 import type { ResolvedTheme } from "@/features/theme/domain/types";
 import { formatCoordinates } from "@/shared/geo/posterBounds";
 import {
@@ -433,58 +437,30 @@ function parseSvgDataUrl(dataUrl: string): string | null {
 
 function serializeInlineSvgIcon(
   rawSvg: string,
-  x: number,
-  y: number,
+  centerX: number,
+  centerY: number,
   size: number,
   tintColor: string | null,
+  strokeColor?: string,
+  strokeWidthPx?: number,
 ): string | null {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(rawSvg, "image/svg+xml");
-  const svgEl = doc.querySelector("svg");
-  if (!svgEl) return null;
+  const result = buildStrokedSvgIcon(
+    rawSvg,
+    size,
+    tintColor,
+    strokeColor,
+    strokeWidthPx,
+  );
+  if (!result) return null;
 
-  const viewBox =
-    svgEl.getAttribute("viewBox") ||
-    `0 0 ${svgEl.getAttribute("width") || "24"} ${svgEl.getAttribute("height") || "24"}`;
+  const x = centerX - result.boxSize / 2;
+  const y = centerY - result.boxSize / 2;
+  const colorAttrs =
+    tintColor && !(strokeColor && strokeWidthPx && strokeWidthPx > 0)
+      ? ` color="${escapeXml(tintColor)}" fill="${escapeXml(tintColor)}"`
+      : "";
 
-  if (tintColor) {
-    // Strip gradient defs and replace fill/style colors with solid tintColor
-    for (const def of Array.from(svgEl.querySelectorAll("defs"))) {
-      def.remove();
-    }
-    for (const node of Array.from(
-      svgEl.querySelectorAll("path, circle, rect, polygon, polyline, ellipse, line"),
-    )) {
-      const styleAttr = node.getAttribute("style");
-      if (styleAttr) {
-        const cleanedStyle = styleAttr
-          .replace(/fill\s*:\s*[^;]+;?/gi, "")
-          .replace(/stroke\s*:\s*[^;]+;?/gi, "");
-        if (cleanedStyle.trim()) {
-          node.setAttribute("style", cleanedStyle);
-        } else {
-          node.removeAttribute("style");
-        }
-      }
-      const existingFill = node.getAttribute("fill");
-      if (existingFill !== "none") {
-        node.setAttribute("fill", tintColor);
-      }
-      const existingStroke = node.getAttribute("stroke");
-      if (existingStroke && existingStroke !== "none") {
-        node.setAttribute("stroke", tintColor);
-      }
-    }
-  }
-
-  const serializer = new XMLSerializer();
-  const inner = Array.from(svgEl.childNodes)
-    .map((child) => serializer.serializeToString(child))
-    .join("")
-    .split("currentColor")
-    .join(tintColor ?? "#000000");
-
-  return `<svg x="${fmt(x)}" y="${fmt(y)}" width="${fmt(size)}" height="${fmt(size)}" viewBox="${escapeXml(viewBox)}"${tintColor ? ` color="${escapeXml(tintColor)}" fill="${escapeXml(tintColor)}"` : ""}>${inner}</svg>`;
+  return `<svg x="${fmt(x)}" y="${fmt(y)}" width="${fmt(result.boxSize)}" height="${fmt(result.boxSize)}" viewBox="${escapeXml(result.viewBox)}"${colorAttrs}>${result.innerMarkup}</svg>`;
 }
 
 async function renderMarkerItemsToSvgGroup(
@@ -499,6 +475,7 @@ async function renderMarkerItemsToSvgGroup(
   if (items.length === 0 || icons.length === 0) return null;
 
   const elements: string[] = [];
+  const strokeScale = ((scaleX + scaleY) / 2) * sizeScale;
 
   for (const marker of items) {
     const icon = icons.find((entry) => entry.id === marker.iconId);
@@ -510,14 +487,22 @@ async function renderMarkerItemsToSvgGroup(
     const size = marker.size * Math.max(scaleX, scaleY) * sizeScale;
     const imageX = x - size / 2;
     const imageY = y - size / 2;
+    const strokeWidthPx =
+      marker.strokeColor &&
+      typeof marker.strokeWidth === "number" &&
+      marker.strokeWidth > 0
+        ? marker.strokeWidth * strokeScale
+        : 0;
 
     if (icon.kind === "svg" && icon.svgMarkup) {
       const serialized = serializeInlineSvgIcon(
         icon.svgMarkup,
-        imageX,
-        imageY,
+        x,
+        y,
         size,
         marker.color,
+        marker.strokeColor,
+        strokeWidthPx,
       );
       if (serialized) {
         elements.push(`  ${serialized}`);
@@ -533,10 +518,12 @@ async function renderMarkerItemsToSvgGroup(
       if (svgSource) {
         const serialized = serializeInlineSvgIcon(
           svgSource,
-          imageX,
-          imageY,
+          x,
+          y,
           size,
           icon.tintWithMarkerColor ? marker.color : null,
+          marker.strokeColor,
+          strokeWidthPx,
         );
         if (serialized) {
           elements.push(`  ${serialized}`);
@@ -829,10 +816,16 @@ export async function createVectorSvgBlobFromMap({
 
       for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
         const route = visibleRoutes[routeIdx];
+        const outlinePaths: string[] = [];
         const routePaths: string[] = [];
 
         const width = Math.max(0.5, route.strokeWidth * widthScale);
-        const pad = Math.ceil(width) + 2;
+        const outline = resolveRouteOutline(route);
+        const hasOutline = outline.enabled && outline.width > 0;
+        const outlineTotalWidth = hasOutline
+          ? width + outline.width * widthScale * 2
+          : width;
+        const pad = Math.ceil(outlineTotalWidth) + 2;
         const routeClip: ClipRect = {
           minX: -pad,
           minY: -pad,
@@ -856,6 +849,11 @@ export async function createVectorSvgBlobFromMap({
           for (const poly of clipped) {
             const d = polylineToPathData(poly);
             if (d) {
+              if (hasOutline) {
+                outlinePaths.push(
+                  `  <path d="${d}" fill="none" stroke="${escapeXml(outline.color)}" stroke-width="${fmt(outlineTotalWidth)}" stroke-linecap="round" stroke-linejoin="round"${opacityAttr} />`,
+                );
+              }
               routePaths.push(
                 `  <path d="${d}" fill="none" stroke="${escapeXml(route.color)}" stroke-width="${fmt(width)}" stroke-linecap="round" stroke-linejoin="round"${dashAttr}${opacityAttr} />`,
               );
@@ -863,7 +861,8 @@ export async function createVectorSvgBlobFromMap({
           }
         }
 
-        if (routePaths.length > 0) {
+        const combinedPaths = [...outlinePaths, ...routePaths];
+        if (combinedPaths.length > 0) {
           const baseLabel = route.label?.trim() || `Route ${routeIdx + 1}`;
           const baseSlug = sanitizeLayerId(baseLabel) || `route-${routeIdx + 1}`;
           let layerId = `overlay-layer-route-${routeIdx + 1}-${baseSlug}`;
@@ -876,7 +875,7 @@ export async function createVectorSvgBlobFromMap({
 
           const layerLabel = escapeXml(`Route: ${baseLabel}`);
           overlayGroups.push(
-            `<g id="${layerId}" inkscape:groupmode="layer" inkscape:label="${layerLabel}" data-name="${layerLabel}">\n${routePaths.join("\n")}\n</g>`,
+            `<g id="${layerId}" inkscape:groupmode="layer" inkscape:label="${layerLabel}" data-name="${layerLabel}">\n${combinedPaths.join("\n")}\n</g>`,
           );
         }
       }

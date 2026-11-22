@@ -9,6 +9,7 @@ export interface RouteEndpointMarker {
   iconId: string;
   color: string;
   size: number;
+  outlineEnabled?: boolean;
 }
 
 export interface Route {
@@ -20,6 +21,9 @@ export interface Route {
   segments: Coordinate[][];
   color: string;
   strokeWidth: number;
+  outlineEnabled?: boolean;
+  outlineColor?: string;
+  outlineWidth?: number;
   opacity: number;
   lineStyle: RouteLineStyle;
   visible: boolean;
@@ -31,6 +35,9 @@ export interface Route {
 export interface RouteDefaults {
   color: string;
   strokeWidth: number;
+  outlineEnabled?: boolean;
+  outlineColor?: string;
+  outlineWidth?: number;
   opacity: number;
   lineStyle: RouteLineStyle;
   startIconId: string;

@@ -495,32 +495,6 @@
         }
       }
     },
-    "chicago_marathon": {
-      "name": "Chicago Marathon",
-      "description": "Option 1 - colors adjusted for Printful",
-      "ui": {
-        "bg": "#E8ECF2",
-        "text": "#D91E36"
-      },
-      "map": {
-        "land": "#E8ECF2",
-        "landcover": "#E1E6EE",
-        "water": "#13316E",
-        "waterway": "#13316E",
-        "parks": "#D4DFEC",
-        "buildings": "#D5DCE8",
-        "aeroway": "#DCE2EC",
-        "rail": "#5A6B8C",
-        "roads": {
-          "major": "#8C9BB8",
-          "path": "#CBD4E3",
-          "outline": "#DCE2EC",
-          "minor_high": "#A4B2CC",
-          "minor_mid": "#B8C3D9",
-          "minor_low": "#C6D0E3"
-        }
-      }
-    },
     "chicago_marathon_navy": {
       "name": "Chicago Marathon - Alt",
       "description": "Option 2 - colors adjusted for Printful",
@@ -879,32 +853,6 @@
         }
       }
     },
-    "paris": {
-      "name": "Paris",
-      "description": "Printful-safe royal blue canvas, deep navy water, crisp white-tinted infrastructure, and vibrant emerald-teal typography and routes",
-      "ui": {
-        "bg": "#1A529B",
-        "text": "#26B89D"
-      },
-      "map": {
-        "land": "#1A529B",
-        "landcover": "#174B8F",
-        "water": "#0F3366",
-        "waterway": "#0F3366",
-        "parks": "#215CA8",
-        "buildings": "#2665B4",
-        "aeroway": "#2E6EBD",
-        "rail": "#C8DCF0",
-        "roads": {
-          "major": "#F5F9FC",
-          "minor_high": "#DCE8F5",
-          "minor_mid": "#B5CEE8",
-          "minor_low": "#88AED6",
-          "path": "#6490BF",
-          "outline": "#1A529B"
-        }
-      }
-    },
     "paris_2": {
       "name": "Paris-2",
       "description": "Printful-safe royal blue canvas, luminous ice-white water, crisp white-tinted infrastructure, and vibrant emerald-teal typography and routes",
@@ -1006,6 +954,113 @@
           "minor_low": "#386BA4",
           "path": "#2D5F99",
           "outline": "#1A529B"
+        }
+      }
+    },
+    "houston_1": {
+      "name": "Houston - 1",
+      "description": "Chevron Houston Marathon sky-blue canvas with deep cobalt highways, cyan bayous, and crimson title & race tracks",
+      "routeColor": "#C81932",
+      "ui": {
+        "bg": "#AFD6F2",
+        "text": "#B8142D"
+      },
+      "map": {
+        "land": "#AFD6F2",
+        "landcover": "#A3CEEE",
+        "water": "#2D96C9",
+        "waterway": "#2D96C9",
+        "parks": "#91C3E8",
+        "buildings": "#9BC9EC",
+        "aeroway": "#87BCE3",
+        "rail": "#97002E",
+        "roads": {
+          "major": "#005A9E",
+          "minor_high": "#1878BA",
+          "minor_mid": "#4293C8",
+          "minor_low": "#72B0DC",
+          "path": "#88BFE4",
+          "outline": "#AFD6F2"
+        }
+      }
+    },
+    "houston_2": {
+      "name": "Houston - 2",
+      "description": "Crisp pale ice-white print poster with Houston Marathon sky-blue water & parks, cobalt/cyan roads, and crimson title & tracks",
+      "routeColor": "#C81932",
+      "ui": {
+        "bg": "#F1F6FA",
+        "text": "#C41630"
+      },
+      "map": {
+        "land": "#F1F6FA",
+        "landcover": "#E6F0F8",
+        "water": "#A5D1F0",
+        "waterway": "#7EBCE8",
+        "parks": "#DCECF8",
+        "buildings": "#D3E5F4",
+        "aeroway": "#C7DDF0",
+        "rail": "#97002E",
+        "roads": {
+          "major": "#005A9E",
+          "minor_high": "#1988C2",
+          "minor_mid": "#5FA6D5",
+          "minor_low": "#9FC5E0",
+          "path": "#B8D4E8",
+          "outline": "#F1F6FA"
+        }
+      }
+    },
+    "houston_3": {
+      "name": "Houston - 3",
+      "description": "Deep Houston cobalt-navy canvas with luminous sky-blue & Chevron cyan roads and high-contrast crimson title & tracks",
+      "routeColor": "#D92638",
+      "ui": {
+        "bg": "#082D56",
+        "text": "#E84A58"
+      },
+      "map": {
+        "land": "#082D56",
+        "landcover": "#0C3766",
+        "water": "#041B36",
+        "waterway": "#041B36",
+        "parks": "#0F4278",
+        "buildings": "#134C87",
+        "aeroway": "#175696",
+        "rail": "#E84A58",
+        "roads": {
+          "major": "#AFD6F2",
+          "minor_high": "#3DA5D9",
+          "minor_mid": "#2378B2",
+          "minor_low": "#195B91",
+          "path": "#144D7D",
+          "outline": "#082D56"
+        }
+      }
+    },
+    "houston": {
+      "name": "Houston",
+      "description": "Low-contrast midnight-blue streets on deep navy land for maximum focus on the red marathon route.",
+      "ui": {
+        "bg": "#152338",
+        "text": "#D94336"
+      },
+      "map": {
+        "land": "#152338",
+        "landcover": "#192A42",
+        "water": "#0F1A2B",
+        "waterway": "#0F1A2B",
+        "parks": "#1B3242",
+        "buildings": "#1C2E47",
+        "aeroway": "#1F334D",
+        "rail": "#22354D",
+        "roads": {
+          "major": "#586E8C",
+          "minor_high": "#415570",
+          "minor_mid": "#304259",
+          "minor_low": "#233347",
+          "path": "#1C2A3B",
+          "outline": "#152338"
         }
       }
     }
@@ -1267,6 +1322,9 @@
         "routeDefaults": {
           "color": "#1A5F7A",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1326,6 +1384,9 @@
         "routeDefaults": {
           "color": "#1A5F7A",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1453,6 +1514,9 @@
         "routeDefaults": {
           "color": "#FFFFFF",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1559,6 +1623,9 @@
         "routeDefaults": {
           "color": "#FFFFFF",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1653,6 +1720,9 @@
         "routeDefaults": {
           "color": "#C41E3A",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1757,6 +1827,9 @@
         "routeDefaults": {
           "color": "#D6B352",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1861,6 +1934,9 @@
         "routeDefaults": {
           "color": "#F0C239",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1955,6 +2031,9 @@
         "routeDefaults": {
           "color": "#F0C239",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2059,6 +2138,9 @@
         "routeDefaults": {
           "color": "#F4C83A",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2118,6 +2200,9 @@
         "routeDefaults": {
           "color": "#E8649A",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2198,6 +2283,9 @@
         "routeDefaults": {
           "color": "#D8EEFA",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2278,6 +2366,9 @@
         "routeDefaults": {
           "color": "#26B89D",
           "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2301,6 +2392,115 @@
           },
           {
             "id": "guide-ac153ea0-0618-469c-98eb-bfcd9fa5a267",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-8d749256-be74-45e1-ab7a-d04798745805",
+      "name": "Houston",
+      "createdAt": "2026-11-22T18:55:33.232Z",
+      "updatedAt": "2026-11-22T19:22:07.049Z",
+      "snapshot": {
+        "form": {
+          "location": "Houston, Texas",
+          "latitude": "29.753756",
+          "longitude": "-95.419546",
+          "distance": "7277",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "houston_1",
+          "layout": "poster_large_portrait",
+          "displayCity": "Houston",
+          "displayCountry": "Texas",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true
+        },
+        "customColors": {
+          "map.rail": "#4293c8"
+        },
+        "displayNameOverrides": {
+          "city": false,
+          "country": false
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#B8142D"
+        },
+        "routes": [
+          {
+            "id": "gpx-cdb8c8cd-959a-4de6-bafe-d4dc9c902598",
+            "label": "Houston_Marathon_track",
+            "source": "gpx",
+            "sourceFilename": "Houston_Marathon_track.gpx",
+            "gpxFile": "Houston_Marathon_track.gpx",
+            "color": "#b8142d",
+            "strokeWidth": 3,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": true,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1b8a3d",
+              "size": 15
+            },
+            "finishMarker": {
+              "iconId": "circle",
+              "color": "#d62828",
+              "size": 15
+            }
+          }
+        ],
+        "routeDefaults": {
+          "color": "#C81932",
+          "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-3d386d26-8c71-483b-bdd0-f893349466bc",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-d0bf6d65-3bd1-4ebe-bb3f-5bfc2d926748",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-6ad0055a-d2c4-4e88-86fd-836d3afa19b0",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-5f9f7c9d-5fa4-499f-9c70-28ccc1e244cd",
             "axis": "y",
             "offsetCm": 39.37
           }

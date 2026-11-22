@@ -35,6 +35,8 @@ function isResolvedRouteOverlay(value: unknown): value is ResolvedRouteOverlay {
 export async function sendThemeDesignerMessage(input: {
   messages: Pick<DesignerMessage, "role" | "content">[];
   selectedTheme?: Pick<GeneratedTheme, "name" | "description" | "colors"> | null;
+  selectedThemeIsGenerated?: boolean;
+  existingThemeNames?: string[];
   signal?: AbortSignal;
 }): Promise<ThemeDesignerChatResponse> {
   const response = await fetch("/api/theme-designer/chat", {
@@ -52,6 +54,8 @@ export async function sendThemeDesignerMessage(input: {
             colors: input.selectedTheme.colors,
           }
         : null,
+      selectedThemeIsGenerated: Boolean(input.selectedThemeIsGenerated),
+      existingThemeNames: input.existingThemeNames ?? [],
     }),
     signal: input.signal,
   });

@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import {
   resolveRouteRequest,
   type ResolvedRouteOverlay,
@@ -15,7 +15,8 @@ const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || process.env.APP_PORT || 3000);
 const IS_PROD = process.env.NODE_ENV === "production";
-const GEMINI_MODEL = "gemini-4-hydrogen";
+const PRIMARY_GEMINI_MODEL = "gemini-4-hydrogen";
+const FALLBACK_GEMINI_MODEL = "gemini-3.1-flash-lite";
 
 const HEX6_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
@@ -93,15 +94,22 @@ HARD REQUIREMENTS:
    - If the user asks ONLY to add a route/course overlay (and did NOT ask for new themes or color edits), return "themes": [] and populate "routeRequest".
    - If the user asks for BOTH a new theme AND a course overlay, return 3 themes AND populate "routeRequest".
    - If the user did NOT ask for a route/course overlay, set "routeRequest": null.
-5. CLARIFYING QUESTIONS VS GENERATING 3 THEMES:
-   - If the user's request is genuinely vague or open-ended (e.g. just "make me a cool running theme" with no subject/mood and no route requested), you may ask 1–2 brief, specific clarifying questions and return "themes": [] and "routeRequest": null.
-   - If the user gives a clear theme subject (e.g. "Chicago Marathon", "Vermont Long Trail", "Tokyo Night Run", "vintage coastal Maine") OR answers your clarifying questions, generate EXACTLY 3 distinct, genuinely different theme variations in "themes".
-   - If the user has an active "selectedTheme" and asks for color adjustments/tweaks (e.g. "make the roads more subtle", "try lighter water", "warmer land color", "more contrast on the route"), ALWAYS generate EXACTLY 3 distinct new variations riffing on that selected theme and set "routeRequest": null (unless they also asked for a route).
+5. CLARIFYING QUESTIONS VS GENERATING 3 THEMES & REFINING THE SELECTED THEME:
+   - Whenever "[Active Selected Theme]" is provided and the user asks for ANY change, adjustment, or tweak (e.g. "make the roads darker", "try lighter water", "more subtle streets", "warmer land", "brighter text/route", "less contrast"), NEVER ask clarifying questions and NEVER ask which theme they mean — ALWAYS assume they are referencing "[Active Selected Theme]".
+   - For refinements of "[Active Selected Theme]":
+     * Set "isRefinement": true.
+     * Start from the exact hex palette of "[Active Selected Theme]" and keep unmodified layers faithful to it.
+     * Generate EXACTLY 3 distinct CMYK-safe variations offering meaningful degrees/takes of the requested change (e.g. subtle / medium / bold).
+     * Use the exact incremental names supplied in "[Active Selected Theme]" (e.g. "Bayou City Navy - 1", "Bayou City Navy - 2", "Bayou City Navy - 3").
+     * Set "routeRequest": null unless they also explicitly requested a route overlay.
+   - When the user introduces a brand-new theme subject/event/place/mood (e.g. "Chicago Marathon", "Vermont Long Trail", "Tokyo Night Run", "vintage coastal Maine") OR answers your clarifying questions:
+     * Set "isRefinement": false and generate EXACTLY 3 distinct, genuinely different CMYK-safe theme variations with creative 2-4 word names.
+   - Only ask 1–2 brief clarifying questions (with "themes": [] and "isRefinement": false) when there is NO clear subject and NO clear tweak request (e.g. just "make me a cool theme").
 6. OUTPUT FORMAT:
    - Always respond ONLY with valid JSON matching the requested schema.
    - All 16 color values must be valid 6-digit uppercase hex codes (#RRGGBB).
-   - Theme names should be concise (2–4 words, e.g. "Lakefront Navy", "Grant Park Cream", "Windy City Slate").
-   - Descriptions should be 1 crisp sentence explaining the palette and print mood.`;
+   - Theme names should be concise (2–4 words, or the exact incremented names when refining).
+   - Descriptions should be 1 crisp sentence explaining the palette and what changed.`;
 
 const THEME_DESIGNER_RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -110,6 +118,11 @@ const THEME_DESIGNER_RESPONSE_SCHEMA = {
       type: Type.STRING,
       description:
         "Concise plain-text summary of your color/course research, design rationale, or 1-2 clarifying questions. No URLs or citation markers.",
+    },
+    isRefinement: {
+      type: Type.BOOLEAN,
+      description:
+        "True if the generated themes are refinements/tweaks of the Active Selected Theme; false if creating themes for a brand-new subject or only answering/routing.",
     },
     themes: {
       type: Type.ARRAY,
@@ -401,6 +414,57 @@ function extractJsonObject(rawText: string): Record<string, unknown> {
   }
 }
 
+function computeNextIncrementedNames(
+  selectedThemeName: string,
+  existingNames: string[],
+  count = 3,
+): string[] {
+  const baseName =
+    selectedThemeName.replace(/\s*-\s*\d+$/, "").trim() ||
+    selectedThemeName.trim() ||
+    "Theme";
+  const escapedBase = baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^${escapedBase}\\s*-\\s*(\\d+)$`, "i");
+
+  let maxIndex = 0;
+  for (const name of existingNames) {
+    const match = String(name ?? "").trim().match(pattern);
+    if (match) {
+      const parsed = Number.parseInt(match[1], 10);
+      if (Number.isFinite(parsed) && parsed > maxIndex) {
+        maxIndex = parsed;
+      }
+    }
+  }
+
+  return Array.from({ length: count }, (_, idx) => `${baseName} - ${maxIndex + idx + 1}`);
+}
+
+function isQuotaError(error: unknown): boolean {
+  const err = error as { status?: unknown; message?: unknown };
+  const status = typeof err?.status === "number" ? err.status : 0;
+  const rawMessage = String(err?.message ?? "");
+  return status === 429 || /RESOURCE_EXHAUSTED|quota|rate[- ]?limit/i.test(rawMessage);
+}
+
+function shouldUseSearchGrounding(
+  latestUserMessage: string,
+  selectedThemeIsGenerated: boolean,
+): boolean {
+  const asksForLookup =
+    /\b(route|course|overlay|gpx|track|trail|marathon|race|half|5k|10k|triathlon|ironman|ultra|official|research|search|look up|find|map of)\b/i.test(
+      latestUserMessage,
+    );
+  if (asksForLookup) return true;
+  if (selectedThemeIsGenerated) return false;
+  // Pure color/layer tweaks against the currently displayed theme don't need web search.
+  const looksLikePureColorTweak =
+    /\b(darker|lighter|brighter|subtle|subtler|warmer|cooler|softer|bolder|muted|vibrant|contrast|roads?|streets?|water|parks?|land|buildings?|background|text|font|outline|rail|paths?)\b/i.test(
+      latestUserMessage,
+    ) && latestUserMessage.trim().length <= 120;
+  return !looksLikePureColorTweak;
+}
+
 async function callGeminiWithRetry<T>(fn: () => Promise<T>, maxAttempts = 2): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -422,6 +486,70 @@ async function callGeminiWithRetry<T>(fn: () => Promise<T>, maxAttempts = 2): Pr
   throw lastError;
 }
 
+async function generateDesignerContent(
+  ai: GoogleGenAI,
+  contents: Array<{ role: string; parts: Array<{ text: string }> }>,
+  useSearchFirst: boolean,
+) {
+  const strategies: Array<{
+    model: string;
+    useSearch: boolean;
+    thinkingLow: boolean;
+  }> = useSearchFirst
+    ? [
+        { model: PRIMARY_GEMINI_MODEL, useSearch: true, thinkingLow: true },
+        { model: PRIMARY_GEMINI_MODEL, useSearch: false, thinkingLow: true },
+        { model: FALLBACK_GEMINI_MODEL, useSearch: true, thinkingLow: false },
+        { model: FALLBACK_GEMINI_MODEL, useSearch: false, thinkingLow: false },
+      ]
+    : [
+        { model: PRIMARY_GEMINI_MODEL, useSearch: false, thinkingLow: true },
+        { model: FALLBACK_GEMINI_MODEL, useSearch: false, thinkingLow: false },
+      ];
+
+  let lastError: unknown;
+  for (let i = 0; i < strategies.length; i += 1) {
+    const strategy = strategies[i];
+    try {
+      return await callGeminiWithRetry(() =>
+        ai.models.generateContent({
+          model: strategy.model,
+          contents,
+          config: {
+            systemInstruction: THEME_DESIGNER_SYSTEM_INSTRUCTION,
+            ...(strategy.useSearch ? { tools: [{ googleSearch: {} }] } : {}),
+            ...(strategy.thinkingLow
+              ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
+              : {}),
+            responseMimeType: "application/json",
+            responseSchema: THEME_DESIGNER_RESPONSE_SCHEMA,
+          },
+        }),
+      );
+    } catch (error) {
+      lastError = error;
+      const err = error as { status?: unknown; message?: unknown };
+      const status = typeof err?.status === "number" ? err.status : 0;
+      const rawMessage = String(err?.message ?? "");
+      const isAuthError =
+        status === 403 || /API_KEY_INVALID|PERMISSION_DENIED/i.test(rawMessage);
+      const canFallback =
+        !isAuthError &&
+        (isQuotaError(error) ||
+          status === 404 ||
+          (strategy.useSearch && status === 400));
+
+      if (!canFallback || i === strategies.length - 1) {
+        throw error;
+      }
+      // Brief pause before falling back to an alternate grounding/model quota pool.
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+  }
+
+  throw lastError;
+}
+
 function formatApiError(error: unknown): { status: number; message: string } {
   const err = error as { status?: number; message?: string };
   const status = typeof err?.status === "number" ? err.status : 500;
@@ -434,11 +562,11 @@ function formatApiError(error: unknown): { status: number; message: string } {
         "Gemini API key was rejected or is not configured. Check your API key in Settings > Secrets.",
     };
   }
-  if (status === 429 || /RESOURCE_EXHAUSTED/i.test(rawMessage)) {
+  if (isQuotaError(error)) {
     return {
       status: 429,
       message:
-        "Gemini rate limit or quota reached. Please wait a moment and try again, or verify your API key tier in Settings > Secrets.",
+        "Gemini API quota reached for your current key. Please wait a minute and try again, or select a billing-enabled API key in Settings > Secrets for higher limits.",
     };
   }
   return {
@@ -464,6 +592,8 @@ async function startServer() {
     const body = req.body as {
       messages?: unknown;
       selectedTheme?: SelectedThemeContext | null;
+      selectedThemeIsGenerated?: unknown;
+      existingThemeNames?: unknown;
     };
 
     const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
@@ -477,7 +607,7 @@ async function startServer() {
           typeof (entry as ChatHistoryMessage).content === "string" &&
           (entry as ChatHistoryMessage).content.trim().length > 0,
       )
-      .slice(-20);
+      .slice(-10);
 
     if (messages.length === 0) {
       res.status(400).json({ error: "Please enter a theme request to get started." });
@@ -492,16 +622,34 @@ async function startServer() {
         ? body.selectedTheme
         : null;
 
+    const selectedThemeIsGenerated = body?.selectedThemeIsGenerated === true;
+    const existingThemeNames = Array.isArray(body?.existingThemeNames)
+      ? body.existingThemeNames
+          .filter((name): name is string => typeof name === "string")
+          .map((name) => name.trim())
+          .filter(Boolean)
+          .slice(0, 100)
+      : [];
+
+    const nextIncrementedNames = selectedTheme
+      ? computeNextIncrementedNames(
+          selectedTheme.name,
+          [...existingThemeNames, selectedTheme.name],
+          3,
+        )
+      : [];
+
     const contents = messages.map((msg, index) => {
       const isLastUser = index === messages.length - 1 && msg.role === "user";
       let text = msg.content.trim();
       if (isLastUser && selectedTheme) {
         text +=
-          `\n\n[Active Selected Generated Theme for Iteration]\n` +
+          `\n\n[Active Selected Theme]\n` +
           `Name: ${selectedTheme.name}\n` +
           `Description: ${selectedTheme.description ?? ""}\n` +
           `Colors JSON: ${JSON.stringify(selectedTheme.colors)}\n` +
-          `Remember: if the user is asking to adjust or refine this selected theme, generate exactly 3 distinct CMYK-safe variations based on it.`;
+          `Incremental Variation Names (use these exact names in order if refining this theme): ${nextIncrementedNames.join(", ")}\n` +
+          `Important: If the user is asking for a change or tweak (e.g. darker roads, lighter water, more contrast, warmer land), assume they mean this Active Selected Theme, set isRefinement=true, do NOT ask which theme they mean, and generate 3 distinct CMYK-safe variations using the exact incremental names above. If they are asking for a brand-new subject/event/trail instead, set isRefinement=false.`;
       }
       return {
         role: msg.role === "assistant" ? "model" : "user",
@@ -509,18 +657,18 @@ async function startServer() {
       };
     });
 
+    const lastUserMessage =
+      [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const useSearchFirst = shouldUseSearchGrounding(
+      lastUserMessage,
+      selectedThemeIsGenerated,
+    );
+
     try {
-      const response = await callGeminiWithRetry(() =>
-        ai.models.generateContent({
-          model: GEMINI_MODEL,
-          contents,
-          config: {
-            systemInstruction: THEME_DESIGNER_SYSTEM_INSTRUCTION,
-            tools: [{ googleSearch: {} }],
-            responseMimeType: "application/json",
-            responseSchema: THEME_DESIGNER_RESPONSE_SCHEMA,
-          },
-        }),
+      const response = await generateDesignerContent(
+        ai,
+        contents,
+        useSearchFirst,
       );
 
       const rawText = String(response.text ?? "").trim();
@@ -533,11 +681,17 @@ async function startServer() {
       let reply =
         String(parsed.reply ?? "").trim() ||
         "Here are your map design results.";
+      const isRefinement = parsed.isRefinement === true;
       const rawThemes = Array.isArray(parsed.themes) ? parsed.themes : [];
       const themes = rawThemes
         .slice(0, 3)
         .map((item, idx) => sanitizeThemeProposal(item, idx))
-        .filter((item): item is GeneratedThemeProposal => item !== null);
+        .filter((item): item is GeneratedThemeProposal => item !== null)
+        .map((theme, idx) =>
+          isRefinement && nextIncrementedNames[idx]
+            ? { ...theme, name: nextIncrementedNames[idx] }
+            : theme,
+        );
 
       let routeOverlay: ResolvedRouteOverlay | null = null;
       const routeRequest = sanitizeRouteRequest(parsed.routeRequest);
@@ -552,7 +706,11 @@ async function startServer() {
       res.json({ reply, themes, routeOverlay });
     } catch (error) {
       const formatted = formatApiError(error);
-      console.error("[theme-designer] Gemini API error:", error);
+      if (formatted.status === 429 || formatted.status === 403 || formatted.status === 400) {
+        console.warn(`[theme-designer] Gemini API (${formatted.status}): ${formatted.message}`);
+      } else {
+        console.error("[theme-designer] Gemini API error:", error);
+      }
       res.status(formatted.status).json({ error: formatted.message });
     }
   });

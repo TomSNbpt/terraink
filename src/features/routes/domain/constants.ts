@@ -2,6 +2,12 @@ export const MIN_ROUTE_STROKE_WIDTH = 1;
 export const MAX_ROUTE_STROKE_WIDTH = 12;
 export const DEFAULT_ROUTE_STROKE_WIDTH = 3;
 
+export const MIN_ROUTE_OUTLINE_WIDTH = 0.5;
+export const MAX_ROUTE_OUTLINE_WIDTH = 10;
+export const DEFAULT_ROUTE_OUTLINE_WIDTH = 1;
+export const DEFAULT_ROUTE_OUTLINE_COLOR = "#ffffff";
+export const DEFAULT_ROUTE_OUTLINE_ENABLED = true;
+
 export const MIN_ROUTE_OPACITY = 0.1;
 export const MAX_ROUTE_OPACITY = 1;
 export const DEFAULT_ROUTE_OPACITY = 1;
@@ -15,5 +21,8 @@ export const ROUTE_LINE_STYLES = ["solid", "dashed"] as const;
 export const MAX_GPX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 export const DEFAULT_ROUTE_START_ICON_ID = "circle";
-export const DEFAULT_ROUTE_FINISH_ICON_ID = "flag";
-export const DEFAULT_ROUTE_ENDPOINT_SIZE = 24;
+export const DEFAULT_ROUTE_FINISH_ICON_ID = "circle";
+export const DEFAULT_ROUTE_START_COLOR = "#1b8a3d";
+export const DEFAULT_ROUTE_FINISH_COLOR = "#d62828";
+export const DEFAULT_ROUTE_ENDPOINT_SIZE = 15;
+export const DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED = true;

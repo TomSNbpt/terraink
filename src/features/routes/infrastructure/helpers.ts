@@ -3,9 +3,15 @@ import type { Coordinate } from "@/shared/geo/types";
 import type { MarkerItem } from "@/features/markers/domain/types";
 import {
   DEFAULT_ROUTE_COLOR,
+  DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED,
   DEFAULT_ROUTE_ENDPOINT_SIZE,
+  DEFAULT_ROUTE_FINISH_COLOR,
   DEFAULT_ROUTE_FINISH_ICON_ID,
   DEFAULT_ROUTE_OPACITY,
+  DEFAULT_ROUTE_OUTLINE_COLOR,
+  DEFAULT_ROUTE_OUTLINE_ENABLED,
+  DEFAULT_ROUTE_OUTLINE_WIDTH,
+  DEFAULT_ROUTE_START_COLOR,
   DEFAULT_ROUTE_START_ICON_ID,
   DEFAULT_ROUTE_STROKE_WIDTH,
 } from "../domain/constants";
@@ -27,10 +33,31 @@ function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+export function resolveRouteOutline(route: Pick<Route, "outlineEnabled" | "outlineColor" | "outlineWidth">): {
+  enabled: boolean;
+  color: string;
+  width: number;
+} {
+  return {
+    enabled: route.outlineEnabled ?? DEFAULT_ROUTE_OUTLINE_ENABLED,
+    color:
+      typeof route.outlineColor === "string" && route.outlineColor.trim()
+        ? route.outlineColor
+        : DEFAULT_ROUTE_OUTLINE_COLOR,
+    width:
+      typeof route.outlineWidth === "number" && Number.isFinite(route.outlineWidth)
+        ? Math.max(0, route.outlineWidth)
+        : DEFAULT_ROUTE_OUTLINE_WIDTH,
+  };
+}
+
 export function createDefaultRouteSettings(): RouteDefaults {
   return {
     color: DEFAULT_ROUTE_COLOR,
     strokeWidth: DEFAULT_ROUTE_STROKE_WIDTH,
+    outlineEnabled: DEFAULT_ROUTE_OUTLINE_ENABLED,
+    outlineColor: DEFAULT_ROUTE_OUTLINE_COLOR,
+    outlineWidth: DEFAULT_ROUTE_OUTLINE_WIDTH,
     opacity: DEFAULT_ROUTE_OPACITY,
     lineStyle: "solid",
     startIconId: DEFAULT_ROUTE_START_ICON_ID,
@@ -45,12 +72,13 @@ export function getGpxUploadLabel(filename: string): string {
 
 export function createRouteEndpointMarker(input: {
   iconId: string;
-  defaults: RouteDefaults;
+  color: string;
 }): RouteEndpointMarker {
   return {
     iconId: input.iconId,
-    color: input.defaults.color,
+    color: input.color,
     size: DEFAULT_ROUTE_ENDPOINT_SIZE,
+    outlineEnabled: DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED,
   };
 }
 
@@ -73,17 +101,20 @@ export function createRoute(input: {
     segments: input.parsed.segments,
     color: input.defaults.color,
     strokeWidth: input.defaults.strokeWidth,
+    outlineEnabled: input.defaults.outlineEnabled ?? DEFAULT_ROUTE_OUTLINE_ENABLED,
+    outlineColor: input.defaults.outlineColor ?? DEFAULT_ROUTE_OUTLINE_COLOR,
+    outlineWidth: input.defaults.outlineWidth ?? DEFAULT_ROUTE_OUTLINE_WIDTH,
     opacity: input.defaults.opacity,
     lineStyle: input.defaults.lineStyle,
     visible: true,
     showEndpoints: true,
     startMarker: createRouteEndpointMarker({
-      iconId: input.defaults.startIconId,
-      defaults: input.defaults,
+      iconId: DEFAULT_ROUTE_START_ICON_ID,
+      color: DEFAULT_ROUTE_START_COLOR,
     }),
     finishMarker: createRouteEndpointMarker({
-      iconId: input.defaults.finishIconId,
-      defaults: input.defaults,
+      iconId: DEFAULT_ROUTE_FINISH_ICON_ID,
+      color: DEFAULT_ROUTE_FINISH_COLOR,
     }),
   };
 }
@@ -94,6 +125,14 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
     if (!route.visible || !route.showEndpoints) continue;
     const endpoints = routeEndpoints(route);
     if (!endpoints) continue;
+    const outline = resolveRouteOutline(route);
+    const startHasStroke =
+      (route.startMarker.outlineEnabled ?? DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
+      outline.width > 0;
+    const finishHasStroke =
+      (route.finishMarker.outlineEnabled ?? DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
+      outline.width > 0;
+
     items.push({
       id: `${route.id}-start`,
       lat: endpoints.start.lat,
@@ -101,6 +140,9 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
       iconId: route.startMarker.iconId,
       color: route.startMarker.color,
       size: route.startMarker.size,
+      ...(startHasStroke
+        ? { strokeColor: outline.color, strokeWidth: outline.width }
+        : {}),
     });
     items.push({
       id: `${route.id}-finish`,
@@ -109,6 +151,9 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
       iconId: route.finishMarker.iconId,
       color: route.finishMarker.color,
       size: route.finishMarker.size,
+      ...(finishHasStroke
+        ? { strokeColor: outline.color, strokeWidth: outline.width }
+        : {}),
     });
   }
   return items;

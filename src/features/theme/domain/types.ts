@@ -32,6 +32,7 @@ export interface ThemeColors {
 export interface ResolvedTheme extends ThemeColors {
   name: string;
   description: string;
+  routeColor?: string;
 }
 
 export type ThemeColorKey =

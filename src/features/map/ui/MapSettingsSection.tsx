@@ -619,6 +619,7 @@ export default function MapSettingsSection({
           <ThemeDesignerPanel
             session={themeDesigner}
             savedThemes={savedThemes}
+            currentMapTheme={effectiveTheme}
             onClose={() => setIsThemeDesignerOpen(false)}
             onAddUserMessage={onAddDesignerMessage}
             onAddAssistantResponse={onAddDesignerResponse}

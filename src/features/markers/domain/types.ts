@@ -21,6 +21,8 @@ export interface MarkerItem {
   iconId: string;
   size: number;
   color: string;
+  strokeColor?: string;
+  strokeWidth?: number;
 }
 
 export interface MarkerDefaults {

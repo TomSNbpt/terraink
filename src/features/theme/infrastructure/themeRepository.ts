@@ -245,9 +245,12 @@ function normalizeTheme(themeInput: unknown): ResolvedTheme {
     return normalizedTextHex;
   })();
 
+  const routeColor = resolveByCandidates(theme, ["routeColor", "route_color"]);
+
   return {
     name,
     description,
+    ...(routeColor ? { routeColor } : {}),
     ui: {
       bg: uiBg,
       text: uiText,
@@ -329,4 +332,11 @@ export function getTheme(themeName: string): ResolvedTheme {
     return normalizeTheme(themesByName[defaultThemeName]);
   }
   return normalizeTheme(fallbackTheme);
+}
+
+export function getThemeRouteColor(themeName: string): string | undefined {
+  if (!themesByName[themeName]) {
+    return undefined;
+  }
+  return normalizeTheme(themesByName[themeName]).routeColor;
 }

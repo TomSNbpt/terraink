@@ -8,7 +8,11 @@ import {
   LoaderIcon,
   SendIcon,
 } from "@/shared/ui/Icons";
-import type { SavedTheme, ThemeColors } from "@/features/theme/domain/types";
+import type {
+  ResolvedTheme,
+  SavedTheme,
+  ThemeColors,
+} from "@/features/theme/domain/types";
 import {
   generatedThemeToOption,
   type DesignerMessage,
@@ -42,6 +46,7 @@ function formatRouteSourceLabel(
 interface ThemeDesignerPanelProps {
   session: ThemeDesignerSession;
   savedThemes: SavedTheme[];
+  currentMapTheme: ResolvedTheme;
   onClose: () => void;
   onAddUserMessage: (message: DesignerMessage) => void;
   onAddAssistantResponse: (
@@ -68,6 +73,7 @@ function createId(prefix: string): string {
 export default function ThemeDesignerPanel({
   session,
   savedThemes,
+  currentMapTheme,
   onClose,
   onAddUserMessage,
   onAddAssistantResponse,
@@ -96,11 +102,19 @@ export default function ThemeDesignerPanel({
     [session.activeGeneratedThemeId, session.generatedThemes],
   );
 
-  // Display newest generated themes first so fresh options are immediately visible.
-  const orderedGeneratedThemes = useMemo(
-    () => [...session.generatedThemes].reverse(),
-    [session.generatedThemes],
-  );
+  // Display newest batch at the top while keeping 1, 2, 3 order within each batch.
+  const orderedGeneratedThemes = useMemo(() => {
+    const batches: GeneratedTheme[][] = [];
+    for (const theme of session.generatedThemes) {
+      const lastBatch = batches[batches.length - 1];
+      if (lastBatch && lastBatch[0]?.createdAt === theme.createdAt) {
+        lastBatch.push(theme);
+      } else {
+        batches.push([theme]);
+      }
+    }
+    return batches.reverse().flat();
+  }, [session.generatedThemes]);
 
   const hasSessionData =
     session.messages.length > 0 || session.generatedThemes.length > 0;
@@ -137,10 +151,21 @@ export default function ThemeDesignerPanel({
     abortControllerRef.current = controller;
     setIsSending(true);
 
+    const referenceTheme = activeGeneratedTheme ?? {
+      name: currentMapTheme.name,
+      description: currentMapTheme.description,
+      colors: {
+        ui: currentMapTheme.ui,
+        map: currentMapTheme.map,
+      },
+    };
+
     try {
       const result = await sendThemeDesignerMessage({
         messages: historyForApi,
-        selectedTheme: activeGeneratedTheme,
+        selectedTheme: referenceTheme,
+        selectedThemeIsGenerated: Boolean(activeGeneratedTheme),
+        existingThemeNames: session.generatedThemes.map((t) => t.name),
         signal: controller.signal,
       });
 

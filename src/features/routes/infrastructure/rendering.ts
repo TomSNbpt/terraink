@@ -2,6 +2,7 @@ import type { MarkerProjectionInput } from "@/features/markers/domain/types";
 import { projectMarkerToCanvas } from "@/features/markers/infrastructure/projection";
 import { ROUTE_DASH_PATTERN } from "../domain/constants";
 import type { Route } from "../domain/types";
+import { resolveRouteOutline } from "./helpers";
 
 export type RoutePointProjector = (
   lat: number,
@@ -10,6 +11,32 @@ export type RoutePointProjector = (
 
 interface DrawOptions {
   widthScale?: number;
+}
+
+function strokeRouteSegments(
+  ctx: CanvasRenderingContext2D,
+  route: Route,
+  project: RoutePointProjector,
+): void {
+  for (const segment of route.segments) {
+    if (segment.length < 2) continue;
+    ctx.beginPath();
+    let started = false;
+    for (const { lat, lon } of segment) {
+      const projected = project(lat, lon);
+      if (!projected) {
+        started = false;
+        continue;
+      }
+      if (!started) {
+        ctx.moveTo(projected.x, projected.y);
+        started = true;
+      } else {
+        ctx.lineTo(projected.x, projected.y);
+      }
+    }
+    ctx.stroke();
+  }
 }
 
 export function drawRoutesWithProjector(
@@ -26,6 +53,17 @@ export function drawRoutesWithProjector(
     if (!route.visible || route.segments.length === 0) continue;
 
     const width = Math.max(0.5, route.strokeWidth * widthScale);
+    const outline = resolveRouteOutline(route);
+
+    if (outline.enabled && outline.width > 0) {
+      const outlineExtra = outline.width * widthScale;
+      ctx.lineWidth = width + outlineExtra * 2;
+      ctx.strokeStyle = outline.color;
+      ctx.globalAlpha = route.opacity;
+      ctx.setLineDash([]);
+      strokeRouteSegments(ctx, route, project);
+    }
+
     ctx.lineWidth = width;
     ctx.strokeStyle = route.color;
     ctx.globalAlpha = route.opacity;
@@ -35,25 +73,7 @@ export function drawRoutesWithProjector(
       ctx.setLineDash([]);
     }
 
-    for (const segment of route.segments) {
-      if (segment.length < 2) continue;
-      ctx.beginPath();
-      let started = false;
-      for (const { lat, lon } of segment) {
-        const projected = project(lat, lon);
-        if (!projected) {
-          started = false;
-          continue;
-        }
-        if (!started) {
-          ctx.moveTo(projected.x, projected.y);
-          started = true;
-        } else {
-          ctx.lineTo(projected.x, projected.y);
-        }
-      }
-      ctx.stroke();
-    }
+    strokeRouteSegments(ctx, route, project);
   }
 
   ctx.restore();

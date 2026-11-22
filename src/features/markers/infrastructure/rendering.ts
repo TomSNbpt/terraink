@@ -4,6 +4,7 @@ import type {
   MarkerProjectionInput,
 } from "@/features/markers/domain/types";
 import { projectMarkerToCanvas } from "./projection";
+import { buildStrokedSvgIcon } from "./svgStroke";
 
 function serializeSvgWithColor(svgMarkup: string, color: string) {
   return svgMarkup.split("currentColor").join(color);
@@ -48,14 +49,39 @@ function drawTintedImage(
 async function resolveMarkerImage(
   icon: MarkerIconDefinition,
   color: string,
-): Promise<HTMLImageElement> {
+  size: number,
+  strokeColor?: string,
+  strokeWidthPx?: number,
+): Promise<{ image: HTMLImageElement; boxSize: number }> {
   if (icon.kind === "svg" && icon.svgMarkup) {
-    const encodedSvg = encodeURIComponent(serializeSvgWithColor(icon.svgMarkup, color));
-    return loadImage(`data:image/svg+xml;charset=utf-8,${encodedSvg}`);
+    if (strokeColor && strokeWidthPx && strokeWidthPx > 0) {
+      const stroked = buildStrokedSvgIcon(
+        icon.svgMarkup,
+        size,
+        color,
+        strokeColor,
+        strokeWidthPx,
+      );
+      if (stroked) {
+        const encodedSvg = encodeURIComponent(stroked.svgMarkup);
+        const image = await loadImage(
+          `data:image/svg+xml;charset=utf-8,${encodedSvg}`,
+        );
+        return { image, boxSize: stroked.boxSize };
+      }
+    }
+    const encodedSvg = encodeURIComponent(
+      serializeSvgWithColor(icon.svgMarkup, color),
+    );
+    const image = await loadImage(
+      `data:image/svg+xml;charset=utf-8,${encodedSvg}`,
+    );
+    return { image, boxSize: size };
   }
 
   if (icon.dataUrl) {
-    return loadImage(icon.dataUrl);
+    const image = await loadImage(icon.dataUrl);
+    return { image, boxSize: size };
   }
 
   throw new Error(`Marker icon "${icon.id}" is missing render data.`);
@@ -70,6 +96,8 @@ export async function drawMarkersOnCanvas(
   scaleY = 1,
   sizeScale = 1,
 ) {
+  const strokeScale = ((scaleX + scaleY) / 2) * sizeScale;
+
   await Promise.all(
     markers.map(async (marker) => {
       const icon = icons.find((entry) => entry.id === marker.iconId);
@@ -81,21 +109,29 @@ export async function drawMarkersOnCanvas(
       const x = point.x * scaleX;
       const y = point.y * scaleY;
       const size = marker.size * Math.max(scaleX, scaleY) * sizeScale;
+      const strokeWidthPx =
+        marker.strokeColor &&
+        typeof marker.strokeWidth === "number" &&
+        marker.strokeWidth > 0
+          ? marker.strokeWidth * strokeScale
+          : 0;
 
-      const image = await resolveMarkerImage(
+      const { image, boxSize } = await resolveMarkerImage(
         icon,
         marker.color,
+        size,
+        marker.strokeColor,
+        strokeWidthPx,
       );
-      const imageSize = size;
-      const imageX = x - imageSize / 2;
-      const imageY = y - imageSize / 2;
+      const imageX = x - boxSize / 2;
+      const imageY = y - boxSize / 2;
 
       if (icon.tintWithMarkerColor) {
-        drawTintedImage(ctx, image, imageX, imageY, imageSize, marker.color);
+        drawTintedImage(ctx, image, imageX, imageY, boxSize, marker.color);
         return;
       }
 
-      ctx.drawImage(image, imageX, imageY, imageSize, imageSize);
+      ctx.drawImage(image, imageX, imageY, boxSize, boxSize);
     }),
   );
 }

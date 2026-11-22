@@ -15,11 +15,14 @@ import { clamp } from "@/shared/geo/math";
 import type { Route, RouteDefaults } from "@/features/routes/domain/types";
 import {
   MAX_ROUTE_OPACITY,
+  MAX_ROUTE_OUTLINE_WIDTH,
   MAX_ROUTE_STROKE_WIDTH,
   MIN_ROUTE_OPACITY,
+  MIN_ROUTE_OUTLINE_WIDTH,
   MIN_ROUTE_STROKE_WIDTH,
 } from "@/features/routes/domain/constants";
 import type { SavedTheme } from "@/features/theme/domain/types";
+import { getThemeRouteColor } from "@/features/theme/infrastructure/themeRepository";
 import {
   createEmptyThemeDesignerSession,
   themeColorsToOverrides,
@@ -254,16 +257,30 @@ export function posterReducer(
         ...(action.clearSelectedLocation ? { selectedLocation: null } : {}),
       };
 
-    case "SET_THEME":
+    case "SET_THEME": {
+      const themeRouteColor = getThemeRouteColor(action.themeId);
       return {
         ...state,
         form: { ...state.form, theme: action.themeId },
         customColors: {},
+        ...(themeRouteColor
+          ? {
+              routeDefaults: {
+                ...state.routeDefaults,
+                color: themeRouteColor,
+              },
+              routes: state.routes.map((route) => ({
+                ...route,
+                color: themeRouteColor,
+              })),
+            }
+          : {}),
         themeDesigner: {
           ...state.themeDesigner,
           activeGeneratedThemeId: null,
         },
       };
+    }
 
     case "SET_LAYOUT":
       return {
@@ -618,6 +635,14 @@ export function posterReducer(
                         MAX_ROUTE_STROKE_WIDTH,
                       )
                     : route.strokeWidth,
+                outlineWidth:
+                  typeof action.changes.outlineWidth === "number"
+                    ? clamp(
+                        action.changes.outlineWidth,
+                        MIN_ROUTE_OUTLINE_WIDTH,
+                        MAX_ROUTE_OUTLINE_WIDTH,
+                      )
+                    : route.outlineWidth,
                 opacity:
                   typeof action.changes.opacity === "number"
                     ? clamp(
@@ -655,6 +680,19 @@ export function posterReducer(
                 MAX_ROUTE_STROKE_WIDTH,
               )
             : state.routeDefaults.strokeWidth,
+        outlineEnabled:
+          typeof partial.outlineEnabled === "boolean"
+            ? partial.outlineEnabled
+            : state.routeDefaults.outlineEnabled,
+        outlineColor: partial.outlineColor ?? state.routeDefaults.outlineColor,
+        outlineWidth:
+          typeof partial.outlineWidth === "number"
+            ? clamp(
+                partial.outlineWidth,
+                MIN_ROUTE_OUTLINE_WIDTH,
+                MAX_ROUTE_OUTLINE_WIDTH,
+              )
+            : state.routeDefaults.outlineWidth,
         opacity:
           typeof partial.opacity === "number"
             ? clamp(partial.opacity, MIN_ROUTE_OPACITY, MAX_ROUTE_OPACITY)

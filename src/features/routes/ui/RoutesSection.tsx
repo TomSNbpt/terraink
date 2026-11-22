@@ -11,14 +11,23 @@ import {
   MAX_MARKER_SIZE,
   MIN_MARKER_SIZE,
 } from "@/features/markers/domain/constants";
-import { routeLengthMeters } from "@/features/routes/infrastructure/helpers";
+import {
+  resolveRouteOutline,
+  routeLengthMeters,
+} from "@/features/routes/infrastructure/helpers";
 import { listBundledGpxEntries } from "@/features/routes/infrastructure/gpxLibrary";
 import {
-  ROUTE_LINE_STYLES,
+  DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED,
+  DEFAULT_ROUTE_FINISH_COLOR,
+  DEFAULT_ROUTE_OUTLINE_COLOR,
+  DEFAULT_ROUTE_START_COLOR,
   MAX_ROUTE_OPACITY,
+  MAX_ROUTE_OUTLINE_WIDTH,
   MAX_ROUTE_STROKE_WIDTH,
   MIN_ROUTE_OPACITY,
+  MIN_ROUTE_OUTLINE_WIDTH,
   MIN_ROUTE_STROKE_WIDTH,
+  ROUTE_LINE_STYLES,
 } from "@/features/routes/domain/constants";
 import ColorPicker from "@/features/theme/ui/ColorPicker";
 import { buildDynamicColorChoices } from "@/features/theme/domain/colorSuggestions";
@@ -41,11 +50,30 @@ interface EndpointPickerState {
   kind: RouteEndpointKind;
 }
 
+interface RouteColorPickerState {
+  routeId: string;
+  target: "route" | "outline";
+}
+
 function formatRouteDistance(meters: number): string {
   if (!Number.isFinite(meters) || meters <= 0) return "—";
   if (meters < 1000) return `${Math.round(meters)} m`;
   const km = meters / 1000;
   return km < 10 ? `${km.toFixed(2)} km` : `${km.toFixed(1)} km`;
+}
+
+function swatchIconColor(hex: string): string {
+  const clean = hex.trim().replace(/^#/, "");
+  const full =
+    clean.length === 3
+      ? `${clean[0]}${clean[0]}${clean[1]}${clean[1]}${clean[2]}${clean[2]}`
+      : clean;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return "#ffffff";
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.65 ? "#0f172a" : "#ffffff";
 }
 
 interface PendingConfirmation {
@@ -141,9 +169,8 @@ export default function RoutesSection() {
   const [isUploading, setIsUploading] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [openRouteId, setOpenRouteId] = useState<string | null>(null);
-  const [openColorPickerId, setOpenColorPickerId] = useState<string | null>(
-    null,
-  );
+  const [openColorPicker, setOpenColorPicker] =
+    useState<RouteColorPickerState | null>(null);
   const [activeEndpoint, setActiveEndpoint] =
     useState<EndpointPickerState | null>(null);
   const [isEndpointIconOpen, setIsEndpointIconOpen] = useState(false);
@@ -234,8 +261,8 @@ export default function RoutesSection() {
     (routeId: string) => {
       dispatch({ type: "REMOVE_ROUTE", routeId });
       setOpenRouteId((current) => (current === routeId ? null : current));
-      setOpenColorPickerId((current) =>
-        current === routeId ? null : current,
+      setOpenColorPicker((current) =>
+        current?.routeId === routeId ? null : current,
       );
       setActiveEndpoint((current) =>
         current?.routeId === routeId ? null : current,
@@ -254,7 +281,7 @@ export default function RoutesSection() {
 
   const toggleCardOpen = useCallback((routeId: string) => {
     setOpenRouteId((current) => (current === routeId ? null : routeId));
-    setOpenColorPickerId(null);
+    setOpenColorPicker(null);
     setActiveEndpoint(null);
     setIsEndpointIconOpen(false);
     setIsEndpointColorOpen(false);
@@ -262,7 +289,7 @@ export default function RoutesSection() {
 
   const closeCard = useCallback(() => {
     setOpenRouteId(null);
-    setOpenColorPickerId(null);
+    setOpenColorPicker(null);
     setActiveEndpoint(null);
     setIsEndpointIconOpen(false);
     setIsEndpointColorOpen(false);
@@ -273,7 +300,7 @@ export default function RoutesSection() {
       setActiveEndpoint({ routeId, kind });
       setIsEndpointIconOpen(false);
       setIsEndpointColorOpen(false);
-      setOpenColorPickerId(null);
+      setOpenColorPicker(null);
     },
     [],
   );
@@ -467,8 +494,18 @@ export default function RoutesSection() {
 
         {routes.map((route) => {
           const isOpen = openRouteId === route.id;
-          const isColorOpen = openColorPickerId === route.id;
+          const isColorOpen =
+            openColorPicker?.routeId === route.id &&
+            openColorPicker.target === "route";
+          const isOutlineColorOpen =
+            openColorPicker?.routeId === route.id &&
+            openColorPicker.target === "outline";
+          const outline = resolveRouteOutline(route);
           const colorChoices = buildDynamicColorChoices(route.color, palette);
+          const outlineColorChoices = buildDynamicColorChoices(
+            outline.color,
+            palette,
+          );
           const distanceLabel = formatRouteDistance(routeLengthMeters(route));
           const endpointKind =
             activeEndpoint?.routeId === route.id ? activeEndpoint.kind : null;
@@ -517,6 +554,10 @@ export default function RoutesSection() {
                   style={{
                     backgroundColor: route.color,
                     opacity: route.opacity,
+                    boxShadow:
+                      outline.enabled && outline.width > 0
+                        ? `inset 0 0 0 2px ${outline.color}`
+                        : undefined,
                   }}
                   aria-hidden="true"
                 />
@@ -542,6 +583,17 @@ export default function RoutesSection() {
                   endpoint.color,
                   palette,
                 );
+                const endpointOutlineEnabled =
+                  endpoint.outlineEnabled ??
+                  DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED;
+                const previewStrokeColor =
+                  endpointOutlineEnabled && outline.width > 0
+                    ? outline.color
+                    : undefined;
+                const previewStrokeWidth =
+                  endpointOutlineEnabled && outline.width > 0
+                    ? Math.min(2, outline.width)
+                    : undefined;
                 return (
                   <div className="route-card__body">
                     <div className="route-card__field">
@@ -565,6 +617,8 @@ export default function RoutesSection() {
                               icon={icon}
                               size={22}
                               color={endpoint.color}
+                              strokeColor={previewStrokeColor}
+                              strokeWidth={previewStrokeWidth}
                             />
                           ) : null}
                         </button>
@@ -605,7 +659,10 @@ export default function RoutesSection() {
                         <button
                           type="button"
                           className="route-card__color-toggle"
-                          style={{ backgroundColor: endpoint.color }}
+                          style={{
+                            backgroundColor: endpoint.color,
+                            color: swatchIconColor(endpoint.color),
+                          }}
                           onClick={() =>
                             setIsEndpointColorOpen((current) => !current)
                           }
@@ -628,7 +685,10 @@ export default function RoutesSection() {
                           }
                           onResetColor={() =>
                             updateEndpoint(route.id, endpointKind!, {
-                              color: route.color,
+                              color:
+                                endpointKind === "start"
+                                  ? DEFAULT_ROUTE_START_COLOR
+                                  : DEFAULT_ROUTE_FINISH_COLOR,
                             })
                           }
                         />
@@ -658,6 +718,25 @@ export default function RoutesSection() {
                         }
                       />
                     </div>
+
+                    <label className="toggle-field">
+                      <span>Outline (matches route)</span>
+                      <span className="theme-switch">
+                        <input
+                          type="checkbox"
+                          checked={endpointOutlineEnabled}
+                          onChange={(event) =>
+                            updateEndpoint(route.id, endpointKind!, {
+                              outlineEnabled: event.target.checked,
+                            })
+                          }
+                        />
+                        <span
+                          className="theme-switch-track"
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </label>
                   </div>
                 );
               })() : null}
@@ -692,6 +771,9 @@ export default function RoutesSection() {
                           customMarkerIcons,
                         );
                         const label = kind === "start" ? "Start" : "Finish";
+                        const endpointOutlineEnabled =
+                          endpoint.outlineEnabled ??
+                          DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED;
                         return (
                           <button
                             key={kind}
@@ -706,6 +788,16 @@ export default function RoutesSection() {
                                   icon={icon}
                                   size={24}
                                   color={endpoint.color}
+                                  strokeColor={
+                                    endpointOutlineEnabled && outline.width > 0
+                                      ? outline.color
+                                      : undefined
+                                  }
+                                  strokeWidth={
+                                    endpointOutlineEnabled && outline.width > 0
+                                      ? Math.min(2, outline.width)
+                                      : undefined
+                                  }
                                 />
                               ) : null}
                             </span>
@@ -724,9 +816,16 @@ export default function RoutesSection() {
                       <button
                         type="button"
                         className="route-card__color-toggle"
-                        style={{ backgroundColor: route.color }}
+                        style={{
+                          backgroundColor: route.color,
+                          color: swatchIconColor(route.color),
+                        }}
                         onClick={() =>
-                          setOpenColorPickerId(isColorOpen ? null : route.id)
+                          setOpenColorPicker(
+                            isColorOpen
+                              ? null
+                              : { routeId: route.id, target: "route" },
+                          )
                         }
                         aria-label={
                           isColorOpen ? "Close color picker" : "Open color picker"
@@ -771,6 +870,95 @@ export default function RoutesSection() {
                       }
                     />
                   </div>
+
+                  <label className="toggle-field">
+                    <span>Outline</span>
+                    <span className="theme-switch">
+                      <input
+                        type="checkbox"
+                        checked={outline.enabled}
+                        onChange={(event) => {
+                          const enabled = event.target.checked;
+                          updateRoute(route.id, { outlineEnabled: enabled });
+                          if (!enabled && isOutlineColorOpen) {
+                            setOpenColorPicker(null);
+                          }
+                        }}
+                      />
+                      <span className="theme-switch-track" aria-hidden="true" />
+                    </span>
+                  </label>
+
+                  {outline.enabled ? (
+                    <>
+                      <div className="route-card__field">
+                        <label>
+                          <span>Outline color</span>
+                          <button
+                            type="button"
+                            className="route-card__color-toggle"
+                            style={{
+                              backgroundColor: outline.color,
+                              color: swatchIconColor(outline.color),
+                            }}
+                            onClick={() =>
+                              setOpenColorPicker(
+                                isOutlineColorOpen
+                                  ? null
+                                  : { routeId: route.id, target: "outline" },
+                              )
+                            }
+                            aria-label={
+                              isOutlineColorOpen
+                                ? "Close outline color picker"
+                                : "Open outline color picker"
+                            }
+                          >
+                            {isOutlineColorOpen ? <CloseIcon /> : null}
+                          </button>
+                        </label>
+                        {isOutlineColorOpen ? (
+                          <ColorPicker
+                            currentColor={outline.color}
+                            suggestedColors={outlineColorChoices.suggestedColors}
+                            moreColors={outlineColorChoices.moreColors}
+                            onChange={(color) =>
+                              updateRoute(route.id, { outlineColor: color })
+                            }
+                            onResetColor={() =>
+                              updateRoute(route.id, {
+                                outlineColor:
+                                  state.routeDefaults.outlineColor ??
+                                  DEFAULT_ROUTE_OUTLINE_COLOR,
+                              })
+                            }
+                          />
+                        ) : null}
+                      </div>
+
+                      <div className="route-card__field">
+                        <label htmlFor={`route-outline-width-${route.id}`}>
+                          <span>Outline width</span>
+                          <span className="route-card__value">
+                            {outline.width}px
+                          </span>
+                        </label>
+                        <input
+                          id={`route-outline-width-${route.id}`}
+                          type="range"
+                          min={MIN_ROUTE_OUTLINE_WIDTH}
+                          max={MAX_ROUTE_OUTLINE_WIDTH}
+                          step={0.5}
+                          value={outline.width}
+                          onChange={(event) =>
+                            updateRoute(route.id, {
+                              outlineWidth: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </>
+                  ) : null}
 
                   <div className="route-card__field">
                     <label htmlFor={`route-opacity-${route.id}`}>
