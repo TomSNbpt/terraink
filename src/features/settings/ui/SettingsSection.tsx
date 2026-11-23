@@ -30,6 +30,7 @@ export default function SettingsSection() {
     userDefaults,
     savedThemes,
     deletedBuiltinThemeIds,
+    customTemplates,
     presets,
     form,
     routes,
@@ -46,9 +47,10 @@ export default function SettingsSection() {
         presets,
         savedThemes,
         deletedBuiltinThemeIds,
+        customTemplates,
         activeRoutes: routes,
       }),
-    [presets, savedThemes, deletedBuiltinThemeIds, routes],
+    [presets, savedThemes, deletedBuiltinThemeIds, customTemplates, routes],
   );
   const newGpxFiles = useMemo(
     () => configSnapshot.gpxFiles.filter((file) => !file.isBundled),
@@ -172,32 +174,40 @@ export default function SettingsSection() {
           </div>
 
           <p className="settings-bleed-hint">
-            Snapshot of all themes, layouts, and presets saved in this session.
-            Copy and paste into <code>src/data/config.json</code> to make your
-            changes permanent.
+            Snapshot of all themes, templates, and products saved in this
+            session. Copy and paste into <code>src/data/config.json</code> to
+            make your changes permanent.
           </p>
 
           <p className="settings-snapshot-meta">
             <span>{configSnapshot.themeCount} themes</span>
             <span aria-hidden="true">&middot;</span>
-            <span>{configSnapshot.layoutCount} layouts</span>
+            <span>{configSnapshot.layoutCount} templates</span>
             <span aria-hidden="true">&middot;</span>
-            <span>{configSnapshot.presetCount} presets</span>
+            <span>{configSnapshot.presetCount} products</span>
           </p>
 
           {configSnapshot.promotedThemeCount > 0 ? (
             <p className="settings-snapshot-note">
               Includes {configSnapshot.promotedThemeCount} custom theme
               {configSnapshot.promotedThemeCount === 1 ? "" : "s"} merged into{" "}
-              <code>themes</code> with preset IDs aligned automatically.
+              <code>themes</code> with product IDs aligned automatically.
             </p>
           ) : null}
 
           {configSnapshot.deletedThemeCount > 0 ? (
             <p className="settings-snapshot-note">
-              Excludes {configSnapshot.deletedThemeCount} deleted built-in theme
+              Excludes {configSnapshot.deletedThemeCount} deleted saved theme
               {configSnapshot.deletedThemeCount === 1 ? "" : "s"} from{" "}
               <code>themes</code>. Copy and save to make permanent.
+            </p>
+          ) : null}
+
+          {configSnapshot.addedTemplateCount > 0 ? (
+            <p className="settings-snapshot-note">
+              Includes {configSnapshot.addedTemplateCount} custom template
+              {configSnapshot.addedTemplateCount === 1 ? "" : "s"} merged into{" "}
+              <code>layouts</code>. Copy and save to make permanent.
             </p>
           ) : null}
 

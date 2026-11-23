@@ -6,6 +6,7 @@ import { clamp } from "@/shared/geo/math";
 import { recordRecentLocation } from "@/features/location/application/useRecentLocations";
 import type { SearchResult } from "@/features/location/domain/types";
 import type { CustomSizeUnit } from "../application/posterReducer";
+import type { CustomTemplate } from "@/features/layout/domain/types";
 import {
   formatLayoutCm,
 } from "@/features/layout/domain/layoutMatcher";
@@ -104,7 +105,7 @@ export function useFormHandlers() {
         return;
       }
 
-      const layoutOption = getLayoutOption(layoutId);
+      const layoutOption = getLayoutOption(layoutId, state.customTemplates);
       if (!layoutOption) return;
 
       dispatch({
@@ -115,7 +116,21 @@ export function useFormHandlers() {
         guides: instantiateLayoutGuides(layoutOption),
       });
     },
-    [dispatch, state.form.height, state.form.width],
+    [dispatch, state.customTemplates, state.form.height, state.form.width],
+  );
+
+  const handleAddCustomTemplate = useCallback(
+    (template: CustomTemplate) => {
+      dispatch({ type: "ADD_CUSTOM_TEMPLATE", template });
+    },
+    [dispatch],
+  );
+
+  const handleRemoveCustomTemplate = useCallback(
+    (templateId: string) => {
+      dispatch({ type: "REMOVE_CUSTOM_TEMPLATE", templateId });
+    },
+    [dispatch],
   );
 
   const handleCustomSizeUnitChange = useCallback(
@@ -220,6 +235,8 @@ export function useFormHandlers() {
     handleNumericFieldBlur,
     handleThemeChange,
     handleLayoutChange,
+    handleAddCustomTemplate,
+    handleRemoveCustomTemplate,
     handleCustomSizeUnitChange,
     handleColorChange,
     handleResetColors,

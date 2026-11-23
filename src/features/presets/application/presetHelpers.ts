@@ -9,6 +9,7 @@ import type {
   SavedTheme,
   ThemeColorKey,
 } from "@/features/theme/domain/types";
+import type { CustomTemplate } from "@/features/layout/domain/types";
 import {
   createCustomLayoutOption,
   formatLayoutDimensions,
@@ -86,8 +87,11 @@ export function resolveSnapshotPalette(
   return colors;
 }
 
-export function resolveSnapshotLayoutName(snapshot: PresetSnapshot): string {
-  const match = getLayoutOption(snapshot.form.layout);
+export function resolveSnapshotLayoutName(
+  snapshot: PresetSnapshot,
+  customTemplates: CustomTemplate[] = [],
+): string {
+  const match = getLayoutOption(snapshot.form.layout, customTemplates);
   if (match) {
     return match.categoryName
       ? `${match.categoryName} - ${match.name}`

@@ -6,6 +6,7 @@ import {
   normalizeGpxFilename,
   serializeRouteToGpxXml,
 } from "@/features/routes/infrastructure/gpxLibrary";
+import type { CustomTemplate } from "@/features/layout/domain/types";
 import type { SavedTheme } from "@/features/theme/domain/types";
 import type { Coordinate } from "@/shared/geo/types";
 
@@ -25,6 +26,7 @@ export interface ConfigSnapshotResult {
   promotedThemeCount: number;
   deletedThemeCount: number;
   layoutCount: number;
+  addedTemplateCount: number;
   presetCount: number;
   gpxFiles: SnapshotGpxFile[];
 }
@@ -162,6 +164,7 @@ export function buildConfigSnapshot(input: {
   presets: UserPreset[];
   savedThemes: SavedTheme[];
   deletedBuiltinThemeIds?: string[];
+  customTemplates?: CustomTemplate[];
   activeRoutes?: Route[];
 }): ConfigSnapshotResult {
   const baseThemes = JSON.parse(
@@ -176,21 +179,77 @@ export function buildConfigSnapshot(input: {
     }
   }
 
+  type SnapshotLayoutEntry = {
+    id: string;
+    name: string;
+    description: string;
+    width: number;
+    height: number;
+    unit: "in" | "px" | "cm";
+    posterWidthCm: number;
+    posterHeightCm: number;
+    guides?: unknown[];
+  };
+
+  type SnapshotLayoutCategory = {
+    id: string;
+    name: string;
+    layouts: SnapshotLayoutEntry[];
+  };
+
   const baseLayouts = JSON.parse(
     JSON.stringify(
       (
         appConfig as {
           layouts?: {
             defaultLayoutId?: string;
-            categories?: Array<{ layouts?: unknown[] }>;
+            categories?: SnapshotLayoutCategory[];
           };
         }
       ).layouts ?? { defaultLayoutId: "", categories: [] },
     ),
   ) as {
     defaultLayoutId?: string;
-    categories?: Array<{ layouts?: unknown[] }>;
+    categories: SnapshotLayoutCategory[];
   };
+
+  if (!Array.isArray(baseLayouts.categories)) {
+    baseLayouts.categories = [];
+  }
+
+  let addedTemplateCount = 0;
+  for (const template of input.customTemplates ?? []) {
+    let category = baseLayouts.categories.find(
+      (cat) => cat.id === template.categoryId,
+    );
+    if (!category) {
+      category = {
+        id: template.categoryId,
+        name: template.categoryName,
+        layouts: [],
+      };
+      baseLayouts.categories.push(category);
+    }
+    if (!Array.isArray(category.layouts)) {
+      category.layouts = [];
+    }
+    const alreadyExists = baseLayouts.categories.some((cat) =>
+      (cat.layouts ?? []).some((item) => item.id === template.id),
+    );
+    if (!alreadyExists) {
+      category.layouts.push({
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        width: template.width,
+        height: template.height,
+        unit: template.unit,
+        posterWidthCm: template.widthCm,
+        posterHeightCm: template.heightCm,
+      });
+      addedTemplateCount += 1;
+    }
+  }
 
   const themeIdRemap = new Map<string, string>();
   let promotedThemeCount = 0;
@@ -356,6 +415,7 @@ export function buildConfigSnapshot(input: {
     promotedThemeCount,
     deletedThemeCount,
     layoutCount,
+    addedTemplateCount,
     presetCount: exportedPresets.length,
     gpxFiles,
   };

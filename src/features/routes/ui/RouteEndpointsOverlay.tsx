@@ -7,6 +7,7 @@ import { findMarkerIcon } from "@/features/markers/infrastructure/iconRegistry";
 import MarkerVisual from "@/features/markers/ui/MarkerVisual";
 import {
   resolveRouteOutline,
+  resolveRouteOutline2,
   routeEndpoints,
 } from "@/features/routes/infrastructure/helpers";
 
@@ -56,6 +57,7 @@ export default function RouteEndpointsOverlay({
       const endpoints = routeEndpoints(route);
       if (!endpoints) return [];
       const outline = resolveRouteOutline(route);
+      const outline2 = resolveRouteOutline2(route);
       const startHasStroke =
         (route.startMarker.outlineEnabled ??
           DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
@@ -74,6 +76,8 @@ export default function RouteEndpointsOverlay({
         size: number;
         strokeColor?: string;
         strokeWidth?: number;
+        outerStrokeColor?: string;
+        outerStrokeWidth?: number;
       }[] = [];
       const projectPoint = (lat: number, lon: number) => {
         try {
@@ -95,7 +99,16 @@ export default function RouteEndpointsOverlay({
             color: route.startMarker.color,
             size: route.startMarker.size,
             ...(startHasStroke
-              ? { strokeColor: outline.color, strokeWidth: outline.width }
+              ? {
+                  strokeColor: outline.color,
+                  strokeWidth: outline.width,
+                  ...(outline2.active
+                    ? {
+                        outerStrokeColor: outline2.color,
+                        outerStrokeWidth: outline2.width,
+                      }
+                    : {}),
+                }
               : {}),
           });
         }
@@ -112,7 +125,16 @@ export default function RouteEndpointsOverlay({
             color: route.finishMarker.color,
             size: route.finishMarker.size,
             ...(finishHasStroke
-              ? { strokeColor: outline.color, strokeWidth: outline.width }
+              ? {
+                  strokeColor: outline.color,
+                  strokeWidth: outline.width,
+                  ...(outline2.active
+                    ? {
+                        outerStrokeColor: outline2.color,
+                        outerStrokeWidth: outline2.width,
+                      }
+                    : {}),
+                }
               : {}),
           });
         }
@@ -129,21 +151,36 @@ export default function RouteEndpointsOverlay({
 
   return (
     <div className="poster-route-endpoints" aria-hidden="true">
-      {projected.map(({ key, x, y, icon, color, size, strokeColor, strokeWidth }) => (
-        <div
-          key={key}
-          className="poster-route-endpoint"
-          style={{ left: `${x}px`, top: `${y}px` } as CSSProperties}
-        >
-          <MarkerVisual
-            icon={icon}
-            size={size}
-            color={color}
-            strokeColor={strokeColor}
-            strokeWidth={strokeWidth}
-          />
-        </div>
-      ))}
+      {projected.map(
+        ({
+          key,
+          x,
+          y,
+          icon,
+          color,
+          size,
+          strokeColor,
+          strokeWidth,
+          outerStrokeColor,
+          outerStrokeWidth,
+        }) => (
+          <div
+            key={key}
+            className="poster-route-endpoint"
+            style={{ left: `${x}px`, top: `${y}px` } as CSSProperties}
+          >
+            <MarkerVisual
+              icon={icon}
+              size={size}
+              color={color}
+              strokeColor={strokeColor}
+              strokeWidth={strokeWidth}
+              outerStrokeColor={outerStrokeColor}
+              outerStrokeWidth={outerStrokeWidth}
+            />
+          </div>
+        ),
+      )}
     </div>
   );
 }

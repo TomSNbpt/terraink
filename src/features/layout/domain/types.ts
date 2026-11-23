@@ -17,6 +17,20 @@ export interface Layout {
   categoryId: string;
   categoryName: string;
   defaultGuides?: LayoutGuideTemplate[];
+  isCustom?: boolean;
+}
+
+export interface CustomTemplate {
+  id: string;
+  name: string;
+  description: string;
+  width: number;
+  height: number;
+  unit: "in" | "px";
+  widthCm: number;
+  heightCm: number;
+  categoryId: string;
+  categoryName: string;
 }
 
 export interface LayoutGroup {

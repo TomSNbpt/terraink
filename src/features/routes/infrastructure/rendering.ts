@@ -2,7 +2,7 @@ import type { MarkerProjectionInput } from "@/features/markers/domain/types";
 import { projectMarkerToCanvas } from "@/features/markers/infrastructure/projection";
 import { ROUTE_DASH_PATTERN } from "../domain/constants";
 import type { Route } from "../domain/types";
-import { resolveRouteOutline } from "./helpers";
+import { resolveRouteOutline, resolveRouteOutline2 } from "./helpers";
 
 export type RoutePointProjector = (
   lat: number,
@@ -54,6 +54,16 @@ export function drawRoutesWithProjector(
 
     const width = Math.max(0.5, route.strokeWidth * widthScale);
     const outline = resolveRouteOutline(route);
+    const outline2 = resolveRouteOutline2(route);
+
+    if (outline2.active) {
+      const totalExtra = (outline.width + outline2.width) * widthScale;
+      ctx.lineWidth = width + totalExtra * 2;
+      ctx.strokeStyle = outline2.color;
+      ctx.globalAlpha = route.opacity;
+      ctx.setLineDash([]);
+      strokeRouteSegments(ctx, route, project);
+    }
 
     if (outline.enabled && outline.width > 0) {
       const outlineExtra = outline.width * widthScale;

@@ -5,6 +5,7 @@ import {
   useReducer,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import {
@@ -15,10 +16,16 @@ import {
 } from "../application/posterReducer";
 import type { ResolvedTheme } from "@/features/theme/domain/types";
 import { getTheme } from "@/features/theme/infrastructure/themeRepository";
+import {
+  captureThemeDesignBaseline,
+  isThemeDesignModified,
+} from "@/features/theme/domain/designDirty";
 import { applyThemeColorOverrides } from "@/features/theme/domain/colorPaths";
 import { generateMapStyle } from "@/features/map/infrastructure/maplibreStyle";
 import type { StyleSpecification } from "maplibre-gl";
 import type { MapInstanceRef } from "@/features/map/domain/types";
+import type { MarkerItem } from "@/features/markers/domain/types";
+import type { Route } from "@/features/routes/domain/types";
 import { createDefaultMarkerSettings } from "@/features/markers/infrastructure/helpers";
 import {
   loadCustomMarkerIcons,
@@ -57,6 +64,10 @@ import {
   getLayoutOption,
   instantiateLayoutGuides,
 } from "@/features/layout/infrastructure/layoutRepository";
+import {
+  loadCustomTemplates,
+  saveCustomTemplates,
+} from "@/features/layout/infrastructure/customTemplatesStorage";
 import { formatLayoutCm } from "@/features/layout/domain/layoutMatcher";
 import { defaultThemeName } from "@/features/theme/infrastructure/themeRepository";
 import {
@@ -122,10 +133,7 @@ export function createFallbackPresetSnapshot(): PresetSnapshot {
       color: defaultThemeTextColor,
     },
     routes: [],
-    routeDefaults: {
-      ...createDefaultRouteSettings(),
-      color: defaultThemeTextColor,
-    },
+    routeDefaults: createDefaultRouteSettings(),
     guides: instantiateLayoutGuides(defaultLayoutOption),
     showGuides: true,
     bearing: 0,
@@ -136,6 +144,7 @@ function buildInitialState(): PosterState {
   const userDefaults = loadUserDefaults();
   const savedThemes = loadSavedThemes();
   const deletedBuiltinThemeIds = loadDeletedBuiltinThemeIds();
+  const customTemplates = loadCustomTemplates();
   const themeDesigner = loadThemeDesignerSession();
   const fallbackSnapshot = createFallbackPresetSnapshot();
   const presets = loadPresets(fallbackSnapshot);
@@ -161,11 +170,17 @@ function buildInitialState(): PosterState {
       : initialSnap.customColors,
     savedThemes: mergedSavedThemes,
     deletedBuiltinThemeIds,
+    customTemplates,
     themeDesigner,
     userDefaults,
     presets,
     activePresetId: defaultPreset.id,
     presetLoadSeq: 0,
+    themeDesignBaseline: captureThemeDesignBaseline(
+      initialSnap.form,
+      initialSnap.routes,
+      initialSnap.routeDefaults,
+    ),
     targetBearing:
       typeof initialSnap.bearing === "number" &&
       Number.isFinite(initialSnap.bearing)
@@ -204,7 +219,14 @@ interface PosterContextValue {
   dispatch: React.Dispatch<PosterAction>;
   selectedTheme: ResolvedTheme;
   effectiveTheme: ResolvedTheme;
+  displayTheme: ResolvedTheme;
   mapStyle: StyleSpecification;
+  displayMapStyle: StyleSpecification;
+  displayRoutes: Route[];
+  displayMarkers: MarkerItem[];
+  previewThemeId: string | null;
+  setPreviewThemeId: (themeId: string | null) => void;
+  isThemeDesignDirty: boolean;
   mapRef: MapInstanceRef;
 }
 
@@ -218,11 +240,10 @@ export function PosterProvider({ children }: { children: ReactNode }) {
     undefined,
     buildInitialState,
   );
+  const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
   const mapRef = useRef(null) as MapInstanceRef;
   const lastSyncedMarkerThemeColorRef = useRef<string | null>(null);
-  const lastSyncedRouteThemeColorRef = useRef<string | null>(null);
   const lastMarkerPresetSeqRef = useRef<number>(state.presetLoadSeq);
-  const lastRoutePresetSeqRef = useRef<number>(state.presetLoadSeq);
   const hasLoadedCustomIconsRef = useRef(false);
   const initialUserDefaultsRef = useRef(state.userDefaults);
   const initialPresetsRef = useRef(state.presets);
@@ -254,6 +275,45 @@ export function PosterProvider({ children }: { children: ReactNode }) {
     return applyThemeColorOverrides(selectedTheme, state.customColors);
   }, [selectedTheme, state.customColors]);
 
+  const previewTheme = useMemo<ResolvedTheme | null>(() => {
+    if (!previewThemeId) return null;
+    const saved = state.savedThemes.find((t) => t.id === previewThemeId);
+    if (saved) {
+      return {
+        name: saved.name,
+        description: saved.description || "Unsaved theme",
+        ui: { ...saved.colors.ui },
+        map: {
+          ...saved.colors.map,
+          roads: { ...saved.colors.map.roads },
+        },
+      };
+    }
+    return getTheme(previewThemeId);
+  }, [previewThemeId, state.savedThemes]);
+
+  const displayTheme = previewTheme ?? effectiveTheme;
+
+  const isThemeDesignDirty = useMemo(
+    () =>
+      isThemeDesignModified({
+        form: state.form,
+        customColors: state.customColors,
+        selectedTheme,
+        activeGeneratedThemeId: state.themeDesigner.activeGeneratedThemeId,
+        routes: state.routes,
+        baseline: state.themeDesignBaseline,
+      }),
+    [
+      selectedTheme,
+      state.customColors,
+      state.form,
+      state.routes,
+      state.themeDesignBaseline,
+      state.themeDesigner.activeGeneratedThemeId,
+    ],
+  );
+
   useEffect(() => {
     const markerThemeColor = effectiveTheme.ui.text;
     const previouslySynced = lastSyncedMarkerThemeColorRef.current;
@@ -276,31 +336,6 @@ export function PosterProvider({ children }: { children: ReactNode }) {
       type: "SET_MARKER_DEFAULTS",
       defaults: { color: markerThemeColor },
       applyToMarkers: true,
-    });
-  }, [dispatch, effectiveTheme.ui.text, state.presetLoadSeq]);
-
-  useEffect(() => {
-    const routeThemeColor = effectiveTheme.ui.text;
-    const previouslySynced = lastSyncedRouteThemeColorRef.current;
-
-    if (
-      previouslySynced === null ||
-      lastRoutePresetSeqRef.current !== state.presetLoadSeq
-    ) {
-      lastSyncedRouteThemeColorRef.current = routeThemeColor;
-      lastRoutePresetSeqRef.current = state.presetLoadSeq;
-      return;
-    }
-
-    if (previouslySynced === routeThemeColor) {
-      return;
-    }
-
-    lastSyncedRouteThemeColorRef.current = routeThemeColor;
-    dispatch({
-      type: "SET_ROUTE_DEFAULTS",
-      defaults: { color: routeThemeColor },
-      applyToRoutes: true,
     });
   }, [dispatch, effectiveTheme.ui.text, state.presetLoadSeq]);
 
@@ -341,6 +376,10 @@ export function PosterProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveDeletedBuiltinThemeIds(state.deletedBuiltinThemeIds);
   }, [state.deletedBuiltinThemeIds]);
+
+  useEffect(() => {
+    saveCustomTemplates(state.customTemplates);
+  }, [state.customTemplates]);
 
   useEffect(() => {
     if (
@@ -395,6 +434,49 @@ export function PosterProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  const displayMapStyle = useMemo(() => {
+    if (!previewTheme) return mapStyle;
+    return generateMapStyle(previewTheme, {
+      includeLandcover: state.form.includeLandcover,
+      includeBuildings: state.form.includeBuildings,
+      includeWater: state.form.includeWater,
+      includeParks: state.form.includeParks,
+      includeAeroway: state.form.includeAeroway,
+      includeRail: state.form.includeRail,
+      includeRoads: state.form.includeRoads,
+      includeRoadPath: state.form.includeRoadPath,
+      includeRoadMinorLow: state.form.includeRoadMinorLow,
+      includeRoadOutline: state.form.includeRoadOutline,
+      distanceMeters: Number(state.form.distance),
+    });
+  }, [
+    mapStyle,
+    previewTheme,
+    state.form.includeLandcover,
+    state.form.includeBuildings,
+    state.form.includeWater,
+    state.form.includeParks,
+    state.form.includeAeroway,
+    state.form.includeRail,
+    state.form.includeRoads,
+    state.form.includeRoadPath,
+    state.form.includeRoadMinorLow,
+    state.form.includeRoadOutline,
+    state.form.distance,
+  ]);
+
+  const displayRoutes = state.routes;
+
+  const displayMarkers = useMemo(() => {
+    if (!previewTheme || state.markers.length === 0) {
+      return state.markers;
+    }
+    return state.markers.map((marker) => ({
+      ...marker,
+      color: previewTheme.ui.text,
+    }));
+  }, [previewTheme, state.markers]);
+
   const dispatchValue = useMemo<PosterDispatchContextValue>(
     () => ({ dispatch }),
     [dispatch],
@@ -406,10 +488,28 @@ export function PosterProvider({ children }: { children: ReactNode }) {
       dispatch,
       selectedTheme,
       effectiveTheme,
+      displayTheme,
       mapStyle,
+      displayMapStyle,
+      displayRoutes,
+      displayMarkers,
+      previewThemeId,
+      setPreviewThemeId,
+      isThemeDesignDirty,
       mapRef,
     }),
-    [state, selectedTheme, effectiveTheme, mapStyle],
+    [
+      state,
+      selectedTheme,
+      effectiveTheme,
+      displayTheme,
+      mapStyle,
+      displayMapStyle,
+      displayRoutes,
+      displayMarkers,
+      previewThemeId,
+      isThemeDesignDirty,
+    ],
   );
 
   return (

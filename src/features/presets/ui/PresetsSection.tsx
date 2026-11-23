@@ -42,7 +42,7 @@ type ConfirmState =
 
 export default function PresetsSection() {
   const { state, dispatch, mapRef } = usePosterContext();
-  const { presets, activePresetId, savedThemes } = state;
+  const { presets, activePresetId, savedThemes, customTemplates } = state;
 
   const [highlightedPresetId, setHighlightedPresetId] = useState<string | null>(
     null,
@@ -59,11 +59,11 @@ export default function PresetsSection() {
     for (const preset of presets) {
       map.set(preset.id, {
         palette: resolveSnapshotPalette(preset.snapshot, savedThemes),
-        layoutName: resolveSnapshotLayoutName(preset.snapshot),
+        layoutName: resolveSnapshotLayoutName(preset.snapshot, customTemplates),
       });
     }
     return map;
-  }, [presets, savedThemes]);
+  }, [customTemplates, presets, savedThemes]);
 
   function captureCurrentSnapshot(): PresetSnapshot {
     const bearing = mapRef.current ? mapRef.current.getBearing() : 0;
@@ -72,7 +72,7 @@ export default function PresetsSection() {
 
   function handleOpenNewPreset() {
     const city = state.form.displayCity.trim();
-    const suggestedName = city ? `${city} Preset` : "My Preset";
+    const suggestedName = city ? `${city} Product` : "My Product";
     setSaveModal({
       mode: "create",
       suggestedName,
@@ -146,11 +146,11 @@ export default function PresetsSection() {
 
   return (
     <section className="panel-block presets-section">
-      <h2>Presets</h2>
+      <h2>Products</h2>
       <p className="presets-note">
-        Save snapshots of your complete map setup (location, scale, theme,
-        layout, layers, style, markers, and routes). The app always opens to{" "}
-        <strong>DEFAULT</strong>.
+        Save snapshots of your complete product setup (location, layout,
+        template, theme, layers, markers, GPS routes, and route styling). The
+        app always opens to <strong>DEFAULT</strong>.
       </p>
 
       <div className="presets-toolbar">
@@ -160,11 +160,11 @@ export default function PresetsSection() {
           onClick={handleOpenNewPreset}
         >
           <AddIcon aria-hidden="true" />
-          <span>New Preset</span>
+          <span>New Product</span>
         </button>
       </div>
 
-      <div className="presets-list" role="list" aria-label="Saved presets">
+      <div className="presets-list" role="list" aria-label="Saved products">
         {presets.map((preset) => {
           const isDefault = preset.id === DEFAULT_PRESET_ID;
           const isLoaded = preset.id === activePresetId;
@@ -300,7 +300,7 @@ export default function PresetsSection() {
           title={
             saveModal.mode === "duplicate"
               ? `Duplicate "${saveModal.sourceName}"`
-              : "New Preset"
+              : "New Product"
           }
           suggestedName={saveModal.suggestedName}
           existingPresets={presets}
@@ -328,9 +328,9 @@ export default function PresetsSection() {
 
       {confirmState?.kind === "load" ? (
         <ConfirmModal
-          title="Load Preset"
-          message={`Load "${confirmState.preset.name}"? Any unsaved changes to your current map and poster setup will be replaced.`}
-          confirmLabel="Load Preset"
+          title="Load Product"
+          message={`Load "${confirmState.preset.name}"? Any unsaved changes to your current product setup will be replaced.`}
+          confirmLabel="Load Product"
           cancelLabel="Cancel"
           onConfirm={handleConfirmAction}
           onCancel={() => setConfirmState(null)}
@@ -339,8 +339,8 @@ export default function PresetsSection() {
 
       {confirmState?.kind === "update" ? (
         <ConfirmModal
-          title="Overwrite Preset"
-          message={`Overwrite "${confirmState.preset.name}" with your current map and poster settings?`}
+          title="Overwrite Product"
+          message={`Overwrite "${confirmState.preset.name}" with your current product settings?`}
           confirmLabel="Overwrite"
           cancelLabel="Cancel"
           onConfirm={handleConfirmAction}
@@ -350,8 +350,8 @@ export default function PresetsSection() {
 
       {confirmState?.kind === "set-default" ? (
         <ConfirmModal
-          title="Overwrite DEFAULT Preset"
-          message={`Copy all settings from "${confirmState.preset.name}" into DEFAULT?\n\n"${confirmState.preset.name}" will remain in your preset list.`}
+          title="Overwrite DEFAULT Product"
+          message={`Copy all settings from "${confirmState.preset.name}" into DEFAULT?\n\n"${confirmState.preset.name}" will remain in your product list.`}
           confirmLabel="Set as DEFAULT"
           cancelLabel="Cancel"
           onConfirm={handleConfirmAction}
@@ -361,8 +361,8 @@ export default function PresetsSection() {
 
       {confirmState?.kind === "delete" ? (
         <ConfirmModal
-          title="Delete Preset"
-          message={`Delete preset "${confirmState.preset.name}"? This cannot be undone.`}
+          title="Delete Product"
+          message={`Delete product "${confirmState.preset.name}"? This cannot be undone.`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           destructive

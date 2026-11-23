@@ -15,6 +15,7 @@ import MarkersSection from "@/features/markers/ui/MarkersSection";
 import RoutesSection from "@/features/routes/ui/RoutesSection";
 import PresetsSection from "@/features/presets/ui/PresetsSection";
 import TypographySection from "@/features/poster/ui/TypographySection";
+import DesignSection from "@/features/poster/ui/DesignSection";
 import {
   LocationIcon,
   ThemeIcon,
@@ -23,7 +24,7 @@ import {
   MarkersIcon,
   RouteIcon,
   PresetsIcon,
-  StyleIcon,
+  DesignIcon,
   ChevronDownIcon,
 } from "@/shared/ui/Icons";
 
@@ -38,13 +39,13 @@ import type { SearchResult } from "@/features/location/domain/types";
 
 type SectionId =
   | "location"
-  | "theme"
   | "layout"
+  | "theme"
+  | "style"
   | "layers"
   | "markers"
   | "routes"
-  | "presets"
-  | "style";
+  | "presets";
 
 const accordionSections: {
   id: SectionId;
@@ -52,13 +53,13 @@ const accordionSections: {
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { id: "location", label: "Location", Icon: LocationIcon },
-  { id: "theme", label: "Theme", Icon: ThemeIcon },
   { id: "layout", label: "Layout", Icon: LayoutIcon },
+  { id: "theme", label: "Theme", Icon: ThemeIcon },
+  { id: "style", label: "Design", Icon: DesignIcon },
   { id: "layers", label: "Layers", Icon: LayersIcon },
   { id: "markers", label: "Markers", Icon: MarkersIcon },
   { id: "routes", label: "Routes", Icon: RouteIcon },
-  { id: "presets", label: "Presets", Icon: PresetsIcon },
-  { id: "style", label: "Style", Icon: StyleIcon },
+  { id: "presets", label: "Products", Icon: PresetsIcon },
 ];
 
 export default function SettingsPanel({
@@ -86,23 +87,20 @@ export default function SettingsPanel({
     handleLocationSelect,
     handleClearLocation,
     setLocationFocused,
-    handleCreditsChange,
   } = useFormHandlers();
-  const { locationSuggestions, isLocationSearching, searchNow } = useLocationAutocomplete(
-    state.form.location,
-    state.isLocationFocused,
-  );
+  const { locationSuggestions, isLocationSearching, searchNow } =
+    useLocationAutocomplete(state.form.location, state.isLocationFocused);
   const { flyToLocation } = useMapSync(state, dispatch, mapRef);
-  const { handleUseCurrentLocation, isLocatingUser, locationPermissionMessage } =
-    useCurrentLocation(flyToLocation);
+  const {
+    handleUseCurrentLocation,
+    isLocatingUser,
+    locationPermissionMessage,
+  } = useCurrentLocation(flyToLocation);
   const { addAiRouteOverlay } = useGpxUpload();
 
-  const [isColorEditorActive, setIsColorEditorActive] = useState(false);
   const [openSections, setOpenSections] = useState<Set<SectionId>>(
-    new Set(["location", "theme", "layout", "style"]),
+    new Set(["location", "layout", "theme", "style"]),
   );
-
-  const isAuxEditorActive = isColorEditorActive;
 
   const toggleSection = (id: SectionId) => {
     setOpenSections((prev) => {
@@ -177,76 +175,21 @@ export default function SettingsPanel({
           className={`accordion-body${openSections.has("location") ? " is-open" : ""}`}
         >
           <div className="accordion-body-inner">
-            {!isColorEditorActive ? (
-              <LocationSection
-                form={state.form}
-                onChange={handleChange}
-                onLocationFocus={() => setLocationFocused(true)}
-                onLocationBlur={() => setLocationFocused(false)}
-                searchNow={searchNow}
-                isLocationFocused={state.isLocationFocused}
-                locationSuggestions={locationSuggestions}
-                isLocationSearching={isLocationSearching}
-                onLocationSelect={onLocationSelect}
-                onClearLocation={handleClearLocation}
-                onUseCurrentLocation={handleUseCurrentLocation}
-                isLocatingUser={isLocatingUser}
-                locationPermissionMessage={locationPermissionMessage}
-              />
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`mobile-section mobile-section--theme-settings accordion-item${openSections.has("theme") ? " accordion-item--open" : ""}`}
-      >
-        <AccordionHeader
-          sectionId="theme"
-          label={accordionSections[1].label}
-          Icon={accordionSections[1].Icon}
-          isOpen={openSections.has("theme")}
-          onToggle={toggleSection}
-        />
-        <div
-          className={`accordion-body${openSections.has("theme") ? " is-open" : ""}`}
-        >
-          <div className="accordion-body-inner">
-            {!isColorEditorActive ? (
-              <MapSettingsSection
-                activeMobileTab={mobileTab}
-                form={state.form}
-                onChange={handleChange}
-                onNumericFieldBlur={handleNumericFieldBlur}
-                onThemeChange={handleThemeChange}
-                onLayoutChange={handleLayoutChange}
-                onCustomUnitChange={handleCustomSizeUnitChange}
-                selectedTheme={selectedTheme}
-                themeOptions={themeOptions}
-                layoutGroups={layoutGroups}
-                minPosterCm={MIN_POSTER_CM}
-                maxPosterCm={MAX_POSTER_CM}
-                customColors={state.customColors}
-                onColorChange={handleColorChange}
-                onResetColors={handleResetColors}
-                onColorEditorActiveChange={setIsColorEditorActive}
-                effectiveTheme={effectiveTheme}
-                savedThemes={state.savedThemes}
-                deletedBuiltinThemeIds={state.deletedBuiltinThemeIds}
-                onAddSavedTheme={handleAddSavedTheme}
-                onUpdateSavedTheme={handleUpdateSavedTheme}
-                onRemoveSavedTheme={handleRemoveSavedTheme}
-                onDeleteBuiltinTheme={handleDeleteBuiltinTheme}
-                onSetCustomColors={handleSetCustomColors}
-                themeDesigner={state.themeDesigner}
-                onAddDesignerMessage={handleAddDesignerMessage}
-                onAddDesignerResponse={handleAddDesignerResponse}
-                onAddAiRouteOverlay={addAiRouteOverlay}
-                onSelectGeneratedTheme={handleSelectGeneratedTheme}
-                onMarkGeneratedThemeSaved={handleMarkGeneratedThemeSaved}
-                onClearThemeDesigner={handleClearThemeDesigner}
-              />
-            ) : null}
+            <LocationSection
+              form={state.form}
+              onChange={handleChange}
+              onLocationFocus={() => setLocationFocused(true)}
+              onLocationBlur={() => setLocationFocused(false)}
+              searchNow={searchNow}
+              isLocationFocused={state.isLocationFocused}
+              locationSuggestions={locationSuggestions}
+              isLocationSearching={isLocationSearching}
+              onLocationSelect={onLocationSelect}
+              onClearLocation={handleClearLocation}
+              onUseCurrentLocation={handleUseCurrentLocation}
+              isLocatingUser={isLocatingUser}
+              locationPermissionMessage={locationPermissionMessage}
+            />
           </div>
         </div>
       </div>
@@ -256,8 +199,8 @@ export default function SettingsPanel({
       >
         <AccordionHeader
           sectionId="layout"
-          label={accordionSections[2].label}
-          Icon={accordionSections[2].Icon}
+          label={accordionSections[1].label}
+          Icon={accordionSections[1].Icon}
           isOpen={openSections.has("layout")}
           onToggle={toggleSection}
         />
@@ -265,125 +208,89 @@ export default function SettingsPanel({
           className={`accordion-body${openSections.has("layout") ? " is-open" : ""}`}
         >
           <div className="accordion-body-inner">
-            {!isColorEditorActive ? (
-              <MapSettingsSection
-                activeMobileTab={mobileTab}
-                form={state.form}
-                onChange={handleChange}
-                onNumericFieldBlur={handleNumericFieldBlur}
-                onThemeChange={handleThemeChange}
-                onLayoutChange={handleLayoutChange}
-                onCustomUnitChange={handleCustomSizeUnitChange}
-                selectedTheme={selectedTheme}
-                themeOptions={themeOptions}
-                layoutGroups={layoutGroups}
-                minPosterCm={MIN_POSTER_CM}
-                maxPosterCm={MAX_POSTER_CM}
-                customColors={state.customColors}
-                onColorChange={handleColorChange}
-                onResetColors={handleResetColors}
-                onColorEditorActiveChange={setIsColorEditorActive}
-                effectiveTheme={effectiveTheme}
-                savedThemes={state.savedThemes}
-                deletedBuiltinThemeIds={state.deletedBuiltinThemeIds}
-                onAddSavedTheme={handleAddSavedTheme}
-                onUpdateSavedTheme={handleUpdateSavedTheme}
-                onRemoveSavedTheme={handleRemoveSavedTheme}
-                onDeleteBuiltinTheme={handleDeleteBuiltinTheme}
-                onSetCustomColors={handleSetCustomColors}
-                themeDesigner={state.themeDesigner}
-                onAddDesignerMessage={handleAddDesignerMessage}
-                onAddDesignerResponse={handleAddDesignerResponse}
-                onAddAiRouteOverlay={addAiRouteOverlay}
-                onSelectGeneratedTheme={handleSelectGeneratedTheme}
-                onMarkGeneratedThemeSaved={handleMarkGeneratedThemeSaved}
-                onClearThemeDesigner={handleClearThemeDesigner}
-              />
-            ) : null}
+            <MapSettingsSection
+              activeMobileTab={mobileTab ?? activeTab}
+              layoutControlsSlot={
+                <TypographySection
+                  form={state.form}
+                  onChange={handleChange}
+                  fontOptions={FONT_OPTIONS}
+                />
+              }
+              form={state.form}
+              onChange={handleChange}
+              onNumericFieldBlur={handleNumericFieldBlur}
+              onThemeChange={handleThemeChange}
+              onLayoutChange={handleLayoutChange}
+              onCustomUnitChange={handleCustomSizeUnitChange}
+              selectedTheme={selectedTheme}
+              effectiveTheme={effectiveTheme}
+              themeOptions={themeOptions}
+              layoutGroups={layoutGroups}
+              minPosterCm={MIN_POSTER_CM}
+              maxPosterCm={MAX_POSTER_CM}
+              customColors={state.customColors}
+              savedThemes={state.savedThemes}
+              deletedBuiltinThemeIds={state.deletedBuiltinThemeIds}
+              onAddSavedTheme={handleAddSavedTheme}
+              onRemoveSavedTheme={handleRemoveSavedTheme}
+              onDeleteBuiltinTheme={handleDeleteBuiltinTheme}
+              onSetCustomColors={handleSetCustomColors}
+              themeDesigner={state.themeDesigner}
+              onAddDesignerMessage={handleAddDesignerMessage}
+              onAddDesignerResponse={handleAddDesignerResponse}
+              onAddAiRouteOverlay={addAiRouteOverlay}
+              onSelectGeneratedTheme={handleSelectGeneratedTheme}
+              onMarkGeneratedThemeSaved={handleMarkGeneratedThemeSaved}
+              onClearThemeDesigner={handleClearThemeDesigner}
+            />
           </div>
         </div>
       </div>
 
       <div
-        className={`mobile-section mobile-section--layers accordion-item${openSections.has("layers") ? " accordion-item--open" : ""}`}
+        className={`mobile-section mobile-section--theme-settings accordion-item${openSections.has("theme") ? " accordion-item--open" : ""}`}
       >
         <AccordionHeader
-          sectionId="layers"
-          label={accordionSections[3].label}
-          Icon={accordionSections[3].Icon}
-          isOpen={openSections.has("layers")}
+          sectionId="theme"
+          label={accordionSections[2].label}
+          Icon={accordionSections[2].Icon}
+          isOpen={openSections.has("theme")}
           onToggle={toggleSection}
         />
         <div
-          className={`accordion-body${openSections.has("layers") ? " is-open" : ""}`}
+          className={`accordion-body${openSections.has("theme") ? " is-open" : ""}`}
         >
           <div className="accordion-body-inner">
-            {!isAuxEditorActive ? (
-              <LayersSection
-                form={state.form}
-                onChange={handleChange}
-                minPosterCm={MIN_POSTER_CM}
-                maxPosterCm={MAX_POSTER_CM}
-                onNumericFieldBlur={handleNumericFieldBlur}
-              />
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`mobile-section mobile-section--markers accordion-item${openSections.has("markers") ? " accordion-item--open" : ""}`}
-      >
-        <AccordionHeader
-          sectionId="markers"
-          label={accordionSections[4].label}
-          Icon={accordionSections[4].Icon}
-          isOpen={openSections.has("markers")}
-          onToggle={toggleSection}
-        />
-        <div
-          className={`accordion-body${openSections.has("markers") ? " is-open" : ""}`}
-        >
-          <div className="accordion-body-inner">
-            {!isColorEditorActive ? <MarkersSection /> : null}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`mobile-section mobile-section--routes accordion-item${openSections.has("routes") ? " accordion-item--open" : ""}`}
-      >
-        <AccordionHeader
-          sectionId="routes"
-          label={accordionSections[5].label}
-          Icon={accordionSections[5].Icon}
-          isOpen={openSections.has("routes")}
-          onToggle={toggleSection}
-        />
-        <div
-          className={`accordion-body${openSections.has("routes") ? " is-open" : ""}`}
-        >
-          <div className="accordion-body-inner">
-            {!isColorEditorActive ? <RoutesSection /> : null}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`mobile-section mobile-section--presets accordion-item${openSections.has("presets") ? " accordion-item--open" : ""}`}
-      >
-        <AccordionHeader
-          sectionId="presets"
-          label={accordionSections[6].label}
-          Icon={accordionSections[6].Icon}
-          isOpen={openSections.has("presets")}
-          onToggle={toggleSection}
-        />
-        <div
-          className={`accordion-body${openSections.has("presets") ? " is-open" : ""}`}
-        >
-          <div className="accordion-body-inner">
-            {!isColorEditorActive ? <PresetsSection /> : null}
+            <MapSettingsSection
+              activeMobileTab={mobileTab ?? activeTab}
+              form={state.form}
+              onChange={handleChange}
+              onNumericFieldBlur={handleNumericFieldBlur}
+              onThemeChange={handleThemeChange}
+              onLayoutChange={handleLayoutChange}
+              onCustomUnitChange={handleCustomSizeUnitChange}
+              selectedTheme={selectedTheme}
+              effectiveTheme={effectiveTheme}
+              themeOptions={themeOptions}
+              layoutGroups={layoutGroups}
+              minPosterCm={MIN_POSTER_CM}
+              maxPosterCm={MAX_POSTER_CM}
+              customColors={state.customColors}
+              savedThemes={state.savedThemes}
+              deletedBuiltinThemeIds={state.deletedBuiltinThemeIds}
+              onAddSavedTheme={handleAddSavedTheme}
+              onRemoveSavedTheme={handleRemoveSavedTheme}
+              onDeleteBuiltinTheme={handleDeleteBuiltinTheme}
+              onSetCustomColors={handleSetCustomColors}
+              themeDesigner={state.themeDesigner}
+              onAddDesignerMessage={handleAddDesignerMessage}
+              onAddDesignerResponse={handleAddDesignerResponse}
+              onAddAiRouteOverlay={addAiRouteOverlay}
+              onSelectGeneratedTheme={handleSelectGeneratedTheme}
+              onMarkGeneratedThemeSaved={handleMarkGeneratedThemeSaved}
+              onClearThemeDesigner={handleClearThemeDesigner}
+            />
           </div>
         </div>
       </div>
@@ -393,8 +300,8 @@ export default function SettingsPanel({
       >
         <AccordionHeader
           sectionId="style"
-          label={accordionSections[7].label}
-          Icon={accordionSections[7].Icon}
+          label={accordionSections[3].label}
+          Icon={accordionSections[3].Icon}
           isOpen={openSections.has("style")}
           onToggle={toggleSection}
         />
@@ -402,18 +309,112 @@ export default function SettingsPanel({
           className={`accordion-body${openSections.has("style") ? " is-open" : ""}`}
         >
           <div className="accordion-body-inner">
-            {!isAuxEditorActive ? (
-              <TypographySection
-                form={state.form}
-                onChange={handleChange}
-                fontOptions={FONT_OPTIONS}
-              />
-            ) : null}
+            <DesignSection
+              activeTab={mobileTab ?? activeTab}
+              themeId={state.form.theme}
+              selectedTheme={selectedTheme}
+              effectiveTheme={effectiveTheme}
+              themeOptions={themeOptions}
+              deletedBuiltinThemeIds={state.deletedBuiltinThemeIds}
+              savedThemes={state.savedThemes}
+              customColors={state.customColors}
+              onThemeChange={handleThemeChange}
+              onColorChange={handleColorChange}
+              onResetColors={handleResetColors}
+              onAddSavedTheme={handleAddSavedTheme}
+              onUpdateSavedTheme={handleUpdateSavedTheme}
+              onRemoveSavedTheme={handleRemoveSavedTheme}
+              onDeleteBuiltinTheme={handleDeleteBuiltinTheme}
+              onSetCustomColors={handleSetCustomColors}
+              themeDesigner={state.themeDesigner}
+            />
           </div>
         </div>
       </div>
 
-      {!isAuxEditorActive && state.error ? <p className="error">{state.error}</p> : null}
+      <div
+        className={`mobile-section mobile-section--layers accordion-item${openSections.has("layers") ? " accordion-item--open" : ""}`}
+      >
+        <AccordionHeader
+          sectionId="layers"
+          label={accordionSections[4].label}
+          Icon={accordionSections[4].Icon}
+          isOpen={openSections.has("layers")}
+          onToggle={toggleSection}
+        />
+        <div
+          className={`accordion-body${openSections.has("layers") ? " is-open" : ""}`}
+        >
+          <div className="accordion-body-inner">
+            <LayersSection
+              form={state.form}
+              onChange={handleChange}
+              minPosterCm={MIN_POSTER_CM}
+              maxPosterCm={MAX_POSTER_CM}
+              onNumericFieldBlur={handleNumericFieldBlur}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`mobile-section mobile-section--markers accordion-item${openSections.has("markers") ? " accordion-item--open" : ""}`}
+      >
+        <AccordionHeader
+          sectionId="markers"
+          label={accordionSections[5].label}
+          Icon={accordionSections[5].Icon}
+          isOpen={openSections.has("markers")}
+          onToggle={toggleSection}
+        />
+        <div
+          className={`accordion-body${openSections.has("markers") ? " is-open" : ""}`}
+        >
+          <div className="accordion-body-inner">
+            <MarkersSection />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`mobile-section mobile-section--routes accordion-item${openSections.has("routes") ? " accordion-item--open" : ""}`}
+      >
+        <AccordionHeader
+          sectionId="routes"
+          label={accordionSections[6].label}
+          Icon={accordionSections[6].Icon}
+          isOpen={openSections.has("routes")}
+          onToggle={toggleSection}
+        />
+        <div
+          className={`accordion-body${openSections.has("routes") ? " is-open" : ""}`}
+        >
+          <div className="accordion-body-inner">
+            <RoutesSection />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`mobile-section mobile-section--presets accordion-item${openSections.has("presets") ? " accordion-item--open" : ""}`}
+      >
+        <AccordionHeader
+          sectionId="presets"
+          label={accordionSections[7].label}
+          Icon={accordionSections[7].Icon}
+          isOpen={openSections.has("presets")}
+          onToggle={toggleSection}
+        />
+        <div
+          className={`accordion-body${openSections.has("presets") ? " is-open" : ""}`}
+        >
+          <div className="accordion-body-inner">
+            <PresetsSection />
+          </div>
+        </div>
+      </div>
+
+      {state.error ? <p className="error">{state.error}</p> : null}
     </form>
   );
 }

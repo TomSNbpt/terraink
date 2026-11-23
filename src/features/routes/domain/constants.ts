@@ -8,6 +8,10 @@ export const DEFAULT_ROUTE_OUTLINE_WIDTH = 1;
 export const DEFAULT_ROUTE_OUTLINE_COLOR = "#ffffff";
 export const DEFAULT_ROUTE_OUTLINE_ENABLED = true;
 
+export const DEFAULT_ROUTE_OUTLINE2_WIDTH = 1;
+export const DEFAULT_ROUTE_OUTLINE2_COLOR = "#000000";
+export const DEFAULT_ROUTE_OUTLINE2_ENABLED = false;
+
 export const MIN_ROUTE_OPACITY = 0.1;
 export const MAX_ROUTE_OPACITY = 1;
 export const DEFAULT_ROUTE_OPACITY = 1;

@@ -5,7 +5,7 @@ import {
   LayersIcon,
   MarkersIcon,
   RouteIcon,
-  StyleIcon,
+  DesignIcon,
   SettingsIcon,
   PresetsIcon,
 } from "./Icons";
@@ -27,13 +27,13 @@ const tabs: {
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { id: "location", label: "Location", Icon: LocationIcon },
-  { id: "theme", label: "Theme", Icon: ThemeIcon },
   { id: "layout", label: "Layout", Icon: LayoutIcon },
-  { id: "style", label: "Style", Icon: StyleIcon },
+  { id: "theme", label: "Theme", Icon: ThemeIcon },
+  { id: "style", label: "Design", Icon: DesignIcon },
   { id: "layers", label: "Layers", Icon: LayersIcon },
   { id: "markers", label: "Markers", Icon: MarkersIcon },
   { id: "routes", label: "Routes", Icon: RouteIcon },
-  { id: "presets", label: "Presets", Icon: PresetsIcon },
+  { id: "presets", label: "Products", Icon: PresetsIcon },
 ];
 
 interface MobileNavBarProps {

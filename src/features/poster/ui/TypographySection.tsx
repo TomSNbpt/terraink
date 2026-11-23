@@ -41,7 +41,7 @@ export default function TypographySection({
   return (
     <>
       <section className="panel-block">
-        <p className="section-summary-label">STYLE</p>
+        <p className="section-summary-label">LAYOUT</p>
         <label className="toggle-field">
           <span>Poster text</span>
           <span className="theme-switch">

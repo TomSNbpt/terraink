@@ -4,6 +4,7 @@ import { OUTPUT_DPI } from "@/features/poster/infrastructure/renderer/constants"
 import { toPositiveNumber } from "@/shared/utils/number";
 import { createGuideId } from "../domain/guides";
 import type {
+  CustomTemplate,
   Layout,
   LayoutGroup,
   LayoutGuide,
@@ -210,9 +211,81 @@ export function formatLayoutDimensions(layoutOption: Layout): string {
   return `${formatDecimal(layoutOption.width)} x ${formatDecimal(layoutOption.height)} ${layoutOption.unit}`;
 }
 
-export function getLayoutOption(layoutId: string): Layout | null {
+export function slugifyTemplateSegment(value: string, fallback = "custom"): string {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return slug || fallback;
+}
+
+export function createLayoutFromCustomTemplate(template: CustomTemplate): Layout {
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    width: template.width,
+    height: template.height,
+    unit: template.unit,
+    widthCm: template.widthCm,
+    heightCm: template.heightCm,
+    symbol: createSymbolFromRatio(template.width, template.height),
+    categoryId: template.categoryId,
+    categoryName: template.categoryName,
+    defaultGuides: [],
+    isCustom: true,
+  };
+}
+
+export function mergeLayoutGroups(
+  baseGroups: LayoutGroup[],
+  customTemplates: CustomTemplate[] = [],
+): LayoutGroup[] {
+  const merged = baseGroups.map((group) => ({
+    ...group,
+    options: [...group.options],
+  }));
+
+  if (customTemplates.length === 0) {
+    return merged;
+  }
+
+  const groupById = new Map<string, LayoutGroup>();
+  for (const group of merged) {
+    groupById.set(group.id, group);
+  }
+
+  for (const customTemplate of customTemplates) {
+    const layout = createLayoutFromCustomTemplate(customTemplate);
+    let targetGroup = groupById.get(layout.categoryId);
+    if (!targetGroup) {
+      targetGroup = {
+        id: layout.categoryId,
+        name: layout.categoryName,
+        options: [],
+      };
+      groupById.set(targetGroup.id, targetGroup);
+      merged.push(targetGroup);
+    }
+    if (!targetGroup.options.some((opt) => opt.id === layout.id)) {
+      targetGroup.options.push(layout);
+    }
+  }
+
+  return merged;
+}
+
+export function getLayoutOption(
+  layoutId: string,
+  customTemplates: CustomTemplate[] = [],
+): Layout | null {
   const normalizedId = String(layoutId ?? "").trim();
   if (normalizedId === "custom") return null;
+  const customMatch = customTemplates.find((item) => item.id === normalizedId);
+  if (customMatch) {
+    return createLayoutFromCustomTemplate(customMatch);
+  }
   if (layoutOptionsById[normalizedId]) return layoutOptionsById[normalizedId];
   if (layoutOptionsById[defaultLayoutId])
     return layoutOptionsById[defaultLayoutId];
@@ -242,7 +315,7 @@ export function createCustomLayoutOption(
 
   return {
     id: "custom",
-    name: "Custom Layout",
+    name: "Custom Template",
     description: "Manual width and height values.",
     width,
     height,

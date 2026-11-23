@@ -61,8 +61,15 @@ const DEFAULT_LOCATION_LABEL =
   "Hanover, Region Hannover, Lower Saxony, Germany";
 
 export default function PreviewPanel() {
-  const { state, dispatch, effectiveTheme, mapStyle, mapRef } =
-    usePosterContext();
+  const {
+    state,
+    dispatch,
+    displayTheme,
+    displayMapStyle,
+    displayRoutes,
+    displayMarkers,
+    mapRef,
+  } = usePosterContext();
   const {
     form,
     selectedLocation,
@@ -452,7 +459,7 @@ export default function PreviewPanel() {
           style={
             {
               "--poster-aspect": `${aspect}`,
-              "--poster-bg": effectiveTheme.ui.bg,
+              "--poster-bg": displayTheme.ui.bg,
               "--bleed-bottom-pct": isBleedPreviewActive
                 ? `${bleedMetrics.bleedPercentY}%`
                 : "0%",
@@ -485,7 +492,7 @@ export default function PreviewPanel() {
             }
           >
             <MapPreview
-              style={mapStyle}
+              style={displayMapStyle}
               center={mapCenter}
               zoom={mapZoom}
               bearing={state.targetBearing}
@@ -501,20 +508,20 @@ export default function PreviewPanel() {
             />
             {form.showMarkers ? (
               <GradientFades
-                color={effectiveTheme.ui.bg}
+                color={displayTheme.ui.bg}
                 bleedRatioY={
                   isBleedPreviewActive ? bleedMetrics.bleedRatioY : 0
                 }
               />
             ) : null}
             <RouteOverlay
-              routes={state.routes}
+              routes={displayRoutes}
               mapRef={mapRef}
               visible={form.showRoutes}
               overzoomScale={overzoomScale}
             />
             <RouteEndpointsOverlay
-              routes={state.routes}
+              routes={displayRoutes}
               customIcons={state.customMarkerIcons}
               mapRef={mapRef}
               visible={form.showRoutes}
@@ -522,7 +529,7 @@ export default function PreviewPanel() {
             />
             {hasVisibleMarkers ? (
               <MarkerOverlay
-                markers={state.markers}
+                markers={displayMarkers}
                 customIcons={state.customMarkerIcons}
                 mapRef={mapRef}
                 isMarkerEditMode={isMarkerEditorActive}
@@ -543,8 +550,8 @@ export default function PreviewPanel() {
             lat={formLat}
             lon={formLon}
             fontFamily={form.fontFamily}
-            textColor={effectiveTheme.ui.text}
-            landColor={effectiveTheme.map.land}
+            textColor={displayTheme.ui.text}
+            landColor={displayTheme.map.land}
             showPosterText={form.showPosterText}
             includeCredits={form.includeCredits}
             showOverlay={form.showMarkers}

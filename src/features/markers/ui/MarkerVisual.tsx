@@ -8,6 +8,8 @@ interface MarkerVisualProps {
   color: string;
   strokeColor?: string;
   strokeWidth?: number;
+  outerStrokeColor?: string;
+  outerStrokeWidth?: number;
   className?: string;
 }
 
@@ -17,6 +19,8 @@ const MarkerVisual = memo(function MarkerVisual({
   color,
   strokeColor,
   strokeWidth,
+  outerStrokeColor,
+  outerStrokeWidth,
   className = "",
 }: MarkerVisualProps) {
   const isThemeTintedMarkerSvg =
@@ -30,6 +34,13 @@ const MarkerVisual = memo(function MarkerVisual({
     Number.isFinite(strokeWidth) &&
     strokeWidth > 0;
 
+  const hasOuterStroke =
+    hasStroke &&
+    Boolean(outerStrokeColor) &&
+    typeof outerStrokeWidth === "number" &&
+    Number.isFinite(outerStrokeWidth) &&
+    outerStrokeWidth > 0;
+
   const strokedSvg = useMemo(() => {
     if (!hasStroke || icon.kind !== "svg" || !icon.svgMarkup) {
       return null;
@@ -40,13 +51,34 @@ const MarkerVisual = memo(function MarkerVisual({
       color,
       strokeColor,
       strokeWidth,
+      hasOuterStroke ? outerStrokeColor : undefined,
+      hasOuterStroke ? outerStrokeWidth : undefined,
     );
-  }, [color, hasStroke, icon.kind, icon.svgMarkup, size, strokeColor, strokeWidth]);
+  }, [
+    color,
+    hasOuterStroke,
+    hasStroke,
+    icon.kind,
+    icon.svgMarkup,
+    outerStrokeColor,
+    outerStrokeWidth,
+    size,
+    strokeColor,
+    strokeWidth,
+  ]);
 
   const visualSize = strokedSvg ? strokedSvg.boxSize : size;
   const imageStrokeFilter =
     hasStroke && icon.kind === "image"
-      ? `drop-shadow(0 0 ${strokeWidth}px ${strokeColor}) drop-shadow(0 0 ${Math.max(0.5, strokeWidth! * 0.5)}px ${strokeColor})`
+      ? [
+          `drop-shadow(0 0 ${strokeWidth}px ${strokeColor})`,
+          `drop-shadow(0 0 ${Math.max(0.5, strokeWidth! * 0.5)}px ${strokeColor})`,
+          ...(hasOuterStroke
+            ? [
+                `drop-shadow(0 0 ${outerStrokeWidth}px ${outerStrokeColor})`,
+              ]
+            : []),
+        ].join(" ")
       : undefined;
 
   return (

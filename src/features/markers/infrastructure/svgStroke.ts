@@ -57,12 +57,42 @@ function parseViewBox(svgEl: SVGSVGElement): [number, number, number, number] {
   return [0, 0, w > 0 ? w : 24, h > 0 ? h : 24];
 }
 
+function buildStrokeLayerMarkup(
+  svgEl: SVGSVGElement,
+  serializer: XMLSerializer,
+  strokeColor: string,
+  vbStrokeFull: number,
+): string {
+  const strokeRoot = svgEl.cloneNode(true) as SVGSVGElement;
+  for (const def of Array.from(strokeRoot.querySelectorAll("defs"))) {
+    def.remove();
+  }
+  for (const node of Array.from(strokeRoot.querySelectorAll(SHAPE_SELECTOR))) {
+    stripInlinePaint(node);
+    node.setAttribute("fill", "none");
+    node.setAttribute("stroke", strokeColor);
+    node.setAttribute("stroke-width", fmt(vbStrokeFull));
+    node.setAttribute("stroke-linejoin", "round");
+    node.setAttribute("stroke-linecap", "round");
+  }
+
+  const strokeInner = Array.from(strokeRoot.childNodes)
+    .map((child) => serializer.serializeToString(child))
+    .join("")
+    .split("currentColor")
+    .join(strokeColor);
+
+  return `<g fill="none" stroke="${escapeXmlAttr(strokeColor)}" stroke-width="${fmt(vbStrokeFull)}" stroke-linejoin="round" stroke-linecap="round">${strokeInner}</g>`;
+}
+
 export function buildStrokedSvgIcon(
   rawSvg: string,
   size: number,
   fillColor: string | null,
   strokeColor?: string,
   strokeWidthPx?: number,
+  outerStrokeColor?: string,
+  outerStrokeWidthPx?: number,
 ): StrokedSvgResult | null {
   if (typeof DOMParser === "undefined" || typeof XMLSerializer === "undefined") {
     return null;
@@ -121,35 +151,36 @@ export function buildStrokedSvgIcon(
     };
   }
 
+  const hasOuterStroke =
+    Boolean(outerStrokeColor) &&
+    typeof outerStrokeWidthPx === "number" &&
+    Number.isFinite(outerStrokeWidthPx) &&
+    outerStrokeWidthPx > 0;
+
   const vbMax = Math.max(vbW, vbH);
   const vbPerPx = vbMax / size;
   const vbStrokeHalf = strokeWidthPx! * vbPerPx;
+  const vbOuterHalf = hasOuterStroke ? outerStrokeWidthPx! * vbPerPx : 0;
+  const vbTotalHalf = vbStrokeHalf + vbOuterHalf;
   const vbStrokeFull = vbStrokeHalf * 2;
-  const padVb = vbStrokeHalf * 1.25;
+  const vbOuterFull = vbTotalHalf * 2;
+  const padVb = vbTotalHalf * 1.25;
 
   const expandedViewBox = `${fmt(minX - padVb)} ${fmt(minY - padVb)} ${fmt(vbW + padVb * 2)} ${fmt(vbH + padVb * 2)}`;
   const boxSize = size + 2 * (padVb / vbPerPx);
 
-  const strokeRoot = svgEl.cloneNode(true) as SVGSVGElement;
-  for (const def of Array.from(strokeRoot.querySelectorAll("defs"))) {
-    def.remove();
-  }
-  for (const node of Array.from(strokeRoot.querySelectorAll(SHAPE_SELECTOR))) {
-    stripInlinePaint(node);
-    node.setAttribute("fill", "none");
-    node.setAttribute("stroke", strokeColor!);
-    node.setAttribute("stroke-width", fmt(vbStrokeFull));
-    node.setAttribute("stroke-linejoin", "round");
-    node.setAttribute("stroke-linecap", "round");
-  }
+  const outerLayer = hasOuterStroke
+    ? buildStrokeLayerMarkup(svgEl, serializer, outerStrokeColor!, vbOuterFull)
+    : "";
+  const innerStrokeLayer = buildStrokeLayerMarkup(
+    svgEl,
+    serializer,
+    strokeColor!,
+    vbStrokeFull,
+  );
+  const fillLayer = `<g${fillColor ? ` fill="${escapeXmlAttr(fillColor)}" color="${escapeXmlAttr(fillColor)}"` : ""}>${fillInner}</g>`;
 
-  const strokeInner = Array.from(strokeRoot.childNodes)
-    .map((child) => serializer.serializeToString(child))
-    .join("")
-    .split("currentColor")
-    .join(strokeColor!);
-
-  const innerMarkup = `<g fill="none" stroke="${escapeXmlAttr(strokeColor!)}" stroke-width="${fmt(vbStrokeFull)}" stroke-linejoin="round" stroke-linecap="round">${strokeInner}</g><g${fillColor ? ` fill="${escapeXmlAttr(fillColor)}" color="${escapeXmlAttr(fillColor)}"` : ""}>${fillInner}</g>`;
+  const innerMarkup = `${outerLayer}${innerStrokeLayer}${fillLayer}`;
   const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="${fmt(boxSize)}" height="${fmt(boxSize)}" viewBox="${escapeXmlAttr(expandedViewBox)}">${innerMarkup}</svg>`;
 
   return {

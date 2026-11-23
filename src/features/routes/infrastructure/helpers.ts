@@ -11,6 +11,9 @@ import {
   DEFAULT_ROUTE_OUTLINE_COLOR,
   DEFAULT_ROUTE_OUTLINE_ENABLED,
   DEFAULT_ROUTE_OUTLINE_WIDTH,
+  DEFAULT_ROUTE_OUTLINE2_COLOR,
+  DEFAULT_ROUTE_OUTLINE2_ENABLED,
+  DEFAULT_ROUTE_OUTLINE2_WIDTH,
   DEFAULT_ROUTE_START_COLOR,
   DEFAULT_ROUTE_START_ICON_ID,
   DEFAULT_ROUTE_STROKE_WIDTH,
@@ -51,6 +54,42 @@ export function resolveRouteOutline(route: Pick<Route, "outlineEnabled" | "outli
   };
 }
 
+export function resolveRouteOutline2(
+  route: Pick<
+    Route,
+    | "outlineEnabled"
+    | "outlineColor"
+    | "outlineWidth"
+    | "outline2Enabled"
+    | "outline2Color"
+    | "outline2Width"
+  >,
+): {
+  enabled: boolean;
+  active: boolean;
+  color: string;
+  width: number;
+} {
+  const outline1 = resolveRouteOutline(route);
+  const enabled = route.outline2Enabled ?? DEFAULT_ROUTE_OUTLINE2_ENABLED;
+  const color =
+    typeof route.outline2Color === "string" && route.outline2Color.trim()
+      ? route.outline2Color
+      : DEFAULT_ROUTE_OUTLINE2_COLOR;
+  const width =
+    typeof route.outline2Width === "number" &&
+    Number.isFinite(route.outline2Width)
+      ? Math.max(0, route.outline2Width)
+      : DEFAULT_ROUTE_OUTLINE2_WIDTH;
+
+  return {
+    enabled,
+    active: outline1.enabled && outline1.width > 0 && enabled && width > 0,
+    color,
+    width,
+  };
+}
+
 export function createDefaultRouteSettings(): RouteDefaults {
   return {
     color: DEFAULT_ROUTE_COLOR,
@@ -58,6 +97,9 @@ export function createDefaultRouteSettings(): RouteDefaults {
     outlineEnabled: DEFAULT_ROUTE_OUTLINE_ENABLED,
     outlineColor: DEFAULT_ROUTE_OUTLINE_COLOR,
     outlineWidth: DEFAULT_ROUTE_OUTLINE_WIDTH,
+    outline2Enabled: DEFAULT_ROUTE_OUTLINE2_ENABLED,
+    outline2Color: DEFAULT_ROUTE_OUTLINE2_COLOR,
+    outline2Width: DEFAULT_ROUTE_OUTLINE2_WIDTH,
     opacity: DEFAULT_ROUTE_OPACITY,
     lineStyle: "solid",
     startIconId: DEFAULT_ROUTE_START_ICON_ID,
@@ -104,6 +146,12 @@ export function createRoute(input: {
     outlineEnabled: input.defaults.outlineEnabled ?? DEFAULT_ROUTE_OUTLINE_ENABLED,
     outlineColor: input.defaults.outlineColor ?? DEFAULT_ROUTE_OUTLINE_COLOR,
     outlineWidth: input.defaults.outlineWidth ?? DEFAULT_ROUTE_OUTLINE_WIDTH,
+    outline2Enabled:
+      input.defaults.outline2Enabled ?? DEFAULT_ROUTE_OUTLINE2_ENABLED,
+    outline2Color:
+      input.defaults.outline2Color ?? DEFAULT_ROUTE_OUTLINE2_COLOR,
+    outline2Width:
+      input.defaults.outline2Width ?? DEFAULT_ROUTE_OUTLINE2_WIDTH,
     opacity: input.defaults.opacity,
     lineStyle: input.defaults.lineStyle,
     visible: true,
@@ -126,6 +174,7 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
     const endpoints = routeEndpoints(route);
     if (!endpoints) continue;
     const outline = resolveRouteOutline(route);
+    const outline2 = resolveRouteOutline2(route);
     const startHasStroke =
       (route.startMarker.outlineEnabled ?? DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
       outline.width > 0;
@@ -141,7 +190,16 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
       color: route.startMarker.color,
       size: route.startMarker.size,
       ...(startHasStroke
-        ? { strokeColor: outline.color, strokeWidth: outline.width }
+        ? {
+            strokeColor: outline.color,
+            strokeWidth: outline.width,
+            ...(outline2.active
+              ? {
+                  outerStrokeColor: outline2.color,
+                  outerStrokeWidth: outline2.width,
+                }
+              : {}),
+          }
         : {}),
     });
     items.push({
@@ -152,7 +210,16 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
       color: route.finishMarker.color,
       size: route.finishMarker.size,
       ...(finishHasStroke
-        ? { strokeColor: outline.color, strokeWidth: outline.width }
+        ? {
+            strokeColor: outline.color,
+            strokeWidth: outline.width,
+            ...(outline2.active
+              ? {
+                  outerStrokeColor: outline2.color,
+                  outerStrokeWidth: outline2.width,
+                }
+              : {}),
+          }
         : {}),
     });
   }

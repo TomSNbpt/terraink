@@ -152,9 +152,9 @@ export default function LayoutGuidesSection() {
 
   return (
     <div className="layout-guides-block">
+      <p className="section-summary-label">GUIDES</p>
       <div className="layout-guides-header">
         <div className="layout-guides-title-group">
-          <h3>Guides</h3>
           <span className="layout-guides-origin">(0, 0) top-left</span>
         </div>
 

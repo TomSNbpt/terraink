@@ -11,6 +11,7 @@ import { ROUTE_DASH_PATTERN } from "@/features/routes/domain/constants";
 import type { Route } from "@/features/routes/domain/types";
 import {
   resolveRouteOutline,
+  resolveRouteOutline2,
   routeEndpointMarkerItems,
 } from "@/features/routes/infrastructure/helpers";
 import type { ResolvedTheme } from "@/features/theme/domain/types";
@@ -365,6 +366,26 @@ function extractLinePathsFromGeometry(
   return paths;
 }
 
+function polygonRingSignedArea(ring: Point2D[]): number {
+  let sum = 0;
+  for (let i = 0; i < ring.length; i += 1) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return sum * 0.5;
+}
+
+function normalizeRingWinding(
+  ring: Point2D[],
+  clockwise: boolean,
+): Point2D[] | null {
+  const area = polygonRingSignedArea(ring);
+  if (Math.abs(area) < 1e-6) return null;
+  const isClockwise = area > 0;
+  return isClockwise === clockwise ? ring : ring.slice().reverse();
+}
+
 function extractPolygonPathsFromGeometry(
   geometry: GeoJSON.Geometry | null | undefined,
   exportMap: MaplibreMap,
@@ -383,21 +404,38 @@ function extractPolygonPathsFromGeometry(
 
   const paths: string[] = [];
   for (const polygonRings of polygons) {
-    const ringParts: string[] = [];
-    for (const ring of polygonRings) {
+    if (polygonRings.length === 0) continue;
+
+    // Outer ring (index 0) normalized clockwise in SVG coordinates (+y down)
+    const outerProjected: Point2D[] = [];
+    for (const pair of polygonRings[0]!) {
+      const pt = projectCoordPair(pair, exportMap, scaleX, scaleY);
+      if (pt) outerProjected.push(pt);
+    }
+    const clippedOuter = clipPolygonRingToRect(outerProjected, clipRect);
+    if (clippedOuter.length < 3) continue;
+    const normalizedOuter = normalizeRingWinding(clippedOuter, true);
+    if (!normalizedOuter) continue;
+
+    const ringParts: string[] = [polygonRingToPathData(normalizedOuter)];
+
+    // Inner hole rings (index >= 1) normalized counter-clockwise so nonzero
+    // fill preserves cutouts while keeping overlapping outer polygons solid
+    for (let ringIdx = 1; ringIdx < polygonRings.length; ringIdx += 1) {
       const projected: Point2D[] = [];
-      for (const pair of ring) {
+      for (const pair of polygonRings[ringIdx]!) {
         const pt = projectCoordPair(pair, exportMap, scaleX, scaleY);
         if (pt) projected.push(pt);
       }
       const clippedRing = clipPolygonRingToRect(projected, clipRect);
-      if (clippedRing.length >= 3) {
-        ringParts.push(polygonRingToPathData(clippedRing));
+      if (clippedRing.length < 3) continue;
+      const normalizedHole = normalizeRingWinding(clippedRing, false);
+      if (normalizedHole) {
+        ringParts.push(polygonRingToPathData(normalizedHole));
       }
     }
-    if (ringParts.length > 0) {
-      paths.push(ringParts.join(""));
-    }
+
+    paths.push(ringParts.join(" "));
   }
   return paths;
 }
@@ -443,6 +481,8 @@ function serializeInlineSvgIcon(
   tintColor: string | null,
   strokeColor?: string,
   strokeWidthPx?: number,
+  outerStrokeColor?: string,
+  outerStrokeWidthPx?: number,
 ): string | null {
   const result = buildStrokedSvgIcon(
     rawSvg,
@@ -450,6 +490,8 @@ function serializeInlineSvgIcon(
     tintColor,
     strokeColor,
     strokeWidthPx,
+    outerStrokeColor,
+    outerStrokeWidthPx,
   );
   if (!result) return null;
 
@@ -493,6 +535,13 @@ async function renderMarkerItemsToSvgGroup(
       marker.strokeWidth > 0
         ? marker.strokeWidth * strokeScale
         : 0;
+    const outerStrokeWidthPx =
+      strokeWidthPx > 0 &&
+      marker.outerStrokeColor &&
+      typeof marker.outerStrokeWidth === "number" &&
+      marker.outerStrokeWidth > 0
+        ? marker.outerStrokeWidth * strokeScale
+        : 0;
 
     if (icon.kind === "svg" && icon.svgMarkup) {
       const serialized = serializeInlineSvgIcon(
@@ -503,6 +552,8 @@ async function renderMarkerItemsToSvgGroup(
         marker.color,
         marker.strokeColor,
         strokeWidthPx,
+        marker.outerStrokeColor,
+        outerStrokeWidthPx,
       );
       if (serialized) {
         elements.push(`  ${serialized}`);
@@ -524,6 +575,8 @@ async function renderMarkerItemsToSvgGroup(
           icon.tintWithMarkerColor ? marker.color : null,
           marker.strokeColor,
           strokeWidthPx,
+          marker.outerStrokeColor,
+          outerStrokeWidthPx,
         );
         if (serialized) {
           elements.push(`  ${serialized}`);
@@ -660,7 +713,7 @@ export async function createVectorSvgBlobFromMap({
         });
         if (features.length === 0) continue;
 
-        const pathElements: string[] = [];
+        const subpaths: string[] = [];
         for (const feature of features) {
           const paths = extractPolygonPathsFromGeometry(
             feature.geometry,
@@ -670,15 +723,15 @@ export async function createVectorSvgBlobFromMap({
             artboardClip,
           );
           for (const d of paths) {
-            pathElements.push(`  <path d="${d}" />`);
+            if (d) subpaths.push(d);
           }
         }
-        if (pathElements.length === 0) continue;
+        if (subpaths.length === 0) continue;
 
         const opacityAttr =
           fillOpacity < 0.999 ? ` opacity="${fmt(fillOpacity)}"` : "";
         mapLayerGroups.push(
-          `<g id="map-layer-${sanitizeLayerId(layer.id)}" fill="${escapeXml(fillColor)}" fill-rule="evenodd" stroke="none"${opacityAttr}>\n${pathElements.join("\n")}\n</g>`,
+          `<g id="map-layer-${sanitizeLayerId(layer.id)}" fill="${escapeXml(fillColor)}" fill-rule="nonzero" stroke="none"${opacityAttr}>\n  <path d="${subpaths.join(" ")}" />\n</g>`,
         );
         continue;
       }
@@ -740,7 +793,7 @@ export async function createVectorSvgBlobFromMap({
         });
         if (features.length === 0) continue;
 
-        const pathElements: string[] = [];
+        const subpaths: string[] = [];
         for (const feature of features) {
           const paths = extractLinePathsFromGeometry(
             feature.geometry,
@@ -750,15 +803,15 @@ export async function createVectorSvgBlobFromMap({
             lineClipRect,
           );
           for (const d of paths) {
-            pathElements.push(`  <path d="${d}" />`);
+            if (d) subpaths.push(d);
           }
         }
-        if (pathElements.length === 0) continue;
+        if (subpaths.length === 0) continue;
 
         const opacityAttr =
           lineOpacity < 0.999 ? ` opacity="${fmt(lineOpacity)}"` : "";
         mapLayerGroups.push(
-          `<g id="map-layer-${sanitizeLayerId(layer.id)}" fill="none" stroke="${escapeXml(lineColor)}" stroke-width="${fmt(lineWidth)}" stroke-linecap="${escapeXml(lineCap)}" stroke-linejoin="${escapeXml(lineJoin)}"${dashAttr}${opacityAttr}>\n${pathElements.join("\n")}\n</g>`,
+          `<g id="map-layer-${sanitizeLayerId(layer.id)}" fill="none" stroke="${escapeXml(lineColor)}" stroke-width="${fmt(lineWidth)}" stroke-linecap="${escapeXml(lineCap)}" stroke-linejoin="${escapeXml(lineJoin)}"${dashAttr}${opacityAttr}>\n  <path d="${subpaths.join(" ")}" />\n</g>`,
         );
       }
     }
@@ -816,16 +869,19 @@ export async function createVectorSvgBlobFromMap({
 
       for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
         const route = visibleRoutes[routeIdx];
-        const outlinePaths: string[] = [];
-        const routePaths: string[] = [];
+        const routeSubpaths: string[] = [];
 
         const width = Math.max(0.5, route.strokeWidth * widthScale);
         const outline = resolveRouteOutline(route);
+        const outline2 = resolveRouteOutline2(route);
         const hasOutline = outline.enabled && outline.width > 0;
         const outlineTotalWidth = hasOutline
           ? width + outline.width * widthScale * 2
           : width;
-        const pad = Math.ceil(outlineTotalWidth) + 2;
+        const outline2TotalWidth = outline2.active
+          ? width + (outline.width + outline2.width) * widthScale * 2
+          : outlineTotalWidth;
+        const pad = Math.ceil(outline2TotalWidth) + 2;
         const routeClip: ClipRect = {
           minX: -pad,
           minY: -pad,
@@ -849,20 +905,28 @@ export async function createVectorSvgBlobFromMap({
           for (const poly of clipped) {
             const d = polylineToPathData(poly);
             if (d) {
-              if (hasOutline) {
-                outlinePaths.push(
-                  `  <path d="${d}" fill="none" stroke="${escapeXml(outline.color)}" stroke-width="${fmt(outlineTotalWidth)}" stroke-linecap="round" stroke-linejoin="round"${opacityAttr} />`,
-                );
-              }
-              routePaths.push(
-                `  <path d="${d}" fill="none" stroke="${escapeXml(route.color)}" stroke-width="${fmt(width)}" stroke-linecap="round" stroke-linejoin="round"${dashAttr}${opacityAttr} />`,
-              );
+              routeSubpaths.push(d);
             }
           }
         }
 
-        const combinedPaths = [...outlinePaths, ...routePaths];
-        if (combinedPaths.length > 0) {
+        if (routeSubpaths.length > 0) {
+          const combinedD = routeSubpaths.join(" ");
+          const combinedPaths: string[] = [];
+          if (outline2.active) {
+            combinedPaths.push(
+              `  <path d="${combinedD}" fill="none" stroke="${escapeXml(outline2.color)}" stroke-width="${fmt(outline2TotalWidth)}" stroke-linecap="round" stroke-linejoin="round"${opacityAttr} />`,
+            );
+          }
+          if (hasOutline) {
+            combinedPaths.push(
+              `  <path d="${combinedD}" fill="none" stroke="${escapeXml(outline.color)}" stroke-width="${fmt(outlineTotalWidth)}" stroke-linecap="round" stroke-linejoin="round"${opacityAttr} />`,
+            );
+          }
+          combinedPaths.push(
+            `  <path d="${combinedD}" fill="none" stroke="${escapeXml(route.color)}" stroke-width="${fmt(width)}" stroke-linecap="round" stroke-linejoin="round"${dashAttr}${opacityAttr} />`,
+          );
+
           const baseLabel = route.label?.trim() || `Route ${routeIdx + 1}`;
           const baseSlug = sanitizeLayerId(baseLabel) || `route-${routeIdx + 1}`;
           let layerId = `overlay-layer-route-${routeIdx + 1}-${baseSlug}`;

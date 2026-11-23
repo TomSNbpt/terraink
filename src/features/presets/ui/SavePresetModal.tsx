@@ -83,7 +83,7 @@ export default function SavePresetModal({
       >
         <div className="picker-modal-header">
           <h3 id="save-preset-modal-title">
-            {conflictPreset ? "Preset Already Exists" : title}
+            {conflictPreset ? "Product Already Exists" : title}
           </h3>
           <button
             type="button"
@@ -98,7 +98,7 @@ export default function SavePresetModal({
         {conflictPreset ? (
           <div className="save-theme-modal-body">
             <p className="save-choice-message">
-              A preset named <strong>{conflictPreset.name}</strong> already
+              A product named <strong>{conflictPreset.name}</strong> already
               exists. Would you like to overwrite it or enter a new name?
             </p>
             <div className="save-choice-actions">
@@ -128,7 +128,7 @@ export default function SavePresetModal({
         ) : (
           <form className="save-theme-modal-body" onSubmit={handleSubmit}>
             <label className="save-theme-field">
-              <span className="save-theme-field-label">Preset Name</span>
+              <span className="save-theme-field-label">Product Name</span>
               <input
                 ref={inputRef}
                 type="text"
@@ -140,8 +140,8 @@ export default function SavePresetModal({
             </label>
 
             <p className="save-theme-hint">
-              Captures location, map scale, theme, layout, layers, style,
-              markers, and routes.
+              Captures location, map scale, layout, template, theme, layers,
+              markers, GPS routes, and route styling.
             </p>
 
             <div className="save-theme-actions">
@@ -157,7 +157,7 @@ export default function SavePresetModal({
                 className="save-theme-confirm"
                 disabled={isEmpty}
               >
-                Save Preset
+                Save Product
               </button>
             </div>
           </form>

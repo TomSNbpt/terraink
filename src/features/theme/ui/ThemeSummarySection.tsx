@@ -1,6 +1,5 @@
 import type { RefObject } from "react";
 import ThemeCard from "./ThemeCard";
-import { DesignerIcon, EditIcon, TrashIcon } from "@/shared/ui/Icons";
 import {
   DISPLAY_PALETTE_KEYS,
   type SavedTheme,
@@ -12,15 +11,13 @@ interface ThemeSummarySectionProps {
   listRef?: RefObject<HTMLDivElement>;
   themeOptions: ThemeOption[];
   selectedThemeId: string;
-  selectedThemeOption: ThemeOption;
-  onThemeSelect: (themeId: string) => void;
-  onCustomize: () => void;
-  onOpenThemeDesigner: () => void;
-  generatedThemeCount: number;
-  canDeleteSelectedBuiltin: boolean;
-  onRequestDeleteSelectedBuiltin: () => void;
+  isThemeDesignDirty: boolean;
+  previewThemeId: string | null;
+  onPreviewStart: (themeId: string) => void;
+  onPreviewEnd: () => void;
+  onThemeDoubleClick: (themeId: string) => void;
+  onDeleteBuiltinTheme: (themeId: string) => void;
   savedThemes: SavedTheme[];
-  onApplySavedTheme: (themeId: string) => void;
   onDeleteSavedTheme: (themeId: string) => void;
 }
 
@@ -40,117 +37,115 @@ export default function ThemeSummarySection({
   listRef,
   themeOptions,
   selectedThemeId,
-  selectedThemeOption,
-  onThemeSelect,
-  onCustomize,
-  onOpenThemeDesigner,
-  generatedThemeCount,
-  canDeleteSelectedBuiltin,
-  onRequestDeleteSelectedBuiltin,
+  isThemeDesignDirty,
+  previewThemeId,
+  onPreviewStart,
+  onPreviewEnd,
+  onThemeDoubleClick,
+  onDeleteBuiltinTheme,
   savedThemes,
-  onApplySavedTheme,
   onDeleteSavedTheme,
 }: ThemeSummarySectionProps) {
-  const description =
-    selectedThemeOption.description?.trim() || "No description available.";
+  const canDeleteSavedConfigTheme = themeOptions.length > 1;
+
+  function buildCardTitle(isSelected: boolean): string {
+    if (isSelected) {
+      return isThemeDesignDirty
+        ? "Active theme (unsaved design changes) · Double-click to reset"
+        : "Active theme";
+    }
+    return "Hold to preview · Double-click to switch";
+  }
 
   return (
     <div className="theme-summary-view">
-      <div className="theme-designer-launch-row">
-        <button
-          type="button"
-          className="theme-designer-launch-btn"
-          onClick={onOpenThemeDesigner}
-        >
-          <DesignerIcon aria-hidden="true" />
-          <span>
-            Theme Designer
-            {generatedThemeCount > 0 ? ` · ${generatedThemeCount}` : ""}
-          </span>
-        </button>
-      </div>
-
-      <div className="theme-summary-head">
-        <div className="theme-summary-copy">
-          <p className="theme-summary-label">
-            Theme:{" "}
-            <span className="theme-summary-label-name">
-              {selectedThemeOption.name}
-            </span>
-          </p>
-          <p className="theme-card-description">{description}</p>
-        </div>
-        <div className="theme-summary-head-actions">
-          <button
-            type="button"
-            className="theme-customize-btn"
-            onClick={onCustomize}
-            title={`Customize ${selectedThemeOption.name} colors`}
-            aria-label={`Customize ${selectedThemeOption.name} colors`}
-          >
-            <span className="theme-customize-icon" aria-hidden="true">
-              <EditIcon />
-            </span>
-          </button>
-          {canDeleteSelectedBuiltin ? (
-            <button
-              type="button"
-              className="theme-delete-builtin-btn"
-              onClick={onRequestDeleteSelectedBuiltin}
-              title={`Delete built-in theme ${selectedThemeOption.name}`}
-              aria-label={`Delete Theme ${selectedThemeOption.name}`}
-            >
-              <TrashIcon aria-hidden="true" />
-              <span>Delete Theme</span>
-            </button>
-          ) : null}
-        </div>
-      </div>
+      <p className="theme-interaction-hint">
+        Hold a theme to preview · Double-click to switch
+      </p>
 
       <section className="theme-section theme-section--saved">
-        <h3 className="theme-section-heading">Saved Themes</h3>
+        <h3 className="theme-section-heading">Unsaved Themes</h3>
         {savedThemes.length === 0 ? (
           <div className="saved-themes-empty" role="status">
             <p className="saved-themes-empty-text">
-              Customize and save a theme to see it here.
+              Themes customized during this session appear here until exported
+              to config.json.
             </p>
           </div>
         ) : (
           <div
             className="theme-card-list card-scroll-list saved-themes-list"
             role="list"
-            aria-label="Saved themes"
+            aria-label="Unsaved themes"
           >
-            {savedThemes.map((saved) => (
-              <ThemeCard
-                key={saved.id}
-                themeOption={savedThemeToOption(saved)}
-                isSelected={saved.id === selectedThemeId}
-                onClick={() => onApplySavedTheme(saved.id)}
-                onDelete={() => onDeleteSavedTheme(saved.id)}
-                deleteAriaLabel={`Delete saved theme ${saved.name}`}
-              />
-            ))}
+            {savedThemes.map((saved) => {
+              const isSelected = saved.id === selectedThemeId;
+              return (
+                <ThemeCard
+                  key={saved.id}
+                  themeOption={savedThemeToOption(saved)}
+                  isSelected={isSelected}
+                  outlineState={
+                    isSelected
+                      ? isThemeDesignDirty
+                        ? "red"
+                        : "green"
+                      : undefined
+                  }
+                  isPreviewing={previewThemeId === saved.id}
+                  title={buildCardTitle(isSelected)}
+                  onPreviewStart={
+                    !isSelected ? () => onPreviewStart(saved.id) : undefined
+                  }
+                  onPreviewEnd={onPreviewEnd}
+                  onDoubleClick={() => onThemeDoubleClick(saved.id)}
+                  onDelete={() => onDeleteSavedTheme(saved.id)}
+                  deleteAriaLabel={`Delete unsaved theme ${saved.name}`}
+                />
+              );
+            })}
           </div>
         )}
       </section>
 
       <section className="theme-section theme-section--builtin">
-        <h3 className="theme-section-heading">Built-in Themes</h3>
+        <h3 className="theme-section-heading">Saved Themes</h3>
         <div
           className="theme-card-list card-scroll-list"
           role="list"
-          aria-label="Theme options"
+          aria-label="Saved themes"
           ref={listRef}
         >
-          {themeOptions.map((themeOption) => (
-            <ThemeCard
-              key={themeOption.id}
-              themeOption={themeOption}
-              isSelected={themeOption.id === selectedThemeId}
-              onClick={() => onThemeSelect(themeOption.id)}
-            />
-          ))}
+          {themeOptions.map((themeOption) => {
+            const isSelected = themeOption.id === selectedThemeId;
+            return (
+              <ThemeCard
+                key={themeOption.id}
+                themeOption={themeOption}
+                isSelected={isSelected}
+                outlineState={
+                  isSelected
+                    ? isThemeDesignDirty
+                      ? "red"
+                      : "green"
+                    : undefined
+                }
+                isPreviewing={previewThemeId === themeOption.id}
+                title={buildCardTitle(isSelected)}
+                onPreviewStart={
+                  !isSelected ? () => onPreviewStart(themeOption.id) : undefined
+                }
+                onPreviewEnd={onPreviewEnd}
+                onDoubleClick={() => onThemeDoubleClick(themeOption.id)}
+                onDelete={
+                  canDeleteSavedConfigTheme
+                    ? () => onDeleteBuiltinTheme(themeOption.id)
+                    : undefined
+                }
+                deleteAriaLabel={`Delete saved theme ${themeOption.name}`}
+              />
+            );
+          })}
         </div>
       </section>
     </div>

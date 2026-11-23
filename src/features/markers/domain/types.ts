@@ -23,6 +23,8 @@ export interface MarkerItem {
   color: string;
   strokeColor?: string;
   strokeWidth?: number;
+  outerStrokeColor?: string;
+  outerStrokeWidth?: number;
 }
 
 export interface MarkerDefaults {

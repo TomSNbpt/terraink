@@ -210,6 +210,15 @@ function normalizeSnapshot(
         ...(typeof raw.routeDefaults.outlineWidth === "number"
           ? { outlineWidth: raw.routeDefaults.outlineWidth }
           : {}),
+        ...(typeof raw.routeDefaults.outline2Enabled === "boolean"
+          ? { outline2Enabled: raw.routeDefaults.outline2Enabled }
+          : {}),
+        ...(typeof raw.routeDefaults.outline2Color === "string"
+          ? { outline2Color: raw.routeDefaults.outline2Color }
+          : {}),
+        ...(typeof raw.routeDefaults.outline2Width === "number"
+          ? { outline2Width: raw.routeDefaults.outline2Width }
+          : {}),
         ...(typeof raw.routeDefaults.opacity === "number"
           ? { opacity: raw.routeDefaults.opacity }
           : {}),

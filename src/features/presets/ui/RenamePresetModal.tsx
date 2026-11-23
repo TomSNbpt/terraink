@@ -38,9 +38,9 @@ export default function RenamePresetModal({
   const isUnchanged = trimmedName === preset.name;
 
   const errorMessage = isReservedDefault
-    ? `"${DEFAULT_PRESET_NAME}" is reserved for the startup preset.`
+    ? `"${DEFAULT_PRESET_NAME}" is reserved for the startup product.`
     : conflictPreset
-      ? `A preset named "${conflictPreset.name}" already exists.`
+      ? `A product named "${conflictPreset.name}" already exists.`
       : null;
 
   const canSubmit = !isEmpty && !isUnchanged && errorMessage === null;
@@ -80,7 +80,7 @@ export default function RenamePresetModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="picker-modal-header">
-          <h3 id="rename-preset-modal-title">Rename Preset</h3>
+          <h3 id="rename-preset-modal-title">Rename Product</h3>
           <button
             type="button"
             className="picker-modal-close"
@@ -93,7 +93,7 @@ export default function RenamePresetModal({
 
         <form className="save-theme-modal-body" onSubmit={handleSubmit}>
           <label className="save-theme-field">
-            <span className="save-theme-field-label">Preset Name</span>
+            <span className="save-theme-field-label">Product Name</span>
             <input
               ref={inputRef}
               type="text"
@@ -110,7 +110,7 @@ export default function RenamePresetModal({
             </p>
           ) : (
             <p className="save-theme-hint">
-              Updates the preset name in your session and Settings config
+              Updates the product name in your session and Settings config
               snapshot.
             </p>
           )}

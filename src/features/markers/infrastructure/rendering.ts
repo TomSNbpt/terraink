@@ -52,6 +52,8 @@ async function resolveMarkerImage(
   size: number,
   strokeColor?: string,
   strokeWidthPx?: number,
+  outerStrokeColor?: string,
+  outerStrokeWidthPx?: number,
 ): Promise<{ image: HTMLImageElement; boxSize: number }> {
   if (icon.kind === "svg" && icon.svgMarkup) {
     if (strokeColor && strokeWidthPx && strokeWidthPx > 0) {
@@ -61,6 +63,8 @@ async function resolveMarkerImage(
         color,
         strokeColor,
         strokeWidthPx,
+        outerStrokeColor,
+        outerStrokeWidthPx,
       );
       if (stroked) {
         const encodedSvg = encodeURIComponent(stroked.svgMarkup);
@@ -115,6 +119,13 @@ export async function drawMarkersOnCanvas(
         marker.strokeWidth > 0
           ? marker.strokeWidth * strokeScale
           : 0;
+      const outerStrokeWidthPx =
+        strokeWidthPx > 0 &&
+        marker.outerStrokeColor &&
+        typeof marker.outerStrokeWidth === "number" &&
+        marker.outerStrokeWidth > 0
+          ? marker.outerStrokeWidth * strokeScale
+          : 0;
 
       const { image, boxSize } = await resolveMarkerImage(
         icon,
@@ -122,6 +133,8 @@ export async function drawMarkersOnCanvas(
         size,
         marker.strokeColor,
         strokeWidthPx,
+        marker.outerStrokeColor,
+        outerStrokeWidthPx,
       );
       const imageX = x - boxSize / 2;
       const imageY = y - boxSize / 2;

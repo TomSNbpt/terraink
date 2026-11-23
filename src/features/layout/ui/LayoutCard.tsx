@@ -1,3 +1,4 @@
+import { TrashIcon } from "@/shared/ui/Icons";
 import type { Layout } from "../domain/types";
 import { formatLayoutDimensions } from "../infrastructure/layoutRepository";
 
@@ -21,29 +22,41 @@ function getLayoutSymbolDataUri(layoutOption: Layout): string {
 interface LayoutCardProps {
   layoutOption: Layout | null;
   onClick?: () => void;
+  onDoubleClick?: () => void;
+  onDelete?: () => void;
   isSelected?: boolean;
+  title?: string;
 }
 
 export default function LayoutCard({
   layoutOption,
   onClick,
+  onDoubleClick,
+  onDelete,
   isSelected = false,
+  title,
 }: LayoutCardProps) {
   if (!layoutOption) {
     return null;
   }
-  const className = ["layout-card", isSelected ? "is-selected" : ""]
+  const className = [
+    "layout-card",
+    isSelected ? "is-selected" : "",
+    onDelete ? "has-delete" : "",
+  ]
     .filter(Boolean)
     .join(" ");
   const symbolDataUri = getLayoutSymbolDataUri(layoutOption);
   const sizeText = formatLayoutDimensions(layoutOption);
 
-  return (
+  const cardButton = (
     <button
       type="button"
       className={className}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       aria-pressed={isSelected}
+      title={title}
     >
       <div className="layout-card-copy">
         <p className="layout-card-name">{layoutOption.name}</p>
@@ -57,5 +70,28 @@ export default function LayoutCard({
         />
       ) : null}
     </button>
+  );
+
+  if (!onDelete) {
+    return cardButton;
+  }
+
+  return (
+    <div className="layout-card-shell">
+      {cardButton}
+      <button
+        type="button"
+        className="layout-card-delete-btn"
+        aria-label={`Delete template ${layoutOption.name}`}
+        title={`Delete ${layoutOption.name}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
+        onDoubleClick={(event) => event.stopPropagation()}
+      >
+        <TrashIcon aria-hidden="true" />
+      </button>
+    </div>
   );
 }

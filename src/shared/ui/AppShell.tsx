@@ -121,6 +121,8 @@ export default function AppShell() {
       return;
     }
 
+    setMobileLocationRowVisible(false);
+
     if (tab === mobileTab && mobileDrawerOpen) {
       setMobileDrawerOpen(false);
     } else {
@@ -129,7 +131,14 @@ export default function AppShell() {
     }
   };
 
+  const handleDesktopLocationToggle = () => {
+    setDesktopPanelOpen(false);
+    setDesktopLocationRowVisible((isVisible) => !isVisible);
+  };
+
   const handleDesktopTabChange = (tab: MobileTab) => {
+    setDesktopLocationRowVisible(false);
+
     if (tab === desktopTab && desktopPanelOpen) {
       setDesktopPanelOpen(false);
     } else {
@@ -169,21 +178,19 @@ export default function AppShell() {
         panelOpen={desktopPanelOpen}
         onTabChange={handleDesktopTabChange}
         isLocationVisible={desktopLocationRowVisible}
-        onLocationToggle={() =>
-          setDesktopLocationRowVisible((isVisible) => !isVisible)
-        }
+        onLocationToggle={handleDesktopLocationToggle}
       />
 
       <div
         className={`desktop-location-row-wrap${desktopLocationRowVisible ? "" : " is-hidden"}`}
       >
-        <DesktopLocationBar />
+        <DesktopLocationBar isVisible={desktopLocationRowVisible} />
       </div>
 
       <div
         className={`mobile-location-row-wrap${mobileLocationRowVisible ? "" : " is-hidden"}`}
       >
-        <DesktopLocationBar />
+        <DesktopLocationBar isVisible={mobileLocationRowVisible} />
       </div>
       {isMobileViewport && isMarkerEditorActive && activeMarker ? (
         <div

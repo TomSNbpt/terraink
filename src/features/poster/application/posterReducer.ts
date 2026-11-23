@@ -22,7 +22,11 @@ import {
   MIN_ROUTE_STROKE_WIDTH,
 } from "@/features/routes/domain/constants";
 import type { SavedTheme } from "@/features/theme/domain/types";
-import { getThemeRouteColor } from "@/features/theme/infrastructure/themeRepository";
+import {
+  captureRouteStyleSnapshot,
+  captureThemeDesignBaseline,
+  type ThemeDesignBaseline,
+} from "@/features/theme/domain/designDirty";
 import {
   createEmptyThemeDesignerSession,
   themeColorsToOverrides,
@@ -41,7 +45,10 @@ import {
   cloneSnapshot,
   ensureDefaultPresetFirst,
 } from "@/features/presets/infrastructure/presetsStorage";
-import type { LayoutGuide } from "@/features/layout/domain/types";
+import type {
+  CustomTemplate,
+  LayoutGuide,
+} from "@/features/layout/domain/types";
 import { normalizeBleedInches } from "@/features/layout/domain/bleed";
 
 /* ────── Form state ────── */
@@ -85,11 +92,13 @@ export interface PosterState {
   customColors: Record<string, string>;
   savedThemes: SavedTheme[];
   deletedBuiltinThemeIds: string[];
+  customTemplates: CustomTemplate[];
   themeDesigner: ThemeDesignerSession;
   userDefaults: UserDefaults;
   presets: UserPreset[];
   activePresetId: string | null;
   presetLoadSeq: number;
+  themeDesignBaseline: ThemeDesignBaseline;
   targetBearing: number;
   markers: MarkerItem[];
   customMarkerIcons: MarkerIconDefinition[];
@@ -134,6 +143,7 @@ export type PosterAction =
   | { type: "SET_COLOR"; key: string; value: string }
   | { type: "SET_CUSTOM_COLORS"; colors: Record<string, string> }
   | { type: "RESET_COLORS" }
+  | { type: "RESET_ACTIVE_THEME_DESIGN" }
   | { type: "SET_USER_DEFAULTS"; defaults: UserDefaults }
   | { type: "RESET_USER_DEFAULTS" }
   | { type: "SET_SAVED_THEMES"; themes: SavedTheme[] }
@@ -141,6 +151,8 @@ export type PosterAction =
   | { type: "UPDATE_SAVED_THEME"; themeId: string; changes: Partial<SavedTheme> }
   | { type: "REMOVE_SAVED_THEME"; themeId: string }
   | { type: "DELETE_BUILTIN_THEME"; themeId: string }
+  | { type: "ADD_CUSTOM_TEMPLATE"; template: CustomTemplate }
+  | { type: "REMOVE_CUSTOM_TEMPLATE"; templateId: string }
   | { type: "ADD_DESIGNER_MESSAGE"; message: DesignerMessage }
   | {
       type: "ADD_DESIGNER_RESPONSE";
@@ -185,6 +197,7 @@ export type PosterAction =
       type: "SET_ROUTE_DEFAULTS";
       defaults: Partial<RouteDefaults>;
       applyToRoutes?: boolean;
+      syncBaseline?: boolean;
     }
   | { type: "ADD_GUIDE"; guide: LayoutGuide }
   | { type: "UPDATE_GUIDE"; guideId: string; offsetCm: number }
@@ -247,34 +260,43 @@ export function posterReducer(
       };
     }
 
-    case "SET_FORM_FIELDS":
+    case "SET_FORM_FIELDS": {
+      const nextForm = { ...state.form, ...action.fields };
+      const shouldSyncDisplayNames =
+        "displayCity" in action.fields || "displayCountry" in action.fields;
       return {
         ...state,
-        form: { ...state.form, ...action.fields },
+        form: nextForm,
         displayNameOverrides: action.resetDisplayNameOverrides
           ? { city: false, country: false }
           : state.displayNameOverrides,
         ...(action.clearSelectedLocation ? { selectedLocation: null } : {}),
-      };
-
-    case "SET_THEME": {
-      const themeRouteColor = getThemeRouteColor(action.themeId);
-      return {
-        ...state,
-        form: { ...state.form, theme: action.themeId },
-        customColors: {},
-        ...(themeRouteColor
+        ...(shouldSyncDisplayNames
           ? {
-              routeDefaults: {
-                ...state.routeDefaults,
-                color: themeRouteColor,
+              themeDesignBaseline: {
+                ...state.themeDesignBaseline,
+                typography: {
+                  ...state.themeDesignBaseline.typography,
+                  displayCity: nextForm.displayCity,
+                  displayCountry: nextForm.displayCountry,
+                },
               },
-              routes: state.routes.map((route) => ({
-                ...route,
-                color: themeRouteColor,
-              })),
             }
           : {}),
+      };
+    }
+
+    case "SET_THEME": {
+      const nextForm = { ...state.form, theme: action.themeId };
+      return {
+        ...state,
+        form: nextForm,
+        customColors: {},
+        themeDesignBaseline: captureThemeDesignBaseline(
+          nextForm,
+          state.routes,
+          state.routeDefaults,
+        ),
         themeDesigner: {
           ...state.themeDesigner,
           activeGeneratedThemeId: null,
@@ -310,6 +332,60 @@ export function posterReducer(
 
     case "RESET_COLORS":
       return { ...state, customColors: {} };
+
+    case "RESET_ACTIVE_THEME_DESIGN": {
+      const baseline = state.themeDesignBaseline;
+      const nextForm: PosterForm = {
+        ...state.form,
+        ...baseline.layers,
+        ...baseline.typography,
+      };
+      const nextRouteDefaults: RouteDefaults = {
+        ...baseline.routeDefaults,
+      };
+      const nextRoutes = state.routes.map((route) => {
+        const routeBase = baseline.routeStyles[route.id];
+        if (!routeBase) {
+          return route;
+        }
+        return {
+          ...route,
+          color: routeBase.color,
+          strokeWidth: routeBase.strokeWidth,
+          outlineEnabled: routeBase.outlineEnabled,
+          outlineColor: routeBase.outlineColor,
+          outlineWidth: routeBase.outlineWidth,
+          outline2Enabled: routeBase.outline2Enabled,
+          outline2Color: routeBase.outline2Color,
+          outline2Width: routeBase.outline2Width,
+          opacity: routeBase.opacity,
+          lineStyle: routeBase.lineStyle,
+          showEndpoints: routeBase.showEndpoints,
+          startMarker: routeBase.startMarker
+            ? { ...routeBase.startMarker }
+            : undefined,
+          finishMarker: routeBase.finishMarker
+            ? { ...routeBase.finishMarker }
+            : undefined,
+        };
+      });
+      return {
+        ...state,
+        form: nextForm,
+        customColors: {},
+        routeDefaults: nextRouteDefaults,
+        routes: nextRoutes,
+        themeDesignBaseline: captureThemeDesignBaseline(
+          nextForm,
+          nextRoutes,
+          nextRouteDefaults,
+        ),
+        themeDesigner: {
+          ...state.themeDesigner,
+          activeGeneratedThemeId: null,
+        },
+      };
+    }
 
     case "SET_USER_DEFAULTS":
       return { ...state, userDefaults: action.defaults };
@@ -352,6 +428,25 @@ export function posterReducer(
           ...state.deletedBuiltinThemeIds,
           action.themeId,
         ],
+      };
+    }
+
+    case "ADD_CUSTOM_TEMPLATE": {
+      if (state.customTemplates.some((t) => t.id === action.template.id)) {
+        return state;
+      }
+      return {
+        ...state,
+        customTemplates: [...state.customTemplates, action.template],
+      };
+    }
+
+    case "REMOVE_CUSTOM_TEMPLATE": {
+      return {
+        ...state,
+        customTemplates: state.customTemplates.filter(
+          (t) => t.id !== action.templateId,
+        ),
       };
     }
 
@@ -424,7 +519,8 @@ export function posterReducer(
       };
     }
 
-    case "SELECT_LOCATION":
+    case "SELECT_LOCATION": {
+      const nextDisplayCountry = resolveDisplaySubtitle(action.location);
       return {
         ...state,
         selectedLocation: action.location,
@@ -436,10 +532,19 @@ export function posterReducer(
           latitude: action.location.lat.toFixed(6),
           longitude: action.location.lon.toFixed(6),
           displayCity: action.location.city,
-          displayCountry: resolveDisplaySubtitle(action.location),
+          displayCountry: nextDisplayCountry,
           displayContinent: action.location.continent || "",
         },
+        themeDesignBaseline: {
+          ...state.themeDesignBaseline,
+          typography: {
+            ...state.themeDesignBaseline.typography,
+            displayCity: action.location.city,
+            displayCountry: nextDisplayCountry,
+          },
+        },
       };
+    }
 
     case "SET_USER_LOCATION":
       return {
@@ -615,6 +720,13 @@ export function posterReducer(
       return {
         ...state,
         routes: [...state.routes, action.route],
+        themeDesignBaseline: {
+          ...state.themeDesignBaseline,
+          routeStyles: {
+            ...state.themeDesignBaseline.routeStyles,
+            [action.route.id]: captureRouteStyleSnapshot(action.route),
+          },
+        },
       };
 
     case "UPDATE_ROUTE":
@@ -643,6 +755,14 @@ export function posterReducer(
                         MAX_ROUTE_OUTLINE_WIDTH,
                       )
                     : route.outlineWidth,
+                outline2Width:
+                  typeof action.changes.outline2Width === "number"
+                    ? clamp(
+                        action.changes.outline2Width,
+                        MIN_ROUTE_OUTLINE_WIDTH,
+                        MAX_ROUTE_OUTLINE_WIDTH,
+                      )
+                    : route.outline2Width,
                 opacity:
                   typeof action.changes.opacity === "number"
                     ? clamp(
@@ -656,17 +776,46 @@ export function posterReducer(
         ),
       };
 
-    case "REMOVE_ROUTE":
+    case "REMOVE_ROUTE": {
+      const nextRouteStyles = { ...state.themeDesignBaseline.routeStyles };
+      delete nextRouteStyles[action.routeId];
       return {
         ...state,
         routes: state.routes.filter((route) => route.id !== action.routeId),
+        themeDesignBaseline: {
+          ...state.themeDesignBaseline,
+          routeStyles: nextRouteStyles,
+        },
       };
+    }
 
-    case "REPLACE_ROUTES":
-      return { ...state, routes: action.routes };
+    case "REPLACE_ROUTES": {
+      const nextRouteStyles: Record<
+        string,
+        ReturnType<typeof captureRouteStyleSnapshot>
+      > = {};
+      for (const route of action.routes) {
+        nextRouteStyles[route.id] = captureRouteStyleSnapshot(route);
+      }
+      return {
+        ...state,
+        routes: action.routes,
+        themeDesignBaseline: {
+          ...state.themeDesignBaseline,
+          routeStyles: nextRouteStyles,
+        },
+      };
+    }
 
     case "CLEAR_ROUTES":
-      return { ...state, routes: [] };
+      return {
+        ...state,
+        routes: [],
+        themeDesignBaseline: {
+          ...state.themeDesignBaseline,
+          routeStyles: {},
+        },
+      };
 
     case "SET_ROUTE_DEFAULTS": {
       const { defaults: partial } = action;
@@ -693,6 +842,20 @@ export function posterReducer(
                 MAX_ROUTE_OUTLINE_WIDTH,
               )
             : state.routeDefaults.outlineWidth,
+        outline2Enabled:
+          typeof partial.outline2Enabled === "boolean"
+            ? partial.outline2Enabled
+            : state.routeDefaults.outline2Enabled,
+        outline2Color:
+          partial.outline2Color ?? state.routeDefaults.outline2Color,
+        outline2Width:
+          typeof partial.outline2Width === "number"
+            ? clamp(
+                partial.outline2Width,
+                MIN_ROUTE_OUTLINE_WIDTH,
+                MAX_ROUTE_OUTLINE_WIDTH,
+              )
+            : state.routeDefaults.outline2Width,
         opacity:
           typeof partial.opacity === "number"
             ? clamp(partial.opacity, MIN_ROUTE_OPACITY, MAX_ROUTE_OPACITY)
@@ -702,18 +865,41 @@ export function posterReducer(
         finishIconId: partial.finishIconId ?? state.routeDefaults.finishIconId,
       };
 
+      const nextRoutes = action.applyToRoutes
+        ? state.routes.map((route) => ({
+            ...route,
+            color: nextDefaults.color,
+            strokeWidth: nextDefaults.strokeWidth,
+            opacity: nextDefaults.opacity,
+            lineStyle: nextDefaults.lineStyle,
+          }))
+        : state.routes;
+
+      const nextBaseline = action.syncBaseline
+        ? {
+            ...state.themeDesignBaseline,
+            routeDefaults: {
+              ...state.themeDesignBaseline.routeDefaults,
+              color: nextDefaults.color,
+            },
+            routeStyles: Object.fromEntries(
+              Object.entries(state.themeDesignBaseline.routeStyles).map(
+                ([id, snap]) => [
+                  id,
+                  action.applyToRoutes
+                    ? { ...snap, color: nextDefaults.color }
+                    : snap,
+                ],
+              ),
+            ),
+          }
+        : state.themeDesignBaseline;
+
       return {
         ...state,
         routeDefaults: nextDefaults,
-        routes: action.applyToRoutes
-          ? state.routes.map((route) => ({
-              ...route,
-              color: nextDefaults.color,
-              strokeWidth: nextDefaults.strokeWidth,
-              opacity: nextDefaults.opacity,
-              lineStyle: nextDefaults.lineStyle,
-            }))
-          : state.routes,
+        routes: nextRoutes,
+        themeDesignBaseline: nextBaseline,
       };
     }
 
@@ -891,6 +1077,11 @@ export function posterReducer(
             : 0,
         activePresetId: target.id,
         presetLoadSeq: state.presetLoadSeq + 1,
+        themeDesignBaseline: captureThemeDesignBaseline(
+          snap.form,
+          snap.routes,
+          snap.routeDefaults,
+        ),
         isMarkerEditorActive: false,
         activeMarkerId: null,
         selectedLocation: null,

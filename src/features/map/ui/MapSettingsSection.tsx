@@ -1,43 +1,36 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createCustomLayoutOption } from "@/features/layout/infrastructure/layoutRepository";
+import { usePosterContext } from "@/features/poster/ui/PosterContext";
 import {
-  DISPLAY_PALETTE_KEYS,
-  PALETTE_COLOR_LABELS,
-  type ThemeColorKey,
-  type ThemeOption,
-} from "@/features/theme/domain/types";
-import { getThemeColorByPath } from "@/features/theme/domain/colorPaths";
-import { normalizeHexColor } from "@/shared/utils/color";
-import {
-  buildDynamicColorChoices,
-  createFallbackThemeOption,
-} from "@/features/theme/domain/colorSuggestions";
-import LayoutCard from "@/features/layout/ui/LayoutCard";
-import LayoutGuidesSection from "@/features/layout/ui/LayoutGuidesSection";
-import MapDimensionFields from "./MapDimensionFields";
-import ColorPicker from "@/features/theme/ui/ColorPicker";
-import ThemeColorEditor from "@/features/theme/ui/ThemeColorEditor";
-import ThemeSummarySection from "@/features/theme/ui/ThemeSummarySection";
-import ThemeDesignerPanel from "@/features/theme-designer/ui/ThemeDesignerPanel";
-import SaveThemeModal from "@/features/theme/ui/SaveThemeModal";
-import SaveChoiceModal from "@/features/theme/ui/SaveChoiceModal";
-import ConfirmModal from "@/shared/ui/ConfirmModal";
-import { CheckIcon, EditIcon } from "@/shared/ui/Icons";
+  createCustomLayoutOption,
+  defaultLayoutId,
+  formatLayoutDimensions,
+  mergeLayoutGroups,
+} from "@/features/layout/infrastructure/layoutRepository";
 import type {
   ResolvedTheme,
   SavedTheme,
   ThemeColors,
+  ThemeOption,
 } from "@/features/theme/domain/types";
+import LayoutCard from "@/features/layout/ui/LayoutCard";
+import LayoutGuidesSection from "@/features/layout/ui/LayoutGuidesSection";
+import CreateTemplateForm from "@/features/layout/ui/CreateTemplateForm";
+import ThemePickerView from "@/features/theme/ui/ThemePickerView";
+import ThemeDesignerPanel from "@/features/theme-designer/ui/ThemeDesignerPanel";
+import ConfirmModal from "@/shared/ui/ConfirmModal";
+import { AddIcon, DesignerIcon } from "@/shared/ui/Icons";
 import type {
   DesignerMessage,
   GeneratedTheme,
   ResolvedRouteOverlay,
   ThemeDesignerSession,
 } from "@/features/theme-designer/domain/types";
-import type { LayoutGroup } from "@/features/layout/domain/types";
+import type {
+  CustomTemplate,
+  Layout,
+  LayoutGroup,
+} from "@/features/layout/domain/types";
 import type { CustomSizeUnit } from "@/features/poster/application/posterReducer";
-
-const FALLBACK_COLOR = "#000000";
 
 interface MapSettingsForm {
   theme: string;
@@ -59,6 +52,7 @@ interface MapSettingsForm {
 
 interface MapSettingsSectionProps {
   activeMobileTab?: string;
+  layoutControlsSlot?: React.ReactNode;
   form: MapSettingsForm;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onNumericFieldBlur: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -66,19 +60,15 @@ interface MapSettingsSectionProps {
   onLayoutChange: (layoutId: string) => void;
   onCustomUnitChange?: (unit: CustomSizeUnit) => void;
   selectedTheme: ResolvedTheme;
+  effectiveTheme: ResolvedTheme;
   themeOptions: ThemeOption[];
   layoutGroups: LayoutGroup[];
   minPosterCm: number;
   maxPosterCm: number;
   customColors: Record<string, string>;
-  onColorChange: (key: string, value: string) => void;
-  onResetColors: () => void;
-  onColorEditorActiveChange?: (active: boolean) => void;
-  effectiveTheme: ResolvedTheme;
   savedThemes: SavedTheme[];
   deletedBuiltinThemeIds: string[];
   onAddSavedTheme: (theme: SavedTheme) => void;
-  onUpdateSavedTheme: (themeId: string, changes: Partial<SavedTheme>) => void;
   onRemoveSavedTheme: (themeId: string) => void;
   onDeleteBuiltinTheme: (themeId: string) => void;
   onSetCustomColors: (colors: Record<string, string>) => void;
@@ -99,26 +89,17 @@ interface MapSettingsSectionProps {
 
 export default function MapSettingsSection({
   activeMobileTab,
+  layoutControlsSlot,
   form,
-  onChange,
-  onNumericFieldBlur,
   onThemeChange,
   onLayoutChange,
-  onCustomUnitChange,
   selectedTheme,
+  effectiveTheme,
   themeOptions,
   layoutGroups,
-  minPosterCm,
-  maxPosterCm,
-  customColors,
-  onColorChange,
-  onResetColors,
-  onColorEditorActiveChange,
-  effectiveTheme,
   savedThemes,
   deletedBuiltinThemeIds,
   onAddSavedTheme,
-  onUpdateSavedTheme,
   onRemoveSavedTheme,
   onDeleteBuiltinTheme,
   onSetCustomColors,
@@ -130,147 +111,32 @@ export default function MapSettingsSection({
   onMarkGeneratedThemeSaved,
   onClearThemeDesigner,
 }: MapSettingsSectionProps) {
-  const [isThemeEditing, setIsThemeEditing] = useState(false);
+  const { state, dispatch } = usePosterContext();
+
   const [isThemeDesignerOpen, setIsThemeDesignerOpen] = useState(false);
-  const [isLayoutEditing, setIsLayoutEditing] = useState(false);
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [isSaveChoiceModalOpen, setIsSaveChoiceModalOpen] = useState(false);
-  const [pendingDeleteThemeId, setPendingDeleteThemeId] = useState<
-    string | null
-  >(null);
-  const [pendingDeleteBuiltinThemeId, setPendingDeleteBuiltinThemeId] =
-    useState<string | null>(null);
-  const defaultColorKey: ThemeColorKey = DISPLAY_PALETTE_KEYS[0] ?? "ui.bg";
-  const [activeColorKey, setActiveColorKey] = useState<ThemeColorKey | null>(
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [pendingLoadTemplate, setPendingLoadTemplate] = useState<Layout | null>(
     null,
   );
-  const [activeColorSession, setActiveColorSession] = useState<{
-    key: ThemeColorKey;
-    seedColor: string;
-    seedPalette: string[];
-  } | null>(null);
-  const themeListRef = useRef<HTMLDivElement | null>(null);
+  const [pendingDeleteTemplate, setPendingDeleteTemplate] =
+    useState<Layout | null>(null);
+
   const layoutGroupsRef = useRef<HTMLDivElement | null>(null);
 
-  const visibleThemeOptions = useMemo(() => {
-    if (deletedBuiltinThemeIds.length === 0) return themeOptions;
-    const deletedSet = new Set(deletedBuiltinThemeIds);
-    return themeOptions.filter((option) => !deletedSet.has(option.id));
-  }, [deletedBuiltinThemeIds, themeOptions]);
-
-  const activeGeneratedTheme = useMemo(
-    () =>
-      themeDesigner.activeGeneratedThemeId
-        ? (themeDesigner.generatedThemes.find(
-            (t) => t.id === themeDesigner.activeGeneratedThemeId,
-          ) ?? null)
-        : null,
-    [themeDesigner.activeGeneratedThemeId, themeDesigner.generatedThemes],
-  );
-
-  const selectedThemeOption = useMemo(() => {
-    if (activeGeneratedTheme) {
-      const palette = DISPLAY_PALETTE_KEYS.map(
-        (key) => getThemeColorByPath(activeGeneratedTheme.colors, key) || "",
-      );
-      return {
-        id: activeGeneratedTheme.id,
-        name: activeGeneratedTheme.name,
-        description: activeGeneratedTheme.description,
-        palette,
-      };
-    }
-    const matchingOption = visibleThemeOptions.find((t) => t.id === form.theme);
-    if (matchingOption) return matchingOption;
-    const matchingSaved = savedThemes.find((t) => t.id === form.theme);
-    if (matchingSaved) {
-      const palette = DISPLAY_PALETTE_KEYS.map(
-        (key) => getThemeColorByPath(matchingSaved.colors, key) || "",
-      );
-      return {
-        id: matchingSaved.id,
-        name: matchingSaved.name,
-        description: matchingSaved.description,
-        palette,
-      };
-    }
-    return createFallbackThemeOption(form.theme, selectedTheme);
-  }, [
-    activeGeneratedTheme,
-    form.theme,
-    savedThemes,
-    selectedTheme,
-    visibleThemeOptions,
-  ]);
-
-  const canDeleteSelectedBuiltin = useMemo(() => {
-    if (activeGeneratedTheme) return false;
-    if (visibleThemeOptions.length <= 1) return false;
-    return visibleThemeOptions.some((t) => t.id === form.theme);
-  }, [activeGeneratedTheme, form.theme, visibleThemeOptions]);
-
-  const currentThemePalette = useMemo(
-    () =>
-      DISPLAY_PALETTE_KEYS.map((key) => {
-        const themeColor =
-          getThemeColorByPath(selectedTheme, key) || FALLBACK_COLOR;
-        return customColors[key] ?? themeColor;
-      }),
-    [customColors, selectedTheme],
-  );
-
-  const summaryThemeOption = useMemo(
-    () => ({ ...selectedThemeOption, palette: currentThemePalette }),
-    [currentThemePalette, selectedThemeOption],
-  );
-
-  const activeColorChoices = useMemo(() => {
-    if (!activeColorKey) return { suggestedColors: [], moreColors: [] };
-
-    const sessionColor =
-      activeColorSession?.key === activeColorKey
-        ? activeColorSession.seedColor
-        : "";
-    const sessionPalette =
-      activeColorSession?.key === activeColorKey
-        ? activeColorSession.seedPalette
-        : currentThemePalette;
-
-    return buildDynamicColorChoices(
-      sessionColor ||
-        customColors[activeColorKey] ||
-        getThemeColorByPath(selectedTheme, activeColorKey) ||
-        currentThemePalette[0] ||
-        "",
-      sessionPalette,
-    );
-  }, [
-    activeColorKey,
-    activeColorSession,
-    customColors,
-    currentThemePalette,
-    selectedTheme,
-  ]);
-
-  const colorTargets = useMemo(
-    () =>
-      DISPLAY_PALETTE_KEYS.map((key) => {
-        const baseColor =
-          getThemeColorByPath(selectedTheme, key) || FALLBACK_COLOR;
-        const currentColor = customColors[key] ?? baseColor;
-        return {
-          key,
-          label: PALETTE_COLOR_LABELS[key] ?? key,
-          color: currentColor,
-          isActive: activeColorKey === key,
-        };
-      }),
-    [activeColorKey, customColors, selectedTheme],
+  const mergedLayoutGroups = useMemo(
+    () => mergeLayoutGroups(layoutGroups, state.customTemplates),
+    [layoutGroups, state.customTemplates],
   );
 
   const layoutOptions = useMemo(
-    () => layoutGroups.flatMap((g) => g.options),
-    [layoutGroups],
+    () => mergedLayoutGroups.flatMap((g) => g.options),
+    [mergedLayoutGroups],
+  );
+
+  const existingTemplateIds = useMemo(
+    () => new Set(layoutOptions.map((option) => option.id)),
+    [layoutOptions],
   );
 
   const selectedLayoutOption = useMemo(() => {
@@ -282,143 +148,39 @@ export default function MapSettingsSection({
       form.customSizeUnit ?? "in",
     );
   }, [form.customSizeUnit, form.height, form.layout, form.width, layoutOptions]);
+
   const selectedLayoutDescription =
     selectedLayoutOption.id === "custom"
-      ? "Your custom layout."
+      ? "Your custom template."
       : selectedLayoutOption.description?.trim() || "No description available.";
 
-  function clearColorPickerState() {
-    setActiveColorKey(null);
-    setActiveColorSession(null);
-  }
+  useEffect(() => {
+    if (activeMobileTab && activeMobileTab !== "layout") {
+      setIsTemplatePickerOpen(false);
+      setIsCreatingTemplate(false);
+    }
+    if (activeMobileTab && activeMobileTab !== "theme") {
+      setIsThemeDesignerOpen(false);
+    }
+  }, [activeMobileTab]);
 
-  function handleThemeSelect(themeId: string) {
-    onThemeChange(themeId);
-    clearColorPickerState();
-  }
-
-  function handleLayoutSelectInline(layoutId: string) {
-    onLayoutChange(layoutId);
-    setIsLayoutEditing(false);
-  }
-
-  function handleSwatchClick(key: ThemeColorKey) {
-    const themeColor = getThemeColorByPath(selectedTheme, key);
-    const seedColor =
-      customColors[key] ?? (themeColor || currentThemePalette[0] || "");
-    setActiveColorKey(key);
-    setActiveColorSession({
-      key,
-      seedColor,
-      seedPalette: [...currentThemePalette],
-    });
-  }
-
-  function handleOpenThemeEditor() {
-    setIsThemeEditing(true);
-    clearColorPickerState();
-  }
-
-  function handleDoneThemeEditor() {
-    setIsThemeEditing(false);
-    clearColorPickerState();
-  }
-
-  function handleOpenLayoutEditor() {
-    setIsLayoutEditing(true);
-    onLayoutChange("custom");
-  }
-
-  function handleDoneLayoutEditor() {
-    setIsLayoutEditing(false);
-  }
-
-  function handleResetThemeColors() {
-    onResetColors();
-    if (!isThemeEditing) {
-      clearColorPickerState();
+  useEffect(() => {
+    if (!isTemplatePickerOpen || isCreatingTemplate) {
       return;
     }
-    const activeKey = activeColorKey || defaultColorKey;
-    const seedPalette = DISPLAY_PALETTE_KEYS.map(
-      (key) =>
-        normalizeHexColor(getThemeColorByPath(selectedTheme, key)) ||
-        normalizeHexColor(currentThemePalette[0]) ||
-        "",
-    );
-    setActiveColorSession({
-      key: activeKey,
-      seedColor:
-        seedPalette[DISPLAY_PALETTE_KEYS.indexOf(activeKey)] ||
-        seedPalette[0] ||
-        "",
-      seedPalette,
+    const frameId = window.requestAnimationFrame(() => {
+      const selectedLayoutCard =
+        layoutGroupsRef.current?.querySelector<HTMLElement>(
+          ".layout-card.is-selected",
+        );
+      selectedLayoutCard?.scrollIntoView({
+        behavior: "auto",
+        block: "nearest",
+        inline: "start",
+      });
     });
-  }
-
-  function handleApplySavedTheme(themeId: string) {
-    onThemeChange(themeId);
-    clearColorPickerState();
-  }
-
-  function handleRequestDeleteSavedTheme(themeId: string) {
-    setPendingDeleteThemeId(themeId);
-  }
-
-  function handleCancelDeleteSavedTheme() {
-    setPendingDeleteThemeId(null);
-  }
-
-  function handleConfirmDeleteSavedTheme() {
-    const themeId = pendingDeleteThemeId;
-    if (!themeId) return;
-
-    if (form.theme === themeId) {
-      // Snapshot the deleted theme's colors as customColors and switch to
-      // a built-in base, so the map keeps showing the same colors.
-      const deleted = savedThemes.find((t) => t.id === themeId);
-      const fallbackBaseThemeId =
-        visibleThemeOptions.find((t) => t.id !== themeId)?.id ??
-        themeOptions.find((t) => t.id !== themeId)?.id ??
-        form.theme;
-      onThemeChange(fallbackBaseThemeId);
-      if (deleted) {
-        const colorOverrides: Record<string, string> = {};
-        for (const key of DISPLAY_PALETTE_KEYS) {
-          const color = getThemeColorByPath(deleted.colors, key);
-          if (color) colorOverrides[key] = color;
-        }
-        onSetCustomColors(colorOverrides);
-      }
-    }
-
-    onRemoveSavedTheme(themeId);
-    setPendingDeleteThemeId(null);
-  }
-
-  function handleRequestDeleteSelectedBuiltin() {
-    if (!canDeleteSelectedBuiltin) return;
-    setPendingDeleteBuiltinThemeId(form.theme);
-  }
-
-  function handleConfirmDeleteBuiltinTheme() {
-    const themeId = pendingDeleteBuiltinThemeId;
-    if (!themeId) return;
-
-    const remaining = visibleThemeOptions.filter((t) => t.id !== themeId);
-    if (remaining.length === 0) {
-      setPendingDeleteBuiltinThemeId(null);
-      return;
-    }
-
-    if (form.theme === themeId) {
-      onThemeChange(remaining[0].id);
-      clearColorPickerState();
-    }
-
-    onDeleteBuiltinTheme(themeId);
-    setPendingDeleteBuiltinThemeId(null);
-  }
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isTemplatePickerOpen, isCreatingTemplate]);
 
   function handleSaveGeneratedTheme(
     generatedTheme: GeneratedTheme,
@@ -447,174 +209,52 @@ export default function MapSettingsSection({
     onMarkGeneratedThemeSaved(generatedTheme.id, id);
   }
 
-  function buildSuggestedThemeName(): string {
-    const baseName = (selectedThemeOption.name || selectedTheme.name || "Theme").trim();
-    const now = new Date();
-    const pad = (n: number, width = 2) => String(n).padStart(width, "0");
-    const stamp =
-      `${now.getFullYear()}` +
-      `${pad(now.getMonth() + 1)}` +
-      `${pad(now.getDate())}` +
-      `${pad(now.getHours())}` +
-      `${pad(now.getMinutes())}` +
-      `${pad(now.getSeconds())}`;
-    return `${baseName}-${stamp}`;
-  }
-
-  const isOnSavedTheme = savedThemes.some((t) => t.id === form.theme);
-
-  function handleOpenSaveModal() {
-    if (isOnSavedTheme) {
-      setIsSaveChoiceModalOpen(true);
+  function handleRequestLoadTemplate(layoutOption: Layout) {
+    if (layoutOption.id === form.layout) {
+      setIsTemplatePickerOpen(false);
       return;
     }
-    setIsSaveModalOpen(true);
+    setPendingLoadTemplate(layoutOption);
   }
 
-  function handleCancelSaveChoice() {
-    setIsSaveChoiceModalOpen(false);
+  function handleConfirmLoadTemplate() {
+    if (!pendingLoadTemplate) return;
+    const targetId = pendingLoadTemplate.id;
+    setPendingLoadTemplate(null);
+    onLayoutChange(targetId);
+    setIsTemplatePickerOpen(false);
   }
 
-  function handleChooseSaveAsCopy() {
-    setIsSaveChoiceModalOpen(false);
-    setIsSaveModalOpen(true);
+  function handleCreateCustomTemplate(template: CustomTemplate) {
+    dispatch({ type: "ADD_CUSTOM_TEMPLATE", template });
+    setIsCreatingTemplate(false);
   }
 
-  function handleChooseSaveOverwrite() {
-    const targetId = form.theme;
-    const colorsSnapshot: ThemeColors = {
-      ui: { ...effectiveTheme.ui },
-      map: {
-        ...effectiveTheme.map,
-        roads: { ...effectiveTheme.map.roads },
-      },
-    };
-    onUpdateSavedTheme(targetId, {
-      colors: colorsSnapshot,
-      savedAt: new Date().toISOString(),
-    });
-    onResetColors();
-    setIsSaveChoiceModalOpen(false);
-  }
-
-  function handleCancelSave() {
-    setIsSaveModalOpen(false);
-  }
-
-  function handleConfirmSave(name: string, description: string) {
-    const colorsSnapshot: ThemeColors = {
-      ui: { ...effectiveTheme.ui },
-      map: {
-        ...effectiveTheme.map,
-        roads: { ...effectiveTheme.map.roads },
-      },
-    };
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? `saved-${crypto.randomUUID()}`
-        : `saved-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const newTheme: SavedTheme = {
-      id,
-      name,
-      description,
-      colors: colorsSnapshot,
-      savedAt: new Date().toISOString(),
-    };
-    onAddSavedTheme(newTheme);
-    // Switch to the newly saved theme so the map keeps showing what
-    // the user just saved (SET_THEME also clears customColors).
-    onThemeChange(id);
-    setIsSaveModalOpen(false);
-  }
-
-  function handleResetSingleColor(key: ThemeColorKey) {
-    const originalColor =
-      normalizeHexColor(getThemeColorByPath(selectedTheme, key)) ||
-      normalizeHexColor(currentThemePalette[0]) ||
-      "";
-    if (!originalColor) return;
-    onColorChange(key, originalColor);
-  }
-
-  const hasCustomColors = useMemo(
-    () =>
-      DISPLAY_PALETTE_KEYS.some((key) => {
-        const override = normalizeHexColor(customColors[key]);
-        if (!override) return false;
-        const original = normalizeHexColor(getThemeColorByPath(selectedTheme, key));
-        return override !== original;
-      }),
-    [customColors, selectedTheme],
-  );
-  const activeColorLabel = activeColorKey
-    ? (PALETTE_COLOR_LABELS[activeColorKey] ?? "Color")
-    : "Color";
-
-  useEffect(() => {
-    onColorEditorActiveChange?.(false);
-    return () => {
-      onColorEditorActiveChange?.(false);
-    };
-  }, [onColorEditorActiveChange]);
-
-  useEffect(() => {
-    if (activeMobileTab !== "theme") {
-      return;
+  function handleConfirmDeleteTemplate() {
+    if (!pendingDeleteTemplate) return;
+    const templateId = pendingDeleteTemplate.id;
+    if (form.layout === templateId) {
+      onLayoutChange(defaultLayoutId);
     }
-    const frameId = window.requestAnimationFrame(() => {
-      const selectedThemeCard = themeListRef.current?.querySelector<HTMLElement>(
-        ".theme-card.is-selected",
-      );
-      selectedThemeCard?.scrollIntoView({
-        behavior: "auto",
-        block: "nearest",
-        inline: "start",
-      });
-    });
-    return () => window.cancelAnimationFrame(frameId);
-  }, [activeMobileTab]);
+    dispatch({ type: "REMOVE_CUSTOM_TEMPLATE", templateId });
+    setPendingDeleteTemplate(null);
+  }
 
-  useEffect(() => {
-    if (activeMobileTab !== "layout" || isLayoutEditing) {
-      return;
-    }
-    const frameId = window.requestAnimationFrame(() => {
-      const selectedLayoutCard =
-        layoutGroupsRef.current?.querySelector<HTMLElement>(
-          ".layout-card.is-selected",
-        );
-      selectedLayoutCard?.scrollIntoView({
-        behavior: "auto",
-        block: "nearest",
-        inline: "start",
-      });
-    });
-    return () => window.cancelAnimationFrame(frameId);
-  }, [activeMobileTab, isLayoutEditing]);
+  function handleOpenTemplatePicker() {
+    setIsCreatingTemplate(false);
+    setIsTemplatePickerOpen(true);
+  }
 
-  const editorKey = activeColorKey || defaultColorKey;
-  const editorChoices = activeColorKey
-    ? activeColorChoices
-    : buildDynamicColorChoices(currentThemePalette[0] || "", currentThemePalette);
-  const editorColor =
-    customColors[editorKey] ??
-    (getThemeColorByPath(selectedTheme, editorKey) || currentThemePalette[0] || "");
-  const originalEditorColor =
-    normalizeHexColor(getThemeColorByPath(selectedTheme, editorKey)) ||
-    normalizeHexColor(currentThemePalette[0]) ||
-    "";
-  const normalizedEditorColor = normalizeHexColor(editorColor) || "";
-  const canResetEditorColor = Boolean(
-    originalEditorColor &&
-      normalizedEditorColor &&
-      originalEditorColor !== normalizedEditorColor,
-  );
+  function handleCloseTemplatePicker() {
+    setIsCreatingTemplate(false);
+    setIsTemplatePickerOpen(false);
+  }
+
+  const generatedThemeCount = themeDesigner.generatedThemes.length;
 
   return (
     <section className="panel-block">
       <div className="map-settings-theme-part">
-        <h2>Theme</h2>
-
         {isThemeDesignerOpen ? (
           <ThemeDesignerPanel
             session={themeDesigner}
@@ -628,185 +268,157 @@ export default function MapSettingsSection({
             onSaveGeneratedTheme={handleSaveGeneratedTheme}
             onClearSession={onClearThemeDesigner}
           />
-        ) : isThemeEditing ? (
-          activeColorKey ? (
-            <section className="panel-block color-editor-screen">
-              <h2>Color Editor</h2>
-              <div className="color-editor-header">
-                <p className="theme-active-label">Editing: {activeColorLabel}</p>
-                <div className="theme-edit-actions">
-                  <button
-                    type="button"
-                    className="theme-edit-done-btn"
-                    onClick={clearColorPickerState}
-                  >
-                    Done
-                  </button>
-                </div>
-              </div>
-
-              <ColorPicker
-                currentColor={editorColor}
-                suggestedColors={editorChoices.suggestedColors}
-                moreColors={editorChoices.moreColors}
-                onChange={(color: string) => onColorChange(editorKey, color)}
-                onResetColor={() => handleResetSingleColor(editorKey)}
-                canResetColor={canResetEditorColor}
-              />
-            </section>
-          ) : (
-            <ThemeColorEditor
-              activeColorLabel={activeColorLabel}
-              hasCustomColors={hasCustomColors}
-              onResetAllColors={handleResetThemeColors}
-              onSave={handleOpenSaveModal}
-              onDone={handleDoneThemeEditor}
-              colorTargets={colorTargets}
-              onTargetSelect={handleSwatchClick}
-            />
-          )
         ) : (
-          <ThemeSummarySection
-            listRef={themeListRef}
-            themeOptions={visibleThemeOptions}
-            selectedThemeId={activeGeneratedTheme ? "" : form.theme}
-            selectedThemeOption={summaryThemeOption}
-            onThemeSelect={handleThemeSelect}
-            onCustomize={handleOpenThemeEditor}
-            onOpenThemeDesigner={() => setIsThemeDesignerOpen(true)}
-            generatedThemeCount={themeDesigner.generatedThemes.length}
-            canDeleteSelectedBuiltin={canDeleteSelectedBuiltin}
-            onRequestDeleteSelectedBuiltin={handleRequestDeleteSelectedBuiltin}
-            savedThemes={savedThemes}
-            onApplySavedTheme={handleApplySavedTheme}
-            onDeleteSavedTheme={handleRequestDeleteSavedTheme}
-          />
+          <>
+            <h2>Theme</h2>
+
+            <div className="theme-designer-launch-row">
+              <button
+                type="button"
+                className="theme-designer-launch-btn"
+                onClick={() => setIsThemeDesignerOpen(true)}
+              >
+                <DesignerIcon aria-hidden="true" />
+                <span>
+                  Theme Designer
+                  {generatedThemeCount > 0 ? ` · ${generatedThemeCount}` : ""}
+                </span>
+              </button>
+            </div>
+
+            <ThemePickerView
+              isActive={activeMobileTab === "theme"}
+              themeId={form.theme}
+              selectedTheme={selectedTheme}
+              themeOptions={themeOptions}
+              savedThemes={savedThemes}
+              deletedBuiltinThemeIds={deletedBuiltinThemeIds}
+              themeDesigner={themeDesigner}
+              onThemeChange={onThemeChange}
+              onRemoveSavedTheme={onRemoveSavedTheme}
+              onDeleteBuiltinTheme={onDeleteBuiltinTheme}
+              onSetCustomColors={onSetCustomColors}
+            />
+          </>
         )}
       </div>
 
-      {isSaveChoiceModalOpen ? (
-        <SaveChoiceModal
-          themeName={selectedThemeOption.name}
-          onSave={handleChooseSaveOverwrite}
-          onSaveAsCopy={handleChooseSaveAsCopy}
-          onCancel={handleCancelSaveChoice}
-        />
-      ) : null}
-
-      {isSaveModalOpen ? (
-        <SaveThemeModal
-          suggestedName={buildSuggestedThemeName()}
-          suggestedDescription={selectedThemeOption.description ?? ""}
-          existingNames={savedThemes.map((t) => t.name)}
-          onConfirm={handleConfirmSave}
-          onCancel={handleCancelSave}
-        />
-      ) : null}
-
-      {pendingDeleteThemeId ? (
+      {pendingLoadTemplate ? (
         <ConfirmModal
-          title="Delete saved theme"
-          message={`Delete "${
-            savedThemes.find((t) => t.id === pendingDeleteThemeId)?.name ??
-            "this theme"
-          }"? This cannot be undone.`}
-          confirmLabel="Delete"
+          title="Load Template"
+          message={`Load "${pendingLoadTemplate.name}" (${formatLayoutDimensions(pendingLoadTemplate)})? This will update your map dimensions and guides.`}
+          confirmLabel="Load Template"
+          cancelLabel="Cancel"
+          onConfirm={handleConfirmLoadTemplate}
+          onCancel={() => setPendingLoadTemplate(null)}
+        />
+      ) : null}
+
+      {pendingDeleteTemplate ? (
+        <ConfirmModal
+          title="Delete Template"
+          message={`Delete custom template "${pendingDeleteTemplate.name}"? This cannot be undone.`}
+          confirmLabel="Delete Template"
           cancelLabel="Cancel"
           destructive
-          onConfirm={handleConfirmDeleteSavedTheme}
-          onCancel={handleCancelDeleteSavedTheme}
-        />
-      ) : null}
-
-      {pendingDeleteBuiltinThemeId ? (
-        <ConfirmModal
-          title="Delete built-in theme"
-          message={`Remove "${
-            visibleThemeOptions.find(
-              (t) => t.id === pendingDeleteBuiltinThemeId,
-            )?.name ?? "this theme"
-          }" from Built-in Themes? Export and save src/data/config.json in Settings to make this deletion permanent.`}
-          confirmLabel="Delete Theme"
-          cancelLabel="Cancel"
-          destructive
-          onConfirm={handleConfirmDeleteBuiltinTheme}
-          onCancel={() => setPendingDeleteBuiltinThemeId(null)}
+          onConfirm={handleConfirmDeleteTemplate}
+          onCancel={() => setPendingDeleteTemplate(null)}
         />
       ) : null}
 
       <div className="map-settings-layout-part">
         <h2>Layout</h2>
-        <div className="layout-summary-head">
-          <div className="layout-summary-copy">
-            <p className="layout-summary-label">
-              LAYOUT:{" "}
-              <span className="layout-summary-label-name">
-                {selectedLayoutOption.name}
-              </span>
-            </p>
-            <p className="layout-summary-description">
-              {selectedLayoutDescription}
-            </p>
-          </div>
-          {isLayoutEditing ? (
-            <button
-              type="button"
-              className="theme-customize-btn"
-              onClick={handleDoneLayoutEditor}
-              aria-label="Done editing layout"
-            >
-              <span className="theme-customize-icon" aria-hidden="true">
-                <CheckIcon />
-              </span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="theme-customize-btn"
-              onClick={handleOpenLayoutEditor}
-              aria-label="Customize layout size"
-            >
-              <span className="theme-customize-icon" aria-hidden="true">
-                <EditIcon />
-              </span>
-            </button>
-          )}
-        </div>
 
-        {isLayoutEditing ? (
-          <div className="layout-custom-editor">
-            <MapDimensionFields
-              form={form}
-              minPosterCm={minPosterCm}
-              maxPosterCm={maxPosterCm}
-              onChange={onChange}
-              onNumericFieldBlur={onNumericFieldBlur}
-              customSizeUnit={form.customSizeUnit}
-              onCustomSizeUnitChange={onCustomUnitChange}
-              showDistanceField={false}
+        {isTemplatePickerOpen ? (
+          isCreatingTemplate ? (
+            <CreateTemplateForm
+              layoutGroups={mergedLayoutGroups}
+              existingTemplateIds={existingTemplateIds}
+              onCreateTemplate={handleCreateCustomTemplate}
+              onCancel={() => setIsCreatingTemplate(false)}
             />
-          </div>
-        ) : (
-          <div className="layout-inline-groups" ref={layoutGroupsRef}>
-            {layoutGroups.map((group) => (
-              <section key={group.id} className="layout-inline-group">
-                <h3>{group.name}</h3>
-                <div className="layout-inline-list card-scroll-list">
-                  {group.options.map((layoutOption) => (
-                    <LayoutCard
-                      key={layoutOption.id}
-                      layoutOption={layoutOption}
-                      isSelected={layoutOption.id === form.layout}
-                      onClick={() => handleLayoutSelectInline(layoutOption.id)}
-                    />
-                  ))}
+          ) : (
+            <>
+              <div className="template-picker-header">
+                <div className="layout-summary-copy">
+                  <p className="section-summary-label">TEMPLATE</p>
+                  <p className="theme-interaction-hint">
+                    Double-click a template to load
+                  </p>
                 </div>
-              </section>
-            ))}
-          </div>
-        )}
+                <button
+                  type="button"
+                  className="theme-edit-done-btn"
+                  onClick={handleCloseTemplatePicker}
+                >
+                  Done
+                </button>
+              </div>
 
-        <LayoutGuidesSection />
+              <div className="layout-inline-groups" ref={layoutGroupsRef}>
+                {mergedLayoutGroups.map((group) => (
+                  <section key={group.id} className="layout-inline-group">
+                    <h3>{group.name}</h3>
+                    <div className="layout-inline-list card-scroll-list">
+                      {group.options.map((layoutOption) => (
+                        <LayoutCard
+                          key={layoutOption.id}
+                          layoutOption={layoutOption}
+                          isSelected={layoutOption.id === form.layout}
+                          onDoubleClick={() =>
+                            handleRequestLoadTemplate(layoutOption)
+                          }
+                          onDelete={
+                            layoutOption.isCustom
+                              ? () => setPendingDeleteTemplate(layoutOption)
+                              : undefined
+                          }
+                          title={
+                            layoutOption.id === form.layout
+                              ? `${layoutOption.name} (active)`
+                              : `Double-click to load ${layoutOption.name}`
+                          }
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+
+              <div className="template-picker-create-row">
+                <button
+                  type="button"
+                  className="create-template-submit-btn"
+                  onClick={() => setIsCreatingTemplate(true)}
+                >
+                  <AddIcon aria-hidden="true" />
+                  <span>CREATE NEW TEMPLATE</span>
+                </button>
+              </div>
+            </>
+          )
+        ) : (
+          <>
+            <p className="section-summary-label">TEMPLATE</p>
+
+            <div className="template-current-card-wrap">
+              <LayoutCard
+                layoutOption={selectedLayoutOption}
+                isSelected
+                onClick={handleOpenTemplatePicker}
+              />
+              <p className="template-current-description">
+                {selectedLayoutDescription}
+              </p>
+            </div>
+
+            {layoutControlsSlot ? (
+              <div className="layout-controls-slot">{layoutControlsSlot}</div>
+            ) : null}
+
+            <LayoutGuidesSection />
+          </>
+        )}
       </div>
     </section>
   );

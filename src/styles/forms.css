@@ -1108,6 +1108,157 @@ button.color-editor-target:focus-visible {
   margin-bottom: 10px;
 }
 
+.template-picker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.template-picker-header .section-summary-label {
+  margin-bottom: 4px;
+}
+
+.template-current-card-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.template-current-card-wrap .layout-card {
+  margin: 0;
+  cursor: pointer;
+}
+
+.template-current-card-wrap .layout-card:hover,
+.template-current-card-wrap .layout-card:focus-visible {
+  border-color: rgba(132, 200, 236, 0.95);
+  box-shadow: 0 0 0 2px rgba(94, 174, 212, 0.32);
+}
+
+.template-current-description {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.42;
+  color: #b9cfde;
+}
+
+.layout-card-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.layout-card-shell .layout-card {
+  margin: 0;
+  height: 100%;
+}
+
+.layout-card.has-delete .layout-card-copy {
+  padding-right: 24px;
+}
+
+button.layout-card-delete-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(151, 183, 207, 0.28);
+  border-radius: 7px;
+  background: rgba(9, 18, 27, 0.88);
+  color: #b9cfde;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+button.layout-card-delete-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+button.layout-card-delete-btn:hover,
+button.layout-card-delete-btn:focus-visible {
+  transform: none;
+  filter: none;
+  border-color: rgba(255, 177, 142, 0.85);
+  background: rgba(88, 38, 26, 0.96);
+  color: #ffe8db;
+}
+
+.template-picker-create-row {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(151, 183, 207, 0.18);
+}
+
+.create-template-section {
+  display: grid;
+  gap: 2px;
+}
+
+.create-template-form {
+  display: grid;
+  gap: 10px;
+}
+
+.create-template-form label {
+  margin-bottom: 0;
+}
+
+.create-template-error {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: #ffbda8;
+}
+
+button.create-template-submit-btn {
+  width: 100%;
+  min-height: 40px;
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(112, 184, 222, 0.6);
+  border-radius: 10px;
+  background: rgba(28, 60, 82, 0.94);
+  color: #edf6fc;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+button.create-template-submit-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+button.create-template-submit-btn:not(:disabled):hover,
+button.create-template-submit-btn:focus-visible {
+  transform: none;
+  filter: none;
+  border-color: rgba(138, 204, 240, 0.88);
+  background: rgba(39, 80, 108, 0.98);
+}
+
+.layout-controls-slot {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(151, 183, 207, 0.18);
+}
+
 .layout-inline-groups {
   display: grid;
   gap: 10px;
@@ -1156,6 +1307,22 @@ button.color-editor-target:focus-visible {
   overflow: hidden;
 }
 
+.theme-card--compact {
+  min-height: 54px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.theme-card--compact .theme-card-palette,
+.theme-card--compact .theme-card-swatch {
+  min-height: 54px;
+}
+
+.theme-card--compact .theme-card-name {
+  bottom: 6px;
+  font-size: 0.84rem;
+}
+
 .theme-card.is-selected {
   border-color: rgba(112, 184, 222, 0.8);
   box-shadow: 0 0 0 2px rgba(75, 149, 186, 0.22);
@@ -1168,6 +1335,48 @@ button.color-editor-target:focus-visible {
   border-color: rgba(112, 184, 222, 0.8);
   box-shadow: 0 0 0 2px rgba(75, 149, 186, 0.22);
   background: rgba(9, 18, 27, 0.86);
+}
+
+.theme-card.is-selected.is-clean,
+.theme-card.is-selected.is-clean:hover,
+.theme-card.is-selected.is-clean:focus-within {
+  border: 2px solid #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.34);
+}
+
+.theme-card.is-selected.is-dirty,
+.theme-card.is-selected.is-dirty:hover,
+.theme-card.is-selected.is-dirty:focus-within {
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.38);
+}
+
+.theme-card.is-previewing,
+.theme-card.is-previewing:hover,
+.theme-card.is-previewing:focus-within {
+  border: 2px solid #7dd8f0;
+  box-shadow: 0 0 0 3px rgba(125, 216, 240, 0.34);
+}
+
+.theme-interaction-hint {
+  margin: 0 0 6px;
+  font-family: "Spline Sans Mono", monospace;
+  font-size: 0.68rem;
+  color: rgba(182, 210, 232, 0.72);
+  letter-spacing: 0.02em;
+}
+
+.theme-switch-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.theme-switch-modal-actions button {
+  width: 100%;
+  min-height: 38px;
+  justify-content: center;
 }
 
 .theme-card-name {
@@ -3192,6 +3401,72 @@ button.route-card__summary {
   text-align: left;
 }
 
+.routes-section__content--list {
+  grid-template-columns: 1fr;
+}
+
+.route-card--static .route-card__summary--static {
+  width: 100%;
+  margin: 0;
+  padding: 10px 38px 10px 12px;
+  border-radius: 8px;
+  color: #d8e8f4;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.route-card--static .route-card__meta {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.design-section__home {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.design-current-theme-block {
+  display: grid;
+  gap: 8px;
+}
+
+.design-current-theme-block > .section-summary-label {
+  margin-bottom: 0;
+}
+
+.design-color-editor-block {
+  padding-top: 14px;
+  border-top: 1px solid rgba(151, 183, 207, 0.18);
+}
+
+.design-color-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.design-color-editor-header > .section-summary-label {
+  margin-bottom: 0;
+}
+
+.design-color-editor-block .color-editor-target-grid {
+  margin-bottom: 0;
+}
+
+.design-route-styling {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(151, 183, 207, 0.18);
+}
+
 button.route-card__summary:not(:disabled):hover,
 button.route-card__summary:focus-visible {
   transform: none;
@@ -4303,6 +4578,10 @@ button.preset-action-btn--delete:focus-visible {
   border-top: 1px solid rgba(151, 183, 207, 0.18);
   display: grid;
   gap: 10px;
+}
+
+.layout-guides-block > .section-summary-label {
+  margin-bottom: 0;
 }
 
 .layout-guides-header {

@@ -24,6 +24,9 @@ export interface Route {
   outlineEnabled?: boolean;
   outlineColor?: string;
   outlineWidth?: number;
+  outline2Enabled?: boolean;
+  outline2Color?: string;
+  outline2Width?: number;
   opacity: number;
   lineStyle: RouteLineStyle;
   visible: boolean;
@@ -38,6 +41,9 @@ export interface RouteDefaults {
   outlineEnabled?: boolean;
   outlineColor?: string;
   outlineWidth?: number;
+  outline2Enabled?: boolean;
+  outline2Color?: string;
+  outline2Width?: number;
   opacity: number;
   lineStyle: RouteLineStyle;
   startIconId: string;
