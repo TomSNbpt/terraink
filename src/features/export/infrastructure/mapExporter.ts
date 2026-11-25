@@ -1,4 +1,5 @@
 import maplibregl from "maplibre-gl";
+import { transformMapRequest } from "@/features/map/infrastructure/maplibreStyle";
 import type { Map as MaplibreMap } from "maplibre-gl";
 import type { MarkerProjectionInput } from "@/features/markers/domain/types";
 import {
@@ -56,8 +57,10 @@ export async function captureMapAsCanvas(
     interactive: false,
     attributionControl: false,
     pixelRatio,
+    transformRequest: transformMapRequest,
     canvasContextAttributes: { preserveDrawingBuffer: true },
   });
+  exportMap.on("error", () => {});
 
   try {
     await waitForMapIdle(exportMap);

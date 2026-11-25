@@ -83,6 +83,7 @@ export default function ThemeDesignerPanel({
   onClearSession,
 }: ThemeDesignerPanelProps) {
   const [prompt, setPrompt] = useState("");
+  const [officialUrl, setOfficialUrl] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
@@ -131,17 +132,27 @@ export default function ThemeDesignerPanel({
     };
   }, []);
 
-  async function submitPrompt(rawText: string) {
-    const trimmed = rawText.trim();
+  async function submitPrompt(rawText: string, rawUrl = officialUrl) {
+    const trimmedUrl = rawUrl.trim();
+    const trimmedText = rawText.trim();
+    const trimmed =
+      trimmedText ||
+      (trimmedUrl ? `Official brand themes from ${trimmedUrl}` : "");
     if (!trimmed || isSending) return;
 
     setErrorMessage("");
     setPrompt("");
+    setOfficialUrl("");
+
+    const displayContent =
+      trimmedText && trimmedUrl && !trimmedText.includes(trimmedUrl)
+        ? `${trimmedText}\n${trimmedUrl}`
+        : trimmed;
 
     const userMsg: DesignerMessage = {
       id: createId("msg-user"),
       role: "user",
-      content: trimmed,
+      content: displayContent,
       createdAt: new Date().toISOString(),
     };
     onAddUserMessage(userMsg);
@@ -166,6 +177,7 @@ export default function ThemeDesignerPanel({
         selectedTheme: referenceTheme,
         selectedThemeIsGenerated: Boolean(activeGeneratedTheme),
         existingThemeNames: session.generatedThemes.map((t) => t.name),
+        officialUrl: trimmedUrl || undefined,
         signal: controller.signal,
       });
 
@@ -191,6 +203,7 @@ export default function ThemeDesignerPanel({
           ? { generatedThemeIds: createdThemes.map((t) => t.id) }
           : {}),
         ...(addedRouteSummary ? { addedRouteSummary } : {}),
+        ...(result.brandSource ? { brandSource: result.brandSource } : {}),
       };
 
       onAddAssistantResponse(assistantMsg, createdThemes);
@@ -223,13 +236,20 @@ export default function ThemeDesignerPanel({
 
   function handleFormSubmit(event: React.FormEvent) {
     event.preventDefault();
-    void submitPrompt(prompt);
+    void submitPrompt(prompt, officialUrl);
   }
 
   function handleInputKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      void submitPrompt(prompt);
+      void submitPrompt(prompt, officialUrl);
+    }
+  }
+
+  function handleUrlKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void submitPrompt(prompt, officialUrl);
     }
   }
 
@@ -238,6 +258,7 @@ export default function ThemeDesignerPanel({
     setIsSending(false);
     setErrorMessage("");
     setPrompt("");
+    setOfficialUrl("");
     onClearSession();
     setIsClearConfirmOpen(false);
   }
@@ -331,11 +352,12 @@ export default function ThemeDesignerPanel({
           {session.messages.length === 0 ? (
             <div className="theme-designer-empty">
               <p className="theme-designer-empty-title">
-                Describe an event, trail, or mood
+                Describe an event, brand, URL, or mood
               </p>
               <p className="theme-designer-empty-text">
-                I&apos;ll research official colors for 3 CMYK-safe palettes, or
-                add a race/trail route overlay directly onto your map.
+                I&apos;ll inspect the official website and logo colors to build
+                3 CMYK-safe palettes, or add a race/trail route overlay to your
+                map.
               </p>
               <div className="theme-designer-starters">
                 {STARTER_PROMPTS.map((example) => (
@@ -343,7 +365,7 @@ export default function ThemeDesignerPanel({
                     key={example}
                     type="button"
                     className="theme-designer-starter-btn"
-                    onClick={() => void submitPrompt(example)}
+                    onClick={() => void submitPrompt(example, "")}
                     disabled={isSending}
                   >
                     {example}
@@ -352,26 +374,73 @@ export default function ThemeDesignerPanel({
               </div>
             </div>
           ) : (
-            session.messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`theme-designer-msg theme-designer-msg--${msg.role}`}
-              >
-                <p className="theme-designer-msg-text">{msg.content}</p>
-                {msg.generatedThemeIds && msg.generatedThemeIds.length > 0 ? (
-                  <p className="theme-designer-msg-meta">
-                    Added {msg.generatedThemeIds.length} print-safe{" "}
-                    {msg.generatedThemeIds.length === 1 ? "option" : "options"}{" "}
-                    above
-                  </p>
-                ) : null}
-                {msg.addedRouteSummary ? (
-                  <p className="theme-designer-msg-meta">
-                    {msg.addedRouteSummary}
-                  </p>
-                ) : null}
-              </div>
-            ))
+            session.messages.map((msg) => {
+              const sourceSwatches = msg.brandSource
+                ? [
+                    ...msg.brandSource.logoColors.map((hex) => ({
+                      hex,
+                      origin: "Logo",
+                    })),
+                    ...msg.brandSource.siteColors
+                      .filter((hex) => !msg.brandSource?.logoColors.includes(hex))
+                      .map((hex) => ({ hex, origin: "Website" })),
+                  ].slice(0, 6)
+                : [];
+
+              return (
+                <div
+                  key={msg.id}
+                  className={`theme-designer-msg theme-designer-msg--${msg.role}`}
+                >
+                  <p className="theme-designer-msg-text">{msg.content}</p>
+                  {msg.brandSource ? (
+                    <div className="theme-designer-source">
+                      <div className="theme-designer-source-row">
+                        <span className="theme-designer-source-label">
+                          Source:
+                        </span>
+                        <a
+                          href={msg.brandSource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="theme-designer-source-link"
+                          title={msg.brandSource.url}
+                        >
+                          {msg.brandSource.domain} &#8599;
+                        </a>
+                      </div>
+                      {sourceSwatches.length > 0 ? (
+                        <div
+                          className="theme-designer-source-swatches"
+                          aria-label="Extracted official brand colors"
+                        >
+                          {sourceSwatches.map((swatch) => (
+                            <span
+                              key={`${swatch.origin}-${swatch.hex}`}
+                              className="theme-designer-source-swatch"
+                              style={{ backgroundColor: swatch.hex }}
+                              title={`${swatch.origin}: ${swatch.hex}`}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {msg.generatedThemeIds && msg.generatedThemeIds.length > 0 ? (
+                    <p className="theme-designer-msg-meta">
+                      Added {msg.generatedThemeIds.length} print-safe{" "}
+                      {msg.generatedThemeIds.length === 1 ? "option" : "options"}{" "}
+                      above
+                    </p>
+                  ) : null}
+                  {msg.addedRouteSummary ? (
+                    <p className="theme-designer-msg-meta">
+                      {msg.addedRouteSummary}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })
           )}
 
           {isSending ? (
@@ -394,6 +463,31 @@ export default function ThemeDesignerPanel({
           </p>
         ) : null}
 
+        <div className="theme-designer-url-row">
+          <input
+            type="url"
+            className="theme-designer-url-input"
+            value={officialUrl}
+            onChange={(e) => setOfficialUrl(e.target.value)}
+            onKeyDown={handleUrlKeyDown}
+            placeholder="Official website URL (optional, e.g. lamarathon.com)"
+            disabled={isSending}
+            aria-label="Official website URL (optional)"
+          />
+          {officialUrl ? (
+            <button
+              type="button"
+              className="theme-designer-url-clear"
+              onClick={() => setOfficialUrl("")}
+              disabled={isSending}
+              aria-label="Clear official website URL"
+              title="Clear URL"
+            >
+              <CloseIcon aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+
         <div className="theme-designer-composer">
           <textarea
             className="theme-designer-input"
@@ -403,7 +497,7 @@ export default function ThemeDesignerPanel({
             placeholder={
               activeGeneratedTheme
                 ? `Tweak "${activeGeneratedTheme.name}" or ask to add a race/trail route…`
-                : "e.g. Chicago Marathon, or add the Boston Marathon route overlay…"
+                : "e.g. Los Angeles Marathon, paste a URL, or add a route…"
             }
             rows={2}
             disabled={isSending}
@@ -413,7 +507,10 @@ export default function ThemeDesignerPanel({
             type="button"
             className="theme-designer-send-btn"
             onClick={handleFormSubmit}
-            disabled={isSending || prompt.trim().length === 0}
+            disabled={
+              isSending ||
+              (prompt.trim().length === 0 && officialUrl.trim().length === 0)
+            }
             aria-label="Send theme request"
             title="Send"
           >

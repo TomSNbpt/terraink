@@ -1,4 +1,5 @@
 import maplibregl from "maplibre-gl";
+import { transformMapRequest } from "@/features/map/infrastructure/maplibreStyle";
 import type { Map as MaplibreMap } from "maplibre-gl";
 import type {
   MarkerIconDefinition,
@@ -644,7 +645,9 @@ export async function createVectorSvgBlobFromMap({
     interactive: false,
     attributionControl: false,
     pixelRatio,
+    transformRequest: transformMapRequest,
   });
+  exportMap.on("error", () => {});
 
   try {
     await waitForMapIdle(exportMap);

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import { normalizeHexColor, toUniqueHexColors } from "@/shared/utils/color";
+
+const FULL_SIX_DIGIT_HEX_INPUT = /^#?[0-9a-fA-F]{6}$/;
 
 interface ColorPickerProps {
   currentColor: string;
@@ -38,13 +40,16 @@ export default function ColorPicker({
     "#000000";
   const [hexInput, setHexInput] = useState(normalizedCurrentColor);
   const [showMoreColors, setShowMoreColors] = useState(false);
+  const isHexFocusedRef = useRef(false);
 
   const visiblePalette = showMoreColors
     ? [...suggestionList, ...additionalList]
     : suggestionList;
 
   useEffect(() => {
-    setHexInput(normalizedCurrentColor);
+    if (!isHexFocusedRef.current) {
+      setHexInput(normalizedCurrentColor);
+    }
   }, [normalizedCurrentColor]);
 
   useEffect(() => {
@@ -54,12 +59,14 @@ export default function ColorPicker({
   }, [additionalList]);
 
   function handlePresetClick(color: string) {
+    isHexFocusedRef.current = false;
+    setHexInput(color);
     onChange(color);
   }
 
   function handlePickerChange(nextColor: string) {
     const normalized = normalizeHexColor(nextColor);
-    if (!normalized) {
+    if (!normalized || normalized === normalizedCurrentColor) {
       return;
     }
 
@@ -71,18 +78,58 @@ export default function ColorPicker({
     const nextValue = event.target.value;
     setHexInput(nextValue);
 
-    const normalized = normalizeHexColor(
-      nextValue.startsWith("#") ? nextValue : `#${nextValue}`,
-    );
-    if (!normalized) {
+    const trimmed = nextValue.trim();
+    if (!FULL_SIX_DIGIT_HEX_INPUT.test(trimmed)) {
       return;
     }
 
-    onChange(normalized);
+    const normalized = normalizeHexColor(
+      trimmed.startsWith("#") ? trimmed : `#${trimmed}`,
+    );
+    if (normalized && normalized !== normalizedCurrentColor) {
+      onChange(normalized);
+    }
+  }
+
+  function commitHexInput() {
+    const trimmed = hexInput.trim();
+    const normalized = normalizeHexColor(
+      trimmed.startsWith("#") ? trimmed : `#${trimmed}`,
+    );
+    if (normalized) {
+      setHexInput(normalized);
+      if (normalized !== normalizedCurrentColor) {
+        onChange(normalized);
+      }
+      return;
+    }
+    setHexInput(normalizedCurrentColor);
+  }
+
+  function handleHexFocus() {
+    isHexFocusedRef.current = true;
   }
 
   function handleHexBlur() {
+    isHexFocusedRef.current = false;
+    commitHexInput();
+  }
+
+  function handleHexKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitHexInput();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setHexInput(normalizedCurrentColor);
+      event.currentTarget.blur();
+    }
+  }
+
+  function handleResetClick() {
+    isHexFocusedRef.current = false;
     setHexInput(normalizedCurrentColor);
+    onResetColor();
   }
 
   return (
@@ -94,6 +141,7 @@ export default function ColorPicker({
             type="button"
             className={`color-preset-cell${normalizedCurrentColor === color ? " is-active" : ""}`}
             style={{ backgroundColor: color }}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => handlePresetClick(color)}
             aria-label={color}
             title={color}
@@ -113,7 +161,8 @@ export default function ColorPicker({
         <button
           type="button"
           className="color-grid-action color-grid-reset"
-          onClick={onResetColor}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handleResetClick}
           disabled={!canResetColor}
         >
           Reset Color
@@ -132,8 +181,10 @@ export default function ColorPicker({
             className="color-hex-input"
             value={hexInput}
             onChange={handleHexInput}
+            onFocus={handleHexFocus}
             onBlur={handleHexBlur}
-            maxLength={7}
+            onKeyDown={handleHexKeyDown}
+            maxLength={16}
             spellCheck={false}
             autoComplete="off"
           />

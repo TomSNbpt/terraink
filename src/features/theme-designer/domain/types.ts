@@ -17,6 +17,14 @@ export interface ResolvedRouteOverlay {
   sourceMethod: "gpx-url" | "osm-relation" | "street-routed" | "waypoints";
 }
 
+export interface BrandSourceInfo {
+  name: string;
+  url: string;
+  domain: string;
+  logoColors: string[];
+  siteColors: string[];
+}
+
 export interface DesignerMessage {
   id: string;
   role: "user" | "assistant";
@@ -24,6 +32,7 @@ export interface DesignerMessage {
   createdAt: string;
   generatedThemeIds?: string[];
   addedRouteSummary?: string;
+  brandSource?: BrandSourceInfo;
 }
 
 export interface GeneratedTheme {

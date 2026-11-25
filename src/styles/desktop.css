@@ -300,12 +300,12 @@
   .desktop-left-panel {
     display: block;
     position: fixed;
-    top: 62px;
+    top: 18px;
     left: 82px; /* 64px nav + 18px gap */
     width: 356px;
     z-index: 45;
     pointer-events: auto;
-    max-height: calc(100vh - 80px);
+    max-height: calc(100vh - 36px);
   }
 
   .desktop-location-row-wrap {
@@ -599,7 +599,7 @@
   .desktop-settings-slide {
     display: none;
     height: auto;
-    max-height: calc(100vh - 80px);
+    max-height: calc(100vh - 36px);
     overflow-y: auto;
     overflow-x: hidden;
     pointer-events: auto;

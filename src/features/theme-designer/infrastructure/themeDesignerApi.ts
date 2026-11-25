@@ -1,5 +1,6 @@
 import type { ThemeColors } from "@/features/theme/domain/types";
 import type {
+  BrandSourceInfo,
   DesignerMessage,
   GeneratedTheme,
   ResolvedRouteOverlay,
@@ -15,6 +16,44 @@ export interface ThemeDesignerChatResponse {
   reply: string;
   themes: ThemeDesignerProposal[];
   routeOverlay: ResolvedRouteOverlay | null;
+  brandSource: BrandSourceInfo | null;
+}
+
+function sanitizeBrandSource(value: unknown): BrandSourceInfo | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  const url = typeof candidate.url === "string" ? candidate.url.trim() : "";
+  const domain =
+    typeof candidate.domain === "string" ? candidate.domain.trim() : "";
+  if (!url || !domain) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+  const cleanColors = (list: unknown): string[] =>
+    Array.isArray(list)
+      ? list
+          .filter(
+            (item): item is string =>
+              typeof item === "string" && /^#[0-9A-Fa-f]{6}$/.test(item.trim()),
+          )
+          .map((item) => item.trim().toUpperCase())
+          .slice(0, 6)
+      : [];
+  return {
+    name:
+      typeof candidate.name === "string" && candidate.name.trim()
+        ? candidate.name.trim()
+        : domain,
+    url,
+    domain,
+    logoColors: cleanColors(candidate.logoColors),
+    siteColors: cleanColors(candidate.siteColors),
+  };
 }
 
 function isResolvedRouteOverlay(value: unknown): value is ResolvedRouteOverlay {
@@ -37,6 +76,7 @@ export async function sendThemeDesignerMessage(input: {
   selectedTheme?: Pick<GeneratedTheme, "name" | "description" | "colors"> | null;
   selectedThemeIsGenerated?: boolean;
   existingThemeNames?: string[];
+  officialUrl?: string;
   signal?: AbortSignal;
 }): Promise<ThemeDesignerChatResponse> {
   const response = await fetch("/api/theme-designer/chat", {
@@ -56,6 +96,9 @@ export async function sendThemeDesignerMessage(input: {
         : null,
       selectedThemeIsGenerated: Boolean(input.selectedThemeIsGenerated),
       existingThemeNames: input.existingThemeNames ?? [],
+      ...(input.officialUrl?.trim()
+        ? { officialUrl: input.officialUrl.trim() }
+        : {}),
     }),
     signal: input.signal,
   });
@@ -87,5 +130,6 @@ export async function sendThemeDesignerMessage(input: {
     routeOverlay: isResolvedRouteOverlay(data.routeOverlay)
       ? data.routeOverlay
       : null,
+    brandSource: sanitizeBrandSource(data.brandSource),
   };
 }

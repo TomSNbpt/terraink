@@ -3,8 +3,37 @@ import { MAP_OVERZOOM_SCALE } from "@/features/map/infrastructure/constants";
 import { blendHex } from "@/shared/utils/color";
 import type { StyleSpecification } from "maplibre-gl";
 
-const OPENFREEMAP_SOURCE = "https://tiles.openfreemap.org/planet";
+const OPENFREEMAP_FALLBACK_SOURCE = "https://tiles.openfreemap.org/planet";
 const SOURCE_ID = "openfreemap";
+
+function resolveOpenFreeMapSourceUrl(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}/api/openfreemap/planet`;
+  }
+  return OPENFREEMAP_FALLBACK_SOURCE;
+}
+
+export function transformMapRequest(url: string): { url: string } {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    if (url.startsWith("/api/openfreemap/")) {
+      return { url: `${window.location.origin}${url}` };
+    }
+    try {
+      const parsed = new URL(url);
+      if (
+        parsed.pathname.startsWith("/api/openfreemap/") &&
+        parsed.origin !== window.location.origin
+      ) {
+        return {
+          url: `${window.location.origin}${parsed.pathname}${parsed.search}`,
+        };
+      }
+    } catch {
+      // Leave non-URL strings untouched
+    }
+  }
+  return { url };
+}
 
 /**
  * OpenFreeMap is OpenMapTiles-based and can generalize data at low zooms.
@@ -277,7 +306,7 @@ export function generateMapStyle(
     sources: {
       [SOURCE_ID]: {
         type: "vector",
-        url: OPENFREEMAP_SOURCE,
+        url: resolveOpenFreeMapSourceUrl(),
         maxzoom: SOURCE_MAX_ZOOM,
       },
     },

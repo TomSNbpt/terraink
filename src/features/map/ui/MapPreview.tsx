@@ -7,6 +7,7 @@ import {
   MAP_CENTER_SYNC_EPSILON,
   MAP_FINE_WHEEL_ZOOM_STEP,
   MAP_ZOOM_SYNC_EPSILON,
+  transformMapRequest,
 } from "@/features/map/infrastructure";
 
 /**
@@ -119,12 +120,14 @@ export default function MapPreview({
   const lastPresetLoadSeqRef = useRef(presetLoadSeq);
   const centerRef = useRef(center);
   const zoomRef = useRef(zoom);
+  const styleRef = useRef(style);
   const onMoveEndRef = useRef(onMoveEnd);
   const onMoveRef = useRef(onMove);
   const overzoomScaleRef = useRef(overzoomScale);
   const fineWheelDeltaAccumRef = useRef(0);
   centerRef.current = center;
   zoomRef.current = zoom;
+  styleRef.current = style;
   onMoveEndRef.current = onMoveEnd;
   onMoveRef.current = onMove;
   overzoomScaleRef.current = overzoomScale;
@@ -151,10 +154,59 @@ export default function MapPreview({
       interactive: false,
       attributionControl: false,
       trackResize: false,
+      transformRequest: transformMapRequest,
       canvasContextAttributes: { preserveDrawingBuffer: true },
     });
 
     mapRef.current = map;
+
+    let isDisposed = false;
+    let retryCount = 0;
+    let retryTimer: number | null = null;
+    const MAX_SOURCE_RETRIES = 3;
+
+    const clearRetryTimer = () => {
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+    };
+
+    map.on("load", () => {
+      retryCount = 0;
+      clearRetryTimer();
+    });
+
+    map.on("error", (event) => {
+      if (isDisposed) return;
+      const errMessage = String(event?.error?.message ?? "");
+      const sourceId = (event as { sourceId?: string })?.sourceId;
+      const isTransientFetchError =
+        errMessage.includes("Failed to fetch") ||
+        errMessage.includes("AJAXError") ||
+        errMessage.includes("AbortError") ||
+        sourceId === "openfreemap";
+
+      if (
+        isTransientFetchError &&
+        !map.isStyleLoaded() &&
+        retryCount < MAX_SOURCE_RETRIES &&
+        retryTimer === null
+      ) {
+        retryCount += 1;
+        const delayMs = retryCount === 1 ? 1000 : retryCount === 2 ? 2500 : 5000;
+        retryTimer = window.setTimeout(() => {
+          retryTimer = null;
+          if (isDisposed || map.isStyleLoaded()) return;
+          try {
+            map.setStyle(styleRef.current);
+            prevStyleRef.current = styleRef.current;
+          } catch {
+            // Ignore errors if map was disposed mid-retry
+          }
+        }, delayMs);
+      }
+    });
 
     map.on("moveend", () => {
       if (isSyncing.current) return;
@@ -190,6 +242,8 @@ export default function MapPreview({
     resizeObserver.observe(containerRef.current);
 
     return () => {
+      isDisposed = true;
+      clearRetryTimer();
       resizeObserver.disconnect();
       mapRef.current = null;
       map.remove();

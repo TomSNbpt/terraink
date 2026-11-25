@@ -1325,6 +1325,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1387,6 +1390,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1422,7 +1428,7 @@
       "id": "preset-98863aeb-b2e5-49db-ae9f-cda7e7c5ce2a",
       "name": "Chicago - Blue",
       "createdAt": "2026-11-17T13:46:40.485Z",
-      "updatedAt": "2026-11-20T17:54:22.038Z",
+      "updatedAt": "2026-11-23T23:55:40.854Z",
       "snapshot": {
         "form": {
           "location": "Cook County, United States",
@@ -1465,29 +1471,6 @@
         },
         "routes": [
           {
-            "id": "gpx-9326cace-226d-431a-8613-66caa053ff89",
-            "label": "chicago2026",
-            "source": "gpx",
-            "sourceFilename": "chicago2026.gpx",
-            "color": "#FFFFFF",
-            "strokeWidth": 3,
-            "opacity": 1,
-            "lineStyle": "solid",
-            "visible": true,
-            "showEndpoints": false,
-            "startMarker": {
-              "iconId": "circle",
-              "color": "#1A5F7A",
-              "size": 24
-            },
-            "finishMarker": {
-              "iconId": "flag",
-              "color": "#1A5F7A",
-              "size": 24
-            },
-            "gpxFile": "chicago2026.gpx"
-          },
-          {
             "id": "gpx-e7c3a354-8a6e-4770-ab0c-2f1bf39dea47",
             "label": "chicago2026",
             "source": "gpx",
@@ -1508,7 +1491,8 @@
               "color": "#FFFFFF",
               "size": 24
             },
-            "gpxFile": "chicago2026.gpx"
+            "gpxFile": "chicago2026.gpx",
+            "outline2Enabled": true
           }
         ],
         "routeDefaults": {
@@ -1517,6 +1501,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1626,6 +1613,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1723,6 +1713,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1830,6 +1823,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1937,6 +1933,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -1962,17 +1961,17 @@
       "id": "preset-6d4a1088-ea51-4586-b8b3-32a8a8d675b4",
       "name": "Philadelphia - White",
       "createdAt": "2026-11-19T16:02:34.170Z",
-      "updatedAt": "2026-11-20T17:38:50.219Z",
+      "updatedAt": "2026-11-23T23:59:27.406Z",
       "snapshot": {
         "form": {
           "location": "Philadelphia, United States",
-          "latitude": "39.988051",
-          "longitude": "-75.185466",
-          "distance": "5691",
+          "latitude": "39.989626",
+          "longitude": "-75.177303",
+          "distance": "6099",
           "width": "30.48",
           "height": "40.64",
-          "customSizeUnit": "px",
-          "theme": "philadelphia_option_2",
+          "customSizeUnit": "in",
+          "theme": "philadelphia_option_1",
           "layout": "poster_large_portrait",
           "displayCity": "Philadelphia",
           "displayCountry": "massachusetts",
@@ -2001,7 +2000,7 @@
         "markers": [],
         "markerDefaults": {
           "size": 36,
-          "color": "#F0C239"
+          "color": "#C41E3A"
         },
         "routes": [
           {
@@ -2009,31 +2008,36 @@
             "label": "philadelphia-marathon-2025-philadelphia-2025-track",
             "source": "gpx",
             "sourceFilename": "philadelphia-marathon-2025-philadelphia-2025-track.gpx",
-            "color": "#c41e3a",
+            "color": "#C41E3A",
             "strokeWidth": 3,
             "opacity": 1,
             "lineStyle": "solid",
             "visible": true,
-            "showEndpoints": false,
+            "showEndpoints": true,
             "startMarker": {
               "iconId": "circle",
-              "color": "#1A5F7A",
-              "size": 24
+              "color": "#d20000",
+              "size": 15
             },
             "finishMarker": {
               "iconId": "flag",
-              "color": "#1A5F7A",
-              "size": 24
+              "color": "#2ab001",
+              "size": 15,
+              "outlineEnabled": true
             },
-            "gpxFile": "philadelphia-marathon-2025-philadelphia-2025-track.gpx"
+            "gpxFile": "philadelphia-marathon-2025-philadelphia-2025-track.gpx",
+            "outline2Enabled": true
           }
         ],
         "routeDefaults": {
-          "color": "#F0C239",
+          "color": "#C41E3A",
           "strokeWidth": 3,
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2041,22 +2045,22 @@
         },
         "guides": [
           {
-            "id": "guide-81dd936f-7b02-4b12-a3c7-128c1469fb20",
+            "id": "guide-4dd2e6fa-a08f-4b22-a63b-c797f4a07bad",
             "axis": "x",
             "offsetCm": 1.27
           },
           {
-            "id": "guide-57037120-ac5f-467d-87d9-8eb4061e74f1",
+            "id": "guide-ca79fd2b-e7ee-41cf-94aa-27361c99a2db",
             "axis": "x",
             "offsetCm": 29.21
           },
           {
-            "id": "guide-50fe1a92-710d-4baf-9ed1-3ff377909c66",
+            "id": "guide-b527face-f380-4bad-93e3-863c4a3ce0c7",
             "axis": "y",
             "offsetCm": 1.27
           },
           {
-            "id": "guide-f0e09761-12a6-41dd-b196-d981ec42c2bc",
+            "id": "guide-bb547bd4-bcaf-4ec4-9ecd-df0330420ddd",
             "axis": "y",
             "offsetCm": 39.37
           }
@@ -2141,6 +2145,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2203,6 +2210,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2286,6 +2296,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2369,6 +2382,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",
@@ -2404,7 +2420,7 @@
       "id": "preset-8d749256-be74-45e1-ab7a-d04798745805",
       "name": "Houston",
       "createdAt": "2026-11-22T18:55:33.232Z",
-      "updatedAt": "2026-11-22T19:22:07.049Z",
+      "updatedAt": "2026-11-24T20:11:49.825Z",
       "snapshot": {
         "form": {
           "location": "Houston, Texas",
@@ -2436,7 +2452,22 @@
           "showRoutes": true
         },
         "customColors": {
-          "map.rail": "#4293c8"
+          "ui.bg": "#AFD6F2",
+          "ui.text": "#B8142D",
+          "map.land": "#AFD6F2",
+          "map.landcover": "#A3CEEE",
+          "map.water": "#43A3D1",
+          "map.waterway": "#43A3D1",
+          "map.parks": "#91C3E8",
+          "map.buildings": "#9BC9EC",
+          "map.aeroway": "#87BCE3",
+          "map.rail": "#7EB2DA",
+          "map.roads.major": "#5793C2",
+          "map.roads.minor_high": "#6FA6D0",
+          "map.roads.minor_mid": "#84B7DE",
+          "map.roads.minor_low": "#98C6E8",
+          "map.roads.path": "#A3CEEE",
+          "map.roads.outline": "#AFD6F2"
         },
         "displayNameOverrides": {
           "city": false,
@@ -2469,7 +2500,9 @@
               "iconId": "circle",
               "color": "#d62828",
               "size": 15
-            }
+            },
+            "outline2Enabled": true,
+            "outline2Color": "#1b365d"
           }
         ],
         "routeDefaults": {
@@ -2478,6 +2511,9 @@
           "outlineEnabled": true,
           "outlineColor": "#ffffff",
           "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
           "opacity": 1,
           "lineStyle": "solid",
           "startIconId": "circle",

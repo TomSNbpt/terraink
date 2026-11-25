@@ -9,6 +9,11 @@ import {
   type ResolvedRouteOverlay,
   type RouteRequestPayload,
 } from "./server/routeResolver.ts";
+import {
+  researchOfficialBrand,
+  shouldRunBrandResearch,
+  type BrandResearchResult,
+} from "./server/brandResearch.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,7 +73,11 @@ Your job is to help users:
 (B) Research and add official race courses, marathons, bike routes, or hiking trails as GPX-style route overlays on the map when requested (e.g. "add an overlay for the Chicago Marathon", "plot the Vermont Long Trail", or "Chicago Marathon theme and route overlay").
 
 HARD REQUIREMENTS:
-1. LIVE WEB RESEARCH: Always use Google Search when the user mentions a real event, race, trail, park, team, city flag, or brand so you discover its authentic official colors, logos, AND/OR official course map / turn-by-turn route. Summarize your findings concisely in plain text inside "reply" — do NOT include raw URLs, markdown link lists, or citation brackets in "reply".
+1. OFFICIAL WEBSITE & LOGO COLORS FIRST (NO GENERIC CITY CLICHÉS):
+   - Whenever "[Official Brand Research]" is provided (and/or an official logo image is attached), those verified colors extracted from the official logo and official website are your PRIMARY source of truth.
+   - NEVER substitute generic location/city stereotypes (e.g. generic sunset pink/palm trees for Los Angeles, or generic clichéd colors) when real official logo/website colors are provided or visible in the attached logo image.
+   - If no [Official Brand Research] block was attached but the user names a real event, race, trail, park, team, or brand, use Google Search (and URL Context if a URL is given) to discover its authentic official logo and website colors.
+   - Summarize the official logo/website colors you used concisely in plain text inside "reply" — do NOT paste raw URLs, markdown link lists, or citation brackets in "reply" (the UI displays the clickable source link separately).
 2. CMYK / PRINTFUL MATTE PAPER SAFETY (MANDATORY): Every single hex color you produce MUST be CMYK-safe for printing on uncoated matte paper (Printful giclée / SWOP-GRACoL matte workflow):
    - Avoid out-of-gamut neon RGB colors (electric cyan #00FFFF, pure neon green #00FF00, pure magenta #FF00FF, ultra-saturated violet/royal blues with high magenta that shift purple on matte stock).
    - Keep deep blues slightly shifted toward clean cobalt/navy rather than violet-blue so they stay true blue on matte paper.
@@ -102,7 +111,13 @@ HARD REQUIREMENTS:
      * Generate EXACTLY 3 distinct CMYK-safe variations offering meaningful degrees/takes of the requested change (e.g. subtle / medium / bold).
      * Use the exact incremental names supplied in "[Active Selected Theme]" (e.g. "Bayou City Navy - 1", "Bayou City Navy - 2", "Bayou City Navy - 3").
      * Set "routeRequest": null unless they also explicitly requested a route overlay.
-   - When the user introduces a brand-new theme subject/event/place/mood (e.g. "Chicago Marathon", "Vermont Long Trail", "Tokyo Night Run", "vintage coastal Maine") OR answers your clarifying questions:
+   - When creating themes for an official race, event, team, park, or brand (especially when "[Official Brand Research]" is provided):
+     * Set "isRefinement": false and generate EXACTLY 3 distinct CMYK-safe options using a 2-strict + 1-looser mix:
+       - Option 1 (Strict Official Brand — Light/Editorial): Strictly faithful to the official logo & website colors on a clean light/paper or soft-tinted land base with official brand colors driving water, roads, and typography.
+       - Option 2 (Strict Official Brand — Bold/Dark Field): Strictly faithful to the official logo & website colors using the primary dark or signature brand hue as the land field and official secondary/accent hues for water, roads, and typography.
+       - Option 3 (Creative Brand Spin): A looser, cartographically fresh creative take still clearly anchored in the official brand's signature hues (e.g., an unexpected tonal balance or elevated vintage/editorial twist on the official colors).
+     * Mention briefly in each theme's description whether it is a strict official brand palette or the creative spin.
+   - When the user introduces a purely abstract mood/style (no real-world brand/event):
      * Set "isRefinement": false and generate EXACTLY 3 distinct, genuinely different CMYK-safe theme variations with creative 2-4 word names.
    - Only ask 1–2 brief clarifying questions (with "themes": [] and "isRefinement": false) when there is NO clear subject and NO clear tweak request (e.g. just "make me a cool theme").
 6. OUTPUT FORMAT:
@@ -486,30 +501,80 @@ async function callGeminiWithRetry<T>(fn: () => Promise<T>, maxAttempts = 2): Pr
   throw lastError;
 }
 
+type GeminiContentPart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } };
+
 async function generateDesignerContent(
   ai: GoogleGenAI,
-  contents: Array<{ role: string; parts: Array<{ text: string }> }>,
+  contents: Array<{ role: string; parts: GeminiContentPart[] }>,
   useSearchFirst: boolean,
+  useUrlContext = false,
 ) {
   const strategies: Array<{
     model: string;
     useSearch: boolean;
+    useUrlContext: boolean;
     thinkingLow: boolean;
   }> = useSearchFirst
     ? [
-        { model: PRIMARY_GEMINI_MODEL, useSearch: true, thinkingLow: true },
-        { model: PRIMARY_GEMINI_MODEL, useSearch: false, thinkingLow: true },
-        { model: FALLBACK_GEMINI_MODEL, useSearch: true, thinkingLow: false },
-        { model: FALLBACK_GEMINI_MODEL, useSearch: false, thinkingLow: false },
+        {
+          model: PRIMARY_GEMINI_MODEL,
+          useSearch: true,
+          useUrlContext,
+          thinkingLow: true,
+        },
+        ...(useUrlContext
+          ? [
+              {
+                model: PRIMARY_GEMINI_MODEL,
+                useSearch: true,
+                useUrlContext: false,
+                thinkingLow: true,
+              },
+            ]
+          : []),
+        {
+          model: PRIMARY_GEMINI_MODEL,
+          useSearch: false,
+          useUrlContext: false,
+          thinkingLow: true,
+        },
+        {
+          model: FALLBACK_GEMINI_MODEL,
+          useSearch: true,
+          useUrlContext: false,
+          thinkingLow: false,
+        },
+        {
+          model: FALLBACK_GEMINI_MODEL,
+          useSearch: false,
+          useUrlContext: false,
+          thinkingLow: false,
+        },
       ]
     : [
-        { model: PRIMARY_GEMINI_MODEL, useSearch: false, thinkingLow: true },
-        { model: FALLBACK_GEMINI_MODEL, useSearch: false, thinkingLow: false },
+        {
+          model: PRIMARY_GEMINI_MODEL,
+          useSearch: false,
+          useUrlContext: false,
+          thinkingLow: true,
+        },
+        {
+          model: FALLBACK_GEMINI_MODEL,
+          useSearch: false,
+          useUrlContext: false,
+          thinkingLow: false,
+        },
       ];
 
   let lastError: unknown;
   for (let i = 0; i < strategies.length; i += 1) {
     const strategy = strategies[i];
+    const tools: Array<Record<string, Record<string, never>>> = [];
+    if (strategy.useSearch) tools.push({ googleSearch: {} });
+    if (strategy.useUrlContext) tools.push({ urlContext: {} });
+
     try {
       return await callGeminiWithRetry(() =>
         ai.models.generateContent({
@@ -517,7 +582,7 @@ async function generateDesignerContent(
           contents,
           config: {
             systemInstruction: THEME_DESIGNER_SYSTEM_INSTRUCTION,
-            ...(strategy.useSearch ? { tools: [{ googleSearch: {} }] } : {}),
+            ...(tools.length > 0 ? { tools } : {}),
             ...(strategy.thinkingLow
               ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
               : {}),
@@ -537,7 +602,7 @@ async function generateDesignerContent(
         !isAuthError &&
         (isQuotaError(error) ||
           status === 404 ||
-          (strategy.useSearch && status === 400));
+          ((strategy.useSearch || strategy.useUrlContext) && status === 400));
 
       if (!canFallback || i === strategies.length - 1) {
         throw error;
@@ -575,9 +640,211 @@ function formatApiError(error: unknown): { status: number; message: string } {
   };
 }
 
+const OPENFREEMAP_PLANET_URL = "https://tiles.openfreemap.org/planet";
+const OPENFREEMAP_PLANET_TTL_MS = 15 * 60 * 1000;
+const OPENFREEMAP_TILE_VERSION_RE = /^[A-Za-z0-9._-]+$/;
+const OPENFREEMAP_TILE_INT_RE = /^\d+$/;
+const OPENFREEMAP_TILE_URL_RE =
+  /^https:\/\/tiles\.openfreemap\.org\/planet\/([A-Za-z0-9._-]+)\/\{z\}\/\{x\}\/\{y\}\.pbf$/;
+
+interface CachedPlanetTileJson {
+  data: Record<string, unknown>;
+  fetchedAt: number;
+}
+
+let cachedPlanetTileJson: CachedPlanetTileJson | null = null;
+let inFlightPlanetTileJson: Promise<Record<string, unknown>> | null = null;
+
+async function fetchUpstreamWithRetry(
+  url: string,
+  attempts = 3,
+  timeoutMs = 10_000,
+): Promise<globalThis.Response> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          Accept: "*/*",
+          "User-Agent": "Terraink/0.4 (+https://openfreemap.org)",
+        },
+      });
+      clearTimeout(timer);
+      if (response.status >= 500 && attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+        continue;
+      }
+      return response;
+    } catch (error) {
+      clearTimeout(timer);
+      lastError = error;
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError ?? new Error(`Failed to fetch ${url}`);
+}
+
+async function loadPlanetTileJson(): Promise<Record<string, unknown>> {
+  const now = Date.now();
+  if (
+    cachedPlanetTileJson &&
+    now - cachedPlanetTileJson.fetchedAt < OPENFREEMAP_PLANET_TTL_MS
+  ) {
+    return cachedPlanetTileJson.data;
+  }
+  if (inFlightPlanetTileJson) {
+    return inFlightPlanetTileJson;
+  }
+
+  inFlightPlanetTileJson = (async () => {
+    try {
+      const upstream = await fetchUpstreamWithRetry(OPENFREEMAP_PLANET_URL, 3, 10_000);
+      if (!upstream.ok) {
+        throw new Error(`OpenFreeMap TileJSON HTTP ${upstream.status}`);
+      }
+      const parsed = (await upstream.json()) as Record<string, unknown>;
+      cachedPlanetTileJson = { data: parsed, fetchedAt: Date.now() };
+      return parsed;
+    } catch (error) {
+      if (cachedPlanetTileJson) {
+        return cachedPlanetTileJson.data;
+      }
+      throw error;
+    } finally {
+      inFlightPlanetTileJson = null;
+    }
+  })();
+
+  return inFlightPlanetTileJson;
+}
+
+function parseHttpOrigin(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.origin;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function getRequestOrigin(req: Request): string {
+  const forwardedProto = String(req.headers["x-forwarded-proto"] ?? "")
+    .split(",")[0]
+    .trim();
+  const forwardedHost = String(req.headers["x-forwarded-host"] ?? "")
+    .split(",")[0]
+    .trim();
+
+  if (forwardedHost) {
+    const isLocalForwarded =
+      forwardedHost.startsWith("localhost") ||
+      forwardedHost.startsWith("127.0.0.1") ||
+      forwardedHost.startsWith("0.0.0.0");
+    const proto = forwardedProto || (isLocalForwarded ? "http" : "https");
+    return `${proto}://${forwardedHost}`;
+  }
+
+  const originHeader = parseHttpOrigin(
+    typeof req.headers.origin === "string" ? req.headers.origin : undefined,
+  );
+  if (originHeader) {
+    return originHeader;
+  }
+
+  const refererOrigin = parseHttpOrigin(
+    typeof req.headers.referer === "string" ? req.headers.referer : undefined,
+  );
+  if (refererOrigin) {
+    return refererOrigin;
+  }
+
+  const host = req.get("host") ?? `localhost:${PORT}`;
+  const isLocal =
+    host.startsWith("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("0.0.0.0");
+  const proto = forwardedProto || (isLocal ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: "1mb" }));
+
+  app.get("/api/openfreemap/planet", async (req: Request, res: Response) => {
+    try {
+      const tileJson = await loadPlanetTileJson();
+      const origin = getRequestOrigin(req);
+      const tiles = Array.isArray(tileJson.tiles)
+        ? tileJson.tiles.map((entry) => {
+            if (typeof entry !== "string") return entry;
+            const match = OPENFREEMAP_TILE_URL_RE.exec(entry);
+            if (!match) return entry;
+            return `${origin}/api/openfreemap/tiles/${encodeURIComponent(match[1])}/{z}/{x}/{y}.pbf`;
+          })
+        : tileJson.tiles;
+
+      res.setHeader("Cache-Control", "public, max-age=300");
+      res.json({ ...tileJson, tiles });
+    } catch (error) {
+      console.warn("[openfreemap] Failed to load planet TileJSON:", error);
+      res.status(502).json({ error: "Failed to load OpenFreeMap TileJSON" });
+    }
+  });
+
+  app.get(
+    "/api/openfreemap/tiles/:version/:z/:x/:yFile",
+    async (req: Request, res: Response) => {
+      const version = String(req.params.version ?? "");
+      const z = String(req.params.z ?? "");
+      const x = String(req.params.x ?? "");
+      const yFile = String(req.params.yFile ?? "");
+      const y = yFile.endsWith(".pbf") ? yFile.slice(0, -4) : "";
+
+      const zNum = Number(z);
+      if (
+        !OPENFREEMAP_TILE_VERSION_RE.test(version) ||
+        !OPENFREEMAP_TILE_INT_RE.test(z) ||
+        !OPENFREEMAP_TILE_INT_RE.test(x) ||
+        !OPENFREEMAP_TILE_INT_RE.test(y) ||
+        zNum < 0 ||
+        zNum > 22
+      ) {
+        res.status(400).send("Invalid tile coordinates");
+        return;
+      }
+
+      const upstreamUrl = `${OPENFREEMAP_PLANET_URL}/${encodeURIComponent(version)}/${z}/${x}/${y}.pbf`;
+      try {
+        const upstream = await fetchUpstreamWithRetry(upstreamUrl, 2, 10_000);
+        if (upstream.status === 204 || upstream.status === 404) {
+          res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+          res.status(204).end();
+          return;
+        }
+        if (!upstream.ok) {
+          res.status(upstream.status).end();
+          return;
+        }
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        res.setHeader("Content-Type", "application/vnd.mapbox-vector-tile");
+        res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+        res.status(200).send(buffer);
+      } catch (error) {
+        console.warn(`[openfreemap] Tile fetch failed (${z}/${x}/${y}):`, error);
+        res.status(502).end();
+      }
+    },
+  );
 
   app.post("/api/theme-designer/chat", async (req: Request, res: Response) => {
     const ai = createGeminiClient();
@@ -594,6 +861,7 @@ async function startServer() {
       selectedTheme?: SelectedThemeContext | null;
       selectedThemeIsGenerated?: unknown;
       existingThemeNames?: unknown;
+      officialUrl?: unknown;
     };
 
     const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
@@ -623,6 +891,8 @@ async function startServer() {
         : null;
 
     const selectedThemeIsGenerated = body?.selectedThemeIsGenerated === true;
+    const officialUrl =
+      typeof body?.officialUrl === "string" ? body.officialUrl.trim() : "";
     const existingThemeNames = Array.isArray(body?.existingThemeNames)
       ? body.existingThemeNames
           .filter((name): name is string => typeof name === "string")
@@ -639,36 +909,106 @@ async function startServer() {
         )
       : [];
 
-    const contents = messages.map((msg, index) => {
-      const isLastUser = index === messages.length - 1 && msg.role === "user";
-      let text = msg.content.trim();
-      if (isLastUser && selectedTheme) {
-        text +=
-          `\n\n[Active Selected Theme]\n` +
-          `Name: ${selectedTheme.name}\n` +
-          `Description: ${selectedTheme.description ?? ""}\n` +
-          `Colors JSON: ${JSON.stringify(selectedTheme.colors)}\n` +
-          `Incremental Variation Names (use these exact names in order if refining this theme): ${nextIncrementedNames.join(", ")}\n` +
-          `Important: If the user is asking for a change or tweak (e.g. darker roads, lighter water, more contrast, warmer land), assume they mean this Active Selected Theme, set isRefinement=true, do NOT ask which theme they mean, and generate 3 distinct CMYK-safe variations using the exact incremental names above. If they are asking for a brand-new subject/event/trail instead, set isRefinement=false.`;
-      }
-      return {
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text }],
-      };
-    });
-
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-    const useSearchFirst = shouldUseSearchGrounding(
-      lastUserMessage,
-      selectedThemeIsGenerated,
+
+    let brandResearch: BrandResearchResult | null = null;
+    if (shouldRunBrandResearch(lastUserMessage, selectedThemeIsGenerated, officialUrl)) {
+      brandResearch = await researchOfficialBrand(
+        ai,
+        lastUserMessage,
+        PRIMARY_GEMINI_MODEL,
+        {
+          fallbackModel: FALLBACK_GEMINI_MODEL,
+          explicitUrlOverride: officialUrl || null,
+        },
+      );
+    }
+
+    const contents: Array<{ role: string; parts: GeminiContentPart[] }> =
+      messages.map((msg, index) => {
+        const isLastUser = index === messages.length - 1 && msg.role === "user";
+        let text = msg.content.trim();
+        const parts: GeminiContentPart[] = [];
+
+        if (isLastUser && brandResearch) {
+          const { source, pageTitle, brandSummary, cssBrandVars, logoImage } =
+            brandResearch;
+          const varSummary =
+            cssBrandVars.length > 0
+              ? cssBrandVars.map((v) => `${v.name}: ${v.hex}`).join(", ")
+              : "none";
+          text +=
+            `\n\n[Official Brand Research — PRIMARY COLOR SOURCE]\n` +
+            `Subject: ${source.name}\n` +
+            `Official Website: ${source.url} (domain: ${source.domain})\n` +
+            (pageTitle ? `Page Title: ${pageTitle}\n` : "") +
+            (brandSummary ? `Brand Summary: ${brandSummary}\n` : "") +
+            `Extracted Official Logo Colors: ${
+              source.logoColors.length > 0
+                ? source.logoColors.join(", ")
+                : logoImage
+                  ? "inspect the attached official logo image"
+                  : "not directly extracted (check official website via URL Context / Search)"
+            }\n` +
+            `Extracted Official Website Brand Colors: ${
+              source.siteColors.length > 0 ? source.siteColors.join(", ") : "none extracted"
+            }\n` +
+            `Extracted CSS Brand Variables: ${varSummary}\n` +
+            `MANDATORY INSTRUCTIONS FOR THIS REQUEST:\n` +
+            `- Set "isRefinement": false because this is an official brand theme request.\n` +
+            `- Base your palettes directly on these verified official logo and website colors (and the attached official logo image if present). Do NOT invent generic city stereotypes.\n` +
+            `- Produce 2 STRICT official-brand themes (Options 1 & 2, staying faithfully within these official colors with only minor CMYK-safe print adjustments) and 1 LOOSER creative take (Option 3, a fresh cartographic twist inspired by these official colors).\n` +
+            `- In "reply", briefly note the official colors pulled from ${source.domain} and clearly distinguish the 2 strict options from the looser creative take (do not include raw URLs).`;
+
+          if (logoImage) {
+            parts.push({
+              inlineData: {
+                mimeType: logoImage.mimeType,
+                data: logoImage.data,
+              },
+            });
+          }
+        }
+
+        if (isLastUser && selectedTheme && !brandResearch) {
+          text +=
+            `\n\n[Active Selected Theme]\n` +
+            `Name: ${selectedTheme.name}\n` +
+            `Description: ${selectedTheme.description ?? ""}\n` +
+            `Colors JSON: ${JSON.stringify(selectedTheme.colors)}\n` +
+            `Incremental Variation Names (use these exact names in order if refining this theme): ${nextIncrementedNames.join(", ")}\n` +
+            `Important: If the user is asking for a change or tweak (e.g. darker roads, lighter water, more contrast, warmer land), assume they mean this Active Selected Theme, set isRefinement=true, do NOT ask which theme they mean, and generate 3 distinct CMYK-safe variations using the exact incremental names above. If they are asking for a brand-new subject/event/trail instead, set isRefinement=false.`;
+        }
+
+        parts.push({ text });
+        return {
+          role: msg.role === "assistant" ? "model" : "user",
+          parts,
+        };
+      });
+
+    const asksForRoute =
+      /\b(route|course|overlay|gpx|track|plot)\b/i.test(lastUserMessage) ||
+      /\b(add|show|draw|load)\b.*\btrail\b/i.test(lastUserMessage);
+    const hasScrapedBrandColors = Boolean(
+      brandResearch &&
+        (brandResearch.source.logoColors.length > 0 ||
+          brandResearch.source.siteColors.length > 0 ||
+          brandResearch.logoImage),
     );
+    const useUrlContext = Boolean(brandResearch && !hasScrapedBrandColors);
+    const useSearchFirst =
+      asksForRoute ||
+      (!hasScrapedBrandColors &&
+        shouldUseSearchGrounding(lastUserMessage, selectedThemeIsGenerated));
 
     try {
       const response = await generateDesignerContent(
         ai,
         contents,
-        useSearchFirst,
+        useSearchFirst || useUrlContext,
+        useUrlContext,
       );
 
       const rawText = String(response.text ?? "").trim();
@@ -681,7 +1021,7 @@ async function startServer() {
       let reply =
         String(parsed.reply ?? "").trim() ||
         "Here are your map design results.";
-      const isRefinement = parsed.isRefinement === true;
+      const isRefinement = brandResearch ? false : parsed.isRefinement === true;
       const rawThemes = Array.isArray(parsed.themes) ? parsed.themes : [];
       const themes = rawThemes
         .slice(0, 3)
@@ -694,7 +1034,7 @@ async function startServer() {
         );
 
       let routeOverlay: ResolvedRouteOverlay | null = null;
-      const routeRequest = sanitizeRouteRequest(parsed.routeRequest);
+      const routeRequest = asksForRoute ? sanitizeRouteRequest(parsed.routeRequest) : null;
       if (routeRequest) {
         routeOverlay = await resolveRouteRequest(routeRequest);
         if (!routeOverlay) {
@@ -703,7 +1043,12 @@ async function startServer() {
         }
       }
 
-      res.json({ reply, themes, routeOverlay });
+      res.json({
+        reply,
+        themes,
+        routeOverlay,
+        brandSource: brandResearch ? brandResearch.source : null,
+      });
     } catch (error) {
       const formatted = formatApiError(error);
       if (formatted.status === 429 || formatted.status === 403 || formatted.status === 400) {
