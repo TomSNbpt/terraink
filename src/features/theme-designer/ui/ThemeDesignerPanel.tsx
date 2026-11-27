@@ -6,6 +6,7 @@ import {
   BackIcon,
   CloseIcon,
   LoaderIcon,
+  ResetIcon,
   SendIcon,
 } from "@/shared/ui/Icons";
 import type {
@@ -20,7 +21,10 @@ import {
   type ResolvedRouteOverlay,
   type ThemeDesignerSession,
 } from "../domain/types";
-import { sendThemeDesignerMessage } from "../infrastructure/themeDesignerApi";
+import {
+  sendThemeDesignerMessage,
+  ThemeDesignerApiError,
+} from "../infrastructure/themeDesignerApi";
 
 const STARTER_PROMPTS = [
   "Chicago Marathon theme + route overlay",
@@ -85,13 +89,16 @@ export default function ThemeDesignerPanel({
   const [prompt, setPrompt] = useState("");
   const [officialUrl, setOfficialUrl] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [pendingSaveTheme, setPendingSaveTheme] =
     useState<GeneratedTheme | null>(null);
   const chatLogRef = useRef<HTMLDivElement | null>(null);
   const generatedListRef = useRef<HTMLDivElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastFailedRequestRef = useRef<{
+    historyForApi: DesignerMessage[];
+    officialUrl: string;
+  } | null>(null);
 
   const activeGeneratedTheme = useMemo(
     () =>
@@ -132,32 +139,10 @@ export default function ThemeDesignerPanel({
     };
   }, []);
 
-  async function submitPrompt(rawText: string, rawUrl = officialUrl) {
-    const trimmedUrl = rawUrl.trim();
-    const trimmedText = rawText.trim();
-    const trimmed =
-      trimmedText ||
-      (trimmedUrl ? `Official brand themes from ${trimmedUrl}` : "");
-    if (!trimmed || isSending) return;
-
-    setErrorMessage("");
-    setPrompt("");
-    setOfficialUrl("");
-
-    const displayContent =
-      trimmedText && trimmedUrl && !trimmedText.includes(trimmedUrl)
-        ? `${trimmedText}\n${trimmedUrl}`
-        : trimmed;
-
-    const userMsg: DesignerMessage = {
-      id: createId("msg-user"),
-      role: "user",
-      content: displayContent,
-      createdAt: new Date().toISOString(),
-    };
-    onAddUserMessage(userMsg);
-
-    const historyForApi = [...session.messages, userMsg];
+  async function executeRequest(
+    historyForApi: DesignerMessage[],
+    trimmedUrl: string,
+  ) {
     const controller = new AbortController();
     abortControllerRef.current = controller;
     setIsSending(true);
@@ -181,6 +166,7 @@ export default function ThemeDesignerPanel({
         signal: controller.signal,
       });
 
+      lastFailedRequestRef.current = null;
       const now = new Date().toISOString();
       const createdThemes: GeneratedTheme[] = result.themes.map((proposal) => ({
         id: createId("ai-theme"),
@@ -221,16 +207,87 @@ export default function ThemeDesignerPanel({
       if ((error as { name?: string })?.name === "AbortError") {
         return;
       }
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to generate themes right now. Please try again.";
-      setErrorMessage(message);
+
+      const isApiError = error instanceof ThemeDesignerApiError;
+      const headline =
+        error instanceof Error && error.message.trim()
+          ? error.message.trim()
+          : "Unable to complete that Theme Designer request.";
+      const summary = isApiError
+        ? error.summary
+        : "An unexpected error occurred while contacting the AI service. Please click Retry.";
+      const retryable = isApiError ? error.retryable : true;
+
+      if (retryable) {
+        lastFailedRequestRef.current = {
+          historyForApi,
+          officialUrl: trimmedUrl,
+        };
+      }
+
+      const errorMsg: DesignerMessage = {
+        id: createId("msg-err"),
+        role: "assistant",
+        content: headline,
+        errorSummary: summary,
+        isError: true,
+        retryable,
+        createdAt: new Date().toISOString(),
+      };
+      onAddAssistantResponse(errorMsg, []);
     } finally {
       if (abortControllerRef.current === controller) {
         abortControllerRef.current = null;
       }
       setIsSending(false);
+    }
+  }
+
+  async function submitPrompt(rawText: string, rawUrl = officialUrl) {
+    const trimmedUrl = rawUrl.trim();
+    const trimmedText = rawText.trim();
+    const trimmed =
+      trimmedText ||
+      (trimmedUrl ? `Official brand themes from ${trimmedUrl}` : "");
+    if (!trimmed || isSending) return;
+
+    lastFailedRequestRef.current = null;
+    setPrompt("");
+    setOfficialUrl("");
+
+    const displayContent =
+      trimmedText && trimmedUrl && !trimmedText.includes(trimmedUrl)
+        ? `${trimmedText}\n${trimmedUrl}`
+        : trimmed;
+
+    const userMsg: DesignerMessage = {
+      id: createId("msg-user"),
+      role: "user",
+      content: displayContent,
+      createdAt: new Date().toISOString(),
+    };
+    onAddUserMessage(userMsg);
+
+    const historyForApi = [
+      ...session.messages.filter((m) => !m.isError),
+      userMsg,
+    ];
+    await executeRequest(historyForApi, trimmedUrl);
+  }
+
+  async function handleRetryLastRequest() {
+    if (isSending) return;
+    const saved = lastFailedRequestRef.current;
+    if (saved) {
+      await executeRequest(saved.historyForApi, saved.officialUrl);
+      return;
+    }
+    const cleanHistory = session.messages.filter((m) => !m.isError);
+    if (
+      cleanHistory.length > 0 &&
+      cleanHistory[cleanHistory.length - 1]?.role === "user"
+    ) {
+      await executeRequest(cleanHistory, "");
     }
   }
 
@@ -255,8 +312,8 @@ export default function ThemeDesignerPanel({
 
   function handleConfirmClear() {
     abortControllerRef.current?.abort();
+    lastFailedRequestRef.current = null;
     setIsSending(false);
-    setErrorMessage("");
     setPrompt("");
     setOfficialUrl("");
     onClearSession();
@@ -374,7 +431,40 @@ export default function ThemeDesignerPanel({
               </div>
             </div>
           ) : (
-            session.messages.map((msg) => {
+            session.messages.map((msg, msgIndex) => {
+              const isLastMessage = msgIndex === session.messages.length - 1;
+              if (msg.isError) {
+                return (
+                  <div
+                    key={msg.id}
+                    className="theme-designer-msg theme-designer-msg--assistant theme-designer-msg--error"
+                    role="alert"
+                  >
+                    <p className="theme-designer-msg-error-title">
+                      {msg.content}
+                    </p>
+                    {msg.errorSummary ? (
+                      <p className="theme-designer-msg-error-summary">
+                        {msg.errorSummary}
+                      </p>
+                    ) : null}
+                    {isLastMessage && msg.retryable !== false ? (
+                      <div className="theme-designer-msg-error-actions">
+                        <button
+                          type="button"
+                          className="theme-designer-retry-btn"
+                          onClick={() => void handleRetryLastRequest()}
+                          disabled={isSending}
+                        >
+                          <ResetIcon aria-hidden="true" />
+                          <span>Retry</span>
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              }
+
               const sourceSwatches = msg.brandSource
                 ? [
                     ...msg.brandSource.logoColors.map((hex) => ({
@@ -456,12 +546,6 @@ export default function ThemeDesignerPanel({
             </div>
           ) : null}
         </div>
-
-        {errorMessage ? (
-          <p className="theme-designer-error" role="alert">
-            {errorMessage}
-          </p>
-        ) : null}
 
         <div className="theme-designer-url-row">
           <input

@@ -7,7 +7,10 @@ import type {
   MarkerProjectionInput,
 } from "@/features/markers/domain/types";
 import { projectMarkerToCanvas } from "@/features/markers/infrastructure/projection";
-import { buildStrokedSvgIcon } from "@/features/markers/infrastructure/svgStroke";
+import {
+  buildNumberedCircleSvg,
+  buildStrokedSvgIcon,
+} from "@/features/markers/infrastructure/svgStroke";
 import { ROUTE_DASH_PATTERN } from "@/features/routes/domain/constants";
 import type { Route } from "@/features/routes/domain/types";
 import {
@@ -15,6 +18,7 @@ import {
   resolveRouteOutline2,
   routeEndpointMarkerItems,
 } from "@/features/routes/infrastructure/helpers";
+import { resolveProjectedRouteGeometry } from "@/features/routes/infrastructure/overlapSeparation";
 import type { ResolvedTheme } from "@/features/theme/domain/types";
 import { formatCoordinates } from "@/shared/geo/posterBounds";
 import {
@@ -525,8 +529,8 @@ async function renderMarkerItemsToSvgGroup(
     if (!icon) continue;
 
     const point = projectMarkerToCanvas(marker.lat, marker.lon, markerProjection);
-    const x = point.x * scaleX;
-    const y = point.y * scaleY;
+    const x = point.x * scaleX + (marker.offsetX ?? 0);
+    const y = point.y * scaleY + (marker.offsetY ?? 0);
     const size = marker.size * Math.max(scaleX, scaleY) * sizeScale;
     const imageX = x - size / 2;
     const imageY = y - size / 2;
@@ -543,6 +547,27 @@ async function renderMarkerItemsToSvgGroup(
       marker.outerStrokeWidth > 0
         ? marker.outerStrokeWidth * strokeScale
         : 0;
+
+    if (marker.labelText) {
+      const numbered = buildNumberedCircleSvg({
+        size,
+        fillColor: marker.color,
+        labelText: marker.labelText,
+        labelColor: marker.labelColor || marker.strokeColor || "#ffffff",
+        strokeColor: strokeWidthPx > 0 ? marker.strokeColor : undefined,
+        strokeWidthPx: strokeWidthPx > 0 ? strokeWidthPx : undefined,
+        outerStrokeColor:
+          outerStrokeWidthPx > 0 ? marker.outerStrokeColor : undefined,
+        outerStrokeWidthPx:
+          outerStrokeWidthPx > 0 ? outerStrokeWidthPx : undefined,
+      });
+      const svgX = x - numbered.boxSize / 2;
+      const svgY = y - numbered.boxSize / 2;
+      elements.push(
+        `  <svg x="${fmt(svgX)}" y="${fmt(svgY)}" width="${fmt(numbered.boxSize)}" height="${fmt(numbered.boxSize)}" viewBox="${escapeXml(numbered.viewBox)}">${numbered.innerMarkup}</svg>`,
+      );
+      continue;
+    }
 
     if (icon.kind === "svg" && icon.svgMarkup) {
       const serialized = serializeInlineSvgIcon(
@@ -898,12 +923,17 @@ export async function createVectorSvgBlobFromMap({
         const opacityAttr =
           route.opacity < 0.999 ? ` stroke-opacity="${fmt(route.opacity)}"` : "";
 
-        for (const segment of route.segments) {
-          if (segment.length < 2) continue;
-          const projected = segment.map(({ lat, lon }) => {
+        const { segments: projectedSegments } = resolveProjectedRouteGeometry(
+          route,
+          (lat, lon) => {
             const pt = projectMarkerToCanvas(lat, lon, markerProjection);
             return { x: pt.x * markerScaleX, y: pt.y * markerScaleY };
-          });
+          },
+          widthScale,
+        );
+
+        for (const projected of projectedSegments) {
+          if (projected.length < 2) continue;
           const clipped = clipPolylineToRect(projected, routeClip);
           for (const poly of clipped) {
             const d = polylineToPathData(poly);
@@ -951,7 +981,14 @@ export async function createVectorSvgBlobFromMap({
     if (visibleRoutes.length > 0 && markerIcons.length > 0) {
       for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
         const route = visibleRoutes[routeIdx];
-        const endpointItems = routeEndpointMarkerItems([route]);
+        const endpointItems = routeEndpointMarkerItems([route], {
+          project: (lat, lon) => {
+            const p = projectMarkerToCanvas(lat, lon, markerProjection);
+            return { x: p.x * markerScaleX, y: p.y * markerScaleY };
+          },
+          sizeScale: Math.max(markerScaleX, markerScaleY) * markerSizeScale,
+          strokeScale: ((markerScaleX + markerScaleY) / 2) * markerSizeScale,
+        });
         if (endpointItems.length === 0) continue;
         const baseLabel = route.label?.trim() || `Route ${routeIdx + 1}`;
         const baseSlug = sanitizeLayerId(baseLabel) || `route-${routeIdx + 1}`;

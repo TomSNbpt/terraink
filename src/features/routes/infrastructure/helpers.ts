@@ -14,6 +14,8 @@ import {
   DEFAULT_ROUTE_OUTLINE2_COLOR,
   DEFAULT_ROUTE_OUTLINE2_ENABLED,
   DEFAULT_ROUTE_OUTLINE2_WIDTH,
+  DEFAULT_ROUTE_OVERLAP_SPACING,
+  DEFAULT_ROUTE_SEPARATE_OVERLAPS,
   DEFAULT_ROUTE_START_COLOR,
   DEFAULT_ROUTE_START_ICON_ID,
   DEFAULT_ROUTE_STROKE_WIDTH,
@@ -26,6 +28,7 @@ import type {
   RouteEndpointMarker,
   RouteSource,
 } from "../domain/types";
+import { resolveProjectedRouteGeometry } from "./overlapSeparation";
 
 const METERS_PER_DEGREE_LAT = 111_320;
 
@@ -156,6 +159,11 @@ export function createRoute(input: {
     lineStyle: input.defaults.lineStyle,
     visible: true,
     showEndpoints: true,
+    showMileMarkers: false,
+    mileMarkerSize: DEFAULT_ROUTE_ENDPOINT_SIZE,
+    showMileMarkerNumbers: true,
+    separateOverlaps: DEFAULT_ROUTE_SEPARATE_OVERLAPS,
+    overlapSpacing: DEFAULT_ROUTE_OVERLAP_SPACING,
     startMarker: createRouteEndpointMarker({
       iconId: DEFAULT_ROUTE_START_ICON_ID,
       color: DEFAULT_ROUTE_START_COLOR,
@@ -167,20 +175,288 @@ export function createRoute(input: {
   };
 }
 
-export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
+export const METERS_PER_MILE = 1609.344;
+
+export interface RouteMileMarkerPoint {
+  mile: number;
+  lat: number;
+  lon: number;
+}
+
+export function routeMileMarkers(
+  route: Route,
+  intervalMeters = METERS_PER_MILE,
+): RouteMileMarkerPoint[] {
+  if (!Number.isFinite(intervalMeters) || intervalMeters <= 0) return [];
+  const points: RouteMileMarkerPoint[] = [];
+  let cumulative = 0;
+  let mile = 1;
+  let nextTarget = intervalMeters;
+
+  for (const segment of route.segments) {
+    for (let i = 1; i < segment.length; i += 1) {
+      const a = segment[i - 1]!;
+      const b = segment[i]!;
+      const segDist = haversineMeters(a, b);
+      if (!Number.isFinite(segDist) || segDist <= 0) continue;
+
+      while (cumulative + segDist >= nextTarget) {
+        const t = Math.min(1, Math.max(0, (nextTarget - cumulative) / segDist));
+        points.push({
+          mile,
+          lat: a.lat + (b.lat - a.lat) * t,
+          lon: a.lon + (b.lon - a.lon) * t,
+        });
+        mile += 1;
+        nextTarget = mile * intervalMeters;
+      }
+
+      cumulative += segDist;
+    }
+  }
+
+  return points;
+}
+
+export function routeFinishApproachPoint(
+  route: Route,
+  minDistanceMeters = 50,
+): Coordinate | null {
+  let finish: Coordinate | null = null;
+  let fallbackPrev: Coordinate | null = null;
+
+  for (let s = route.segments.length - 1; s >= 0; s -= 1) {
+    const segment = route.segments[s]!;
+    for (let i = segment.length - 1; i >= 0; i -= 1) {
+      const pt = segment[i]!;
+      if (!finish) {
+        finish = pt;
+        continue;
+      }
+      const dist = haversineMeters(pt, finish);
+      if (dist > 0) {
+        fallbackPrev = pt;
+        if (dist >= minDistanceMeters) {
+          return pt;
+        }
+      }
+    }
+  }
+
+  return fallbackPrev;
+}
+
+export interface RouteMarkerProjectionOptions {
+  project: (lat: number, lon: number) => { x: number; y: number } | null;
+  sizeScale?: number;
+  strokeScale?: number;
+}
+
+export function getRouteMileMarkerSize(route: Route): number {
+  if (
+    typeof route.mileMarkerSize === "number" &&
+    Number.isFinite(route.mileMarkerSize) &&
+    route.mileMarkerSize > 0
+  ) {
+    return route.mileMarkerSize;
+  }
+  return Math.max(1, route.startMarker.size);
+}
+
+export function routeEndpointMarkerItems(
+  routes: Route[],
+  projectionOptions?: RouteMarkerProjectionOptions,
+): MarkerItem[] {
   const items: MarkerItem[] = [];
+  const sizeScale = projectionOptions?.sizeScale ?? 1;
+  const strokeScale = projectionOptions?.strokeScale ?? sizeScale;
+
   for (const route of routes) {
-    if (!route.visible || !route.showEndpoints) continue;
-    const endpoints = routeEndpoints(route);
-    if (!endpoints) continue;
+    if (!route.visible) continue;
+    const showEndpoints = Boolean(route.showEndpoints);
+    const showMileMarkers = Boolean(route.showMileMarkers);
+    if (!showEndpoints && !showMileMarkers) continue;
+
     const outline = resolveRouteOutline(route);
     const outline2 = resolveRouteOutline2(route);
+    const mileHasStroke = outline.enabled && outline.width > 0;
+    const mileSize = getRouteMileMarkerSize(route);
+    const showMileNumbers = route.showMileMarkerNumbers ?? true;
+    const milePoints = showMileMarkers ? routeMileMarkers(route) : [];
+
+    const projectedRoute =
+      route.separateOverlaps && projectionOptions
+        ? resolveProjectedRouteGeometry(
+            route,
+            projectionOptions.project,
+            strokeScale,
+          )
+        : null;
+
+    let lastMileEffectivePt: { x: number; y: number } | null = null;
+
+    // 1. Draw mile markers first so Start / Finish always sit cleanly on top.
+    for (let idx = 0; idx < milePoints.length; idx += 1) {
+      const pt = milePoints[idx]!;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (projectedRoute && projectionOptions) {
+        const rawPt = projectionOptions.project(pt.lat, pt.lon);
+        const shiftedPt = projectedRoute.pointAtDistance(
+          pt.mile * METERS_PER_MILE,
+        );
+        if (rawPt && shiftedPt) {
+          offsetX = shiftedPt.x - rawPt.x;
+          offsetY = shiftedPt.y - rawPt.y;
+          if (idx === milePoints.length - 1) {
+            lastMileEffectivePt = shiftedPt;
+          }
+        }
+      } else if (projectionOptions && idx === milePoints.length - 1) {
+        lastMileEffectivePt = projectionOptions.project(pt.lat, pt.lon);
+      }
+
+      items.push({
+        id: `${route.id}-mile-${pt.mile}`,
+        lat: pt.lat,
+        lon: pt.lon,
+        iconId: "circle",
+        color: route.color,
+        size: mileSize,
+        ...(offsetX !== 0 || offsetY !== 0 ? { offsetX, offsetY } : {}),
+        ...(showMileNumbers
+          ? {
+              labelText: String(pt.mile),
+              labelColor: outline.color,
+            }
+          : {}),
+        ...(mileHasStroke
+          ? {
+              strokeColor: outline.color,
+              strokeWidth: outline.width,
+              ...(outline2.active
+                ? {
+                    outerStrokeColor: outline2.color,
+                    outerStrokeWidth: outline2.width,
+                  }
+                : {}),
+            }
+          : {}),
+      });
+    }
+
+    if (!showEndpoints) continue;
+    const endpoints = routeEndpoints(route);
+    if (!endpoints) continue;
+
     const startHasStroke =
       (route.startMarker.outlineEnabled ?? DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
       outline.width > 0;
     const finishHasStroke =
       (route.finishMarker.outlineEnabled ?? DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
       outline.width > 0;
+
+    let startOffsetX = 0;
+    let startOffsetY = 0;
+    let finishOffsetX = 0;
+    let finishOffsetY = 0;
+
+    if (projectedRoute && projectionOptions) {
+      const rawStart = projectionOptions.project(
+        endpoints.start.lat,
+        endpoints.start.lon,
+      );
+      if (rawStart && projectedRoute.startPoint) {
+        startOffsetX = projectedRoute.startPoint.x - rawStart.x;
+        startOffsetY = projectedRoute.startPoint.y - rawStart.y;
+      }
+
+      const rawFinish = projectionOptions.project(
+        endpoints.finish.lat,
+        endpoints.finish.lon,
+      );
+      if (rawFinish && projectedRoute.finishPoint) {
+        finishOffsetX = projectedRoute.finishPoint.x - rawFinish.x;
+        finishOffsetY = projectedRoute.finishPoint.y - rawFinish.y;
+      }
+    }
+
+    // If Mile N (e.g. Mile 26) sits close enough to overlap the Finish circle,
+    // gently nudge Finish slightly past the end of the route along the finish
+    // trajectory so both circles remain clearly legible.
+    if (projectionOptions && milePoints.length > 0) {
+      const rawFinishPt = projectionOptions.project(
+        endpoints.finish.lat,
+        endpoints.finish.lon,
+      );
+      const finishPt =
+        projectedRoute?.finishPoint ??
+        (rawFinishPt
+          ? {
+              x: rawFinishPt.x + finishOffsetX,
+              y: rawFinishPt.y + finishOffsetY,
+            }
+          : null);
+      const lastMilePt =
+        lastMileEffectivePt ??
+        projectionOptions.project(
+          milePoints[milePoints.length - 1]!.lat,
+          milePoints[milePoints.length - 1]!.lon,
+        );
+
+      if (finishPt && lastMilePt) {
+        const mileStrokePx = mileHasStroke
+          ? outline.width * strokeScale +
+            (outline2.active ? outline2.width * strokeScale : 0)
+          : 0;
+        const finishStrokePx = finishHasStroke
+          ? outline.width * strokeScale +
+            (outline2.active ? outline2.width * strokeScale : 0)
+          : 0;
+        const mileRadius = (mileSize * sizeScale) / 2 + mileStrokePx;
+        const finishRadius =
+          (route.finishMarker.size * sizeScale) / 2 + finishStrokePx;
+        const minCenterDist = mileRadius + finishRadius + 2 * sizeScale;
+
+        const dx = finishPt.x - lastMilePt.x;
+        const dy = finishPt.y - lastMilePt.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < minCenterDist) {
+          let ux = 0;
+          let uy = 0;
+          if (dist > 0.5) {
+            ux = dx / dist;
+            uy = dy / dist;
+          } else {
+            const approachPt = projectedRoute
+              ? projectedRoute.approachBeforeFinish(20 * strokeScale)
+              : (() => {
+                  const approach = routeFinishApproachPoint(route);
+                  return approach
+                    ? projectionOptions.project(approach.lat, approach.lon)
+                    : null;
+                })();
+            if (approachPt) {
+              const tdx = finishPt.x - approachPt.x;
+              const tdy = finishPt.y - approachPt.y;
+              const tLen = Math.hypot(tdx, tdy);
+              if (tLen > 0.001) {
+                ux = tdx / tLen;
+                uy = tdy / tLen;
+              }
+            }
+          }
+          if (ux === 0 && uy === 0) {
+            ux = 1;
+            uy = 0;
+          }
+          finishOffsetX += lastMilePt.x + ux * minCenterDist - finishPt.x;
+          finishOffsetY += lastMilePt.y + uy * minCenterDist - finishPt.y;
+        }
+      }
+    }
 
     items.push({
       id: `${route.id}-start`,
@@ -189,6 +465,9 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
       iconId: route.startMarker.iconId,
       color: route.startMarker.color,
       size: route.startMarker.size,
+      ...(startOffsetX !== 0 || startOffsetY !== 0
+        ? { offsetX: startOffsetX, offsetY: startOffsetY }
+        : {}),
       ...(startHasStroke
         ? {
             strokeColor: outline.color,
@@ -209,6 +488,9 @@ export function routeEndpointMarkerItems(routes: Route[]): MarkerItem[] {
       iconId: route.finishMarker.iconId,
       color: route.finishMarker.color,
       size: route.finishMarker.size,
+      ...(finishOffsetX !== 0 || finishOffsetY !== 0
+        ? { offsetX: finishOffsetX, offsetY: finishOffsetY }
+        : {}),
       ...(finishHasStroke
         ? {
             strokeColor: outline.color,

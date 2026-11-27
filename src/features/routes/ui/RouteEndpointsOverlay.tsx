@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { MapInstanceRef } from "@/features/map/domain/types";
 import type { Route } from "@/features/routes/domain/types";
-import { DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED } from "@/features/routes/domain/constants";
 import type { MarkerIconDefinition } from "@/features/markers/domain/types";
 import { findMarkerIcon } from "@/features/markers/infrastructure/iconRegistry";
 import MarkerVisual from "@/features/markers/ui/MarkerVisual";
-import {
-  resolveRouteOutline,
-  resolveRouteOutline2,
-  routeEndpoints,
-} from "@/features/routes/infrastructure/helpers";
+import { routeEndpointMarkerItems } from "@/features/routes/infrastructure/helpers";
 
 interface RouteEndpointsOverlayProps {
   routes: Route[];
@@ -52,95 +47,59 @@ export default function RouteEndpointsOverlay({
   const map = mapRef.current;
   const projected = useMemo(() => {
     if (!map || !visible) return [];
-    return routes.flatMap((route) => {
-      if (!route.visible || !route.showEndpoints) return [];
-      const endpoints = routeEndpoints(route);
-      if (!endpoints) return [];
-      const outline = resolveRouteOutline(route);
-      const outline2 = resolveRouteOutline2(route);
-      const startHasStroke =
-        (route.startMarker.outlineEnabled ??
-          DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
-        outline.width > 0;
-      const finishHasStroke =
-        (route.finishMarker.outlineEnabled ??
-          DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED) &&
-        outline.width > 0;
 
-      const items: {
-        key: string;
-        x: number;
-        y: number;
-        icon: MarkerIconDefinition;
-        color: string;
-        size: number;
-        strokeColor?: string;
-        strokeWidth?: number;
-        outerStrokeColor?: string;
-        outerStrokeWidth?: number;
-      }[] = [];
-      const projectPoint = (lat: number, lon: number) => {
-        try {
-          const p = map.project([lon, lat]);
-          return { x: p.x / overzoomScale, y: p.y / overzoomScale };
-        } catch {
-          return null;
-        }
-      };
-      const startIcon = findMarkerIcon(route.startMarker.iconId, customIcons);
-      if (startIcon) {
-        const p = projectPoint(endpoints.start.lat, endpoints.start.lon);
-        if (p) {
-          items.push({
-            key: `${route.id}-start`,
-            x: p.x,
-            y: p.y,
-            icon: startIcon,
-            color: route.startMarker.color,
-            size: route.startMarker.size,
-            ...(startHasStroke
-              ? {
-                  strokeColor: outline.color,
-                  strokeWidth: outline.width,
-                  ...(outline2.active
-                    ? {
-                        outerStrokeColor: outline2.color,
-                        outerStrokeWidth: outline2.width,
-                      }
-                    : {}),
-                }
-              : {}),
-          });
-        }
+    const projectPoint = (lat: number, lon: number) => {
+      try {
+        const p = map.project([lon, lat]);
+        return { x: p.x / overzoomScale, y: p.y / overzoomScale };
+      } catch {
+        return null;
       }
-      const finishIcon = findMarkerIcon(route.finishMarker.iconId, customIcons);
-      if (finishIcon) {
-        const p = projectPoint(endpoints.finish.lat, endpoints.finish.lon);
-        if (p) {
-          items.push({
-            key: `${route.id}-finish`,
-            x: p.x,
-            y: p.y,
-            icon: finishIcon,
-            color: route.finishMarker.color,
-            size: route.finishMarker.size,
-            ...(finishHasStroke
-              ? {
-                  strokeColor: outline.color,
-                  strokeWidth: outline.width,
-                  ...(outline2.active
-                    ? {
-                        outerStrokeColor: outline2.color,
-                        outerStrokeWidth: outline2.width,
-                      }
-                    : {}),
-                }
-              : {}),
-          });
-        }
-      }
-      return items;
+    };
+
+    const markerItems = routeEndpointMarkerItems(routes, {
+      project: projectPoint,
+      sizeScale: 1,
+      strokeScale: 1,
     });
+
+    const items: {
+      key: string;
+      x: number;
+      y: number;
+      icon: MarkerIconDefinition;
+      color: string;
+      size: number;
+      strokeColor?: string;
+      strokeWidth?: number;
+      outerStrokeColor?: string;
+      outerStrokeWidth?: number;
+      labelText?: string;
+      labelColor?: string;
+    }[] = [];
+
+    for (const marker of markerItems) {
+      const icon = findMarkerIcon(marker.iconId, customIcons);
+      if (!icon) continue;
+      const p = projectPoint(marker.lat, marker.lon);
+      if (!p) continue;
+      items.push({
+        key: marker.id,
+        x: p.x + (marker.offsetX ?? 0),
+        y: p.y + (marker.offsetY ?? 0),
+        icon,
+        color: marker.color,
+        size: marker.size,
+        strokeColor: marker.strokeColor,
+        strokeWidth: marker.strokeWidth,
+        outerStrokeColor: marker.outerStrokeColor,
+        outerStrokeWidth: marker.outerStrokeWidth,
+        labelText: marker.labelText,
+        labelColor: marker.labelColor,
+      });
+    }
+
+    return items;
     // renderTick drives recomputation when the map view changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, routes, customIcons, visible, overzoomScale, renderTick]);
@@ -163,6 +122,8 @@ export default function RouteEndpointsOverlay({
           strokeWidth,
           outerStrokeColor,
           outerStrokeWidth,
+          labelText,
+          labelColor,
         }) => (
           <div
             key={key}
@@ -177,6 +138,8 @@ export default function RouteEndpointsOverlay({
               strokeWidth={strokeWidth}
               outerStrokeColor={outerStrokeColor}
               outerStrokeWidth={outerStrokeWidth}
+              labelText={labelText}
+              labelColor={labelColor}
             />
           </div>
         ),

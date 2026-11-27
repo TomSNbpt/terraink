@@ -33,6 +33,9 @@ export interface DesignerMessage {
   generatedThemeIds?: string[];
   addedRouteSummary?: string;
   brandSource?: BrandSourceInfo;
+  isError?: boolean;
+  errorSummary?: string;
+  retryable?: boolean;
 }
 
 export interface GeneratedTheme {

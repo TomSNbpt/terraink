@@ -16,9 +16,11 @@ import type { Route, RouteDefaults } from "@/features/routes/domain/types";
 import {
   MAX_ROUTE_OPACITY,
   MAX_ROUTE_OUTLINE_WIDTH,
+  MAX_ROUTE_OVERLAP_SPACING,
   MAX_ROUTE_STROKE_WIDTH,
   MIN_ROUTE_OPACITY,
   MIN_ROUTE_OUTLINE_WIDTH,
+  MIN_ROUTE_OVERLAP_SPACING,
   MIN_ROUTE_STROKE_WIDTH,
 } from "@/features/routes/domain/constants";
 import type { SavedTheme } from "@/features/theme/domain/types";
@@ -50,6 +52,7 @@ import type {
   LayoutGuide,
 } from "@/features/layout/domain/types";
 import { normalizeBleedInches } from "@/features/layout/domain/bleed";
+import { COLOR_ADJUST_DEFAULTS } from "./colorAdjustFields";
 
 /* ────── Form state ────── */
 
@@ -83,6 +86,14 @@ export interface PosterForm {
   includeRoadOutline: boolean;
   showMarkers: boolean;
   showRoutes: boolean;
+  colorBrightness: string;
+  colorContrast: string;
+  colorSaturation: string;
+  colorHue: string;
+  colorWarmth: string;
+  colorInvert: boolean;
+  colorGrayscale: boolean;
+  colorKeepAcrossThemes: boolean;
 }
 
 /* ────── App-level state ────── */
@@ -287,7 +298,11 @@ export function posterReducer(
     }
 
     case "SET_THEME": {
-      const nextForm = { ...state.form, theme: action.themeId };
+      const nextForm: PosterForm = {
+        ...state.form,
+        theme: action.themeId,
+        ...(state.form.colorKeepAcrossThemes ? {} : COLOR_ADJUST_DEFAULTS),
+      };
       return {
         ...state,
         form: nextForm,
@@ -339,6 +354,7 @@ export function posterReducer(
         ...state.form,
         ...baseline.layers,
         ...baseline.typography,
+        ...COLOR_ADJUST_DEFAULTS,
       };
       const nextRouteDefaults: RouteDefaults = {
         ...baseline.routeDefaults,
@@ -361,6 +377,11 @@ export function posterReducer(
           opacity: routeBase.opacity,
           lineStyle: routeBase.lineStyle,
           showEndpoints: routeBase.showEndpoints,
+          showMileMarkers: Boolean(routeBase.showMileMarkers),
+          mileMarkerSize: routeBase.mileMarkerSize,
+          showMileMarkerNumbers: routeBase.showMileMarkerNumbers ?? true,
+          separateOverlaps: Boolean(routeBase.separateOverlaps),
+          overlapSpacing: routeBase.overlapSpacing ?? 0,
           startMarker: routeBase.startMarker
             ? { ...routeBase.startMarker }
             : undefined,
@@ -771,6 +792,22 @@ export function posterReducer(
                         MAX_ROUTE_OPACITY,
                       )
                     : route.opacity,
+                mileMarkerSize:
+                  typeof action.changes.mileMarkerSize === "number"
+                    ? clamp(
+                        action.changes.mileMarkerSize,
+                        MIN_MARKER_SIZE,
+                        MAX_MARKER_SIZE,
+                      )
+                    : route.mileMarkerSize,
+                overlapSpacing:
+                  typeof action.changes.overlapSpacing === "number"
+                    ? clamp(
+                        action.changes.overlapSpacing,
+                        MIN_ROUTE_OVERLAP_SPACING,
+                        MAX_ROUTE_OVERLAP_SPACING,
+                      )
+                    : route.overlapSpacing,
               }
             : route,
         ),

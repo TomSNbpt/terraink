@@ -455,11 +455,77 @@ function computeNextIncrementedNames(
   return Array.from({ length: count }, (_, idx) => `${baseName} - ${maxIndex + idx + 1}`);
 }
 
-function isQuotaError(error: unknown): boolean {
+function extractUpstreamErrorInfo(error: unknown): {
+  status: number;
+  statusText: string;
+  detail: string;
+} {
   const err = error as { status?: unknown; message?: unknown };
-  const status = typeof err?.status === "number" ? err.status : 0;
-  const rawMessage = String(err?.message ?? "");
-  return status === 429 || /RESOURCE_EXHAUSTED|quota|rate[- ]?limit/i.test(rawMessage);
+  let status = typeof err?.status === "number" ? err.status : 0;
+  let statusText = "";
+  const rawMessage = String(err?.message ?? "").trim();
+  let detail = rawMessage;
+
+  if (rawMessage.startsWith("{") || rawMessage.includes('"error"')) {
+    const jsonStart = rawMessage.indexOf("{");
+    const jsonEnd = rawMessage.lastIndexOf("}");
+    if (jsonStart >= 0 && jsonEnd > jsonStart) {
+      try {
+        const parsed = JSON.parse(rawMessage.slice(jsonStart, jsonEnd + 1)) as {
+          error?: { code?: unknown; message?: unknown; status?: unknown };
+        };
+        if (parsed?.error) {
+          if (typeof parsed.error.code === "number" && !status) {
+            status = parsed.error.code;
+          }
+          if (typeof parsed.error.status === "string") {
+            statusText = parsed.error.status;
+          }
+          if (typeof parsed.error.message === "string" && parsed.error.message.trim()) {
+            detail = parsed.error.message.trim();
+          }
+        }
+      } catch {
+        // Keep raw message when JSON parsing fails.
+      }
+    }
+  }
+
+  return { status, statusText, detail };
+}
+
+function isQuotaError(error: unknown): boolean {
+  const info = extractUpstreamErrorInfo(error);
+  return (
+    info.status === 429 ||
+    /RESOURCE_EXHAUSTED|quota|rate[- ]?limit/i.test(`${info.statusText} ${info.detail}`)
+  );
+}
+
+function isTransientUpstreamError(error: unknown): boolean {
+  const info = extractUpstreamErrorInfo(error);
+  return (
+    info.status === 500 ||
+    info.status === 502 ||
+    info.status === 503 ||
+    info.status === 504 ||
+    /UNAVAILABLE|high demand|overloaded|temporarily unavailable|DEADLINE_EXCEEDED|INTERNAL/i.test(
+      `${info.statusText} ${info.detail}`,
+    )
+  );
+}
+
+class DesignerGenerationError extends Error {
+  causeError: unknown;
+  attempts: string[];
+
+  constructor(causeError: unknown, attempts: string[]) {
+    const info = extractUpstreamErrorInfo(causeError);
+    super(info.detail || "Gemini request failed");
+    this.name = "DesignerGenerationError";
+    this.causeError = causeError;
+    this.attempts = attempts;
+  }
 }
 
 function shouldUseSearchGrounding(
@@ -480,22 +546,24 @@ function shouldUseSearchGrounding(
   return !looksLikePureColorTweak;
 }
 
-async function callGeminiWithRetry<T>(fn: () => Promise<T>, maxAttempts = 2): Promise<T> {
+async function callGeminiWithRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts = 2,
+  baseDelayMs = 900,
+): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      const status =
-        typeof (error as { status?: unknown })?.status === "number"
-          ? (error as { status: number }).status
-          : 0;
-      const isRetryable = status === 500 || status === 503 || status === 504;
-      if (!isRetryable || attempt === maxAttempts) {
+      if (!isTransientUpstreamError(error) || attempt === maxAttempts) {
         throw error;
       }
-      await new Promise((resolve) => setTimeout(resolve, 600 * attempt));
+      const jitter = Math.floor(Math.random() * 250);
+      await new Promise((resolve) =>
+        setTimeout(resolve, baseDelayMs * attempt + jitter),
+      );
     }
   }
   throw lastError;
@@ -569,74 +637,138 @@ async function generateDesignerContent(
       ];
 
   let lastError: unknown;
+  const attemptsLog: string[] = [];
+  const overloadedModels = new Set<string>();
+
   for (let i = 0; i < strategies.length; i += 1) {
     const strategy = strategies[i];
+    if (overloadedModels.has(strategy.model)) {
+      continue;
+    }
+
     const tools: Array<Record<string, Record<string, never>>> = [];
     if (strategy.useSearch) tools.push({ googleSearch: {} });
     if (strategy.useUrlContext) tools.push({ urlContext: {} });
 
     try {
-      return await callGeminiWithRetry(() =>
-        ai.models.generateContent({
-          model: strategy.model,
-          contents,
-          config: {
-            systemInstruction: THEME_DESIGNER_SYSTEM_INSTRUCTION,
-            ...(tools.length > 0 ? { tools } : {}),
-            ...(strategy.thinkingLow
-              ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
-              : {}),
-            responseMimeType: "application/json",
-            responseSchema: THEME_DESIGNER_RESPONSE_SCHEMA,
-          },
-        }),
+      return await callGeminiWithRetry(
+        () =>
+          ai.models.generateContent({
+            model: strategy.model,
+            contents,
+            config: {
+              systemInstruction: THEME_DESIGNER_SYSTEM_INSTRUCTION,
+              ...(tools.length > 0 ? { tools } : {}),
+              ...(strategy.thinkingLow
+                ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
+                : {}),
+              responseMimeType: "application/json",
+              responseSchema: THEME_DESIGNER_RESPONSE_SCHEMA,
+            },
+          }),
+        2,
+        900,
       );
     } catch (error) {
       lastError = error;
-      const err = error as { status?: unknown; message?: unknown };
-      const status = typeof err?.status === "number" ? err.status : 0;
-      const rawMessage = String(err?.message ?? "");
+      const info = extractUpstreamErrorInfo(error);
+      const codeLabel =
+        info.status > 0
+          ? `${info.status}${info.statusText ? ` ${info.statusText}` : ""}`
+          : info.statusText || "error";
+      const modeTag = strategy.useSearch ? " with web search" : "";
+      attemptsLog.push(`${strategy.model}${modeTag} (${codeLabel})`);
+
       const isAuthError =
-        status === 403 || /API_KEY_INVALID|PERMISSION_DENIED/i.test(rawMessage);
+        info.status === 403 ||
+        /API_KEY_INVALID|PERMISSION_DENIED/i.test(`${info.statusText} ${info.detail}`);
+      const isTransient = isTransientUpstreamError(error);
+      const isQuota = isQuotaError(error);
+
+      if (isTransient || isQuota) {
+        // Model itself is unavailable or quota-limited; skip duplicate modes on the same model
+        // and move straight to the fallback model.
+        overloadedModels.add(strategy.model);
+      }
+
       const canFallback =
         !isAuthError &&
-        (isQuotaError(error) ||
-          status === 404 ||
-          ((strategy.useSearch || strategy.useUrlContext) && status === 400));
+        (isTransient ||
+          isQuota ||
+          info.status === 404 ||
+          ((strategy.useSearch || strategy.useUrlContext) && info.status === 400));
 
-      if (!canFallback || i === strategies.length - 1) {
-        throw error;
+      const hasRemainingStrategy = strategies
+        .slice(i + 1)
+        .some((next) => !overloadedModels.has(next.model));
+
+      if (!canFallback || !hasRemainingStrategy) {
+        throw new DesignerGenerationError(error, attemptsLog);
       }
-      // Brief pause before falling back to an alternate grounding/model quota pool.
-      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      console.warn(
+        `[theme-designer] ${strategy.model}${modeTag} failed (${codeLabel}); falling back to next model/mode.`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 450));
     }
   }
 
-  throw lastError;
+  throw new DesignerGenerationError(lastError, attemptsLog);
 }
 
-function formatApiError(error: unknown): { status: number; message: string } {
-  const err = error as { status?: number; message?: string };
-  const status = typeof err?.status === "number" ? err.status : 500;
-  const rawMessage = String(err?.message ?? "Unexpected AI error");
+function formatApiError(error: unknown): {
+  status: number;
+  message: string;
+  summary: string;
+  retryable: boolean;
+} {
+  const attempts =
+    error instanceof DesignerGenerationError ? error.attempts : [];
+  const rootError =
+    error instanceof DesignerGenerationError ? error.causeError : error;
+  const info = extractUpstreamErrorInfo(rootError);
+  const status = info.status > 0 ? info.status : 500;
+  const attemptsText =
+    attempts.length > 0 ? ` Tried: ${attempts.join(" → ")}.` : "";
 
-  if (status === 400 || status === 403 || /API_KEY_INVALID|PERMISSION_DENIED/i.test(rawMessage)) {
+  if (
+    status === 403 ||
+    /API_KEY_INVALID|PERMISSION_DENIED/i.test(`${info.statusText} ${info.detail}`)
+  ) {
     return {
-      status,
-      message:
-        "Gemini API key was rejected or is not configured. Check your API key in Settings > Secrets.",
+      status: status === 400 || status === 403 ? status : 403,
+      message: "Gemini API key was rejected or is not configured.",
+      summary:
+        "Authentication with the Gemini API failed. Please check your API key in Settings > Secrets.",
+      retryable: false,
     };
   }
-  if (isQuotaError(error)) {
+  if (isQuotaError(rootError)) {
     return {
       status: 429,
-      message:
-        "Gemini API quota reached for your current key. Please wait a minute and try again, or select a billing-enabled API key in Settings > Secrets for higher limits.",
+      message: "Gemini API quota or rate limit reached.",
+      summary: `Your current API key hit its rate limit or quota.${attemptsText} Wait a minute and click Retry, or select a billing-enabled API key in Settings > Secrets.`,
+      retryable: true,
     };
   }
+  if (isTransientUpstreamError(rootError)) {
+    return {
+      status: status >= 500 && status < 600 ? status : 503,
+      message: "The AI service is temporarily experiencing high demand.",
+      summary: `Both the primary model (${PRIMARY_GEMINI_MODEL}) and backup model (${FALLBACK_GEMINI_MODEL}) could not complete the request due to temporary high demand on Google's servers.${attemptsText} Wait a few seconds and click Retry.`,
+      retryable: true,
+    };
+  }
+
+  const cleanDetail =
+    info.detail && !info.detail.startsWith("{")
+      ? info.detail
+      : `Unexpected AI service error (HTTP ${status}).`;
   return {
     status: status >= 400 && status < 600 ? status : 500,
-    message: rawMessage,
+    message: "Theme Designer couldn't complete that request.",
+    summary: `${cleanDetail}${attemptsText}`,
+    retryable: status >= 500 || status === 408,
   };
 }
 
@@ -1051,12 +1183,23 @@ async function startServer() {
       });
     } catch (error) {
       const formatted = formatApiError(error);
-      if (formatted.status === 429 || formatted.status === 403 || formatted.status === 400) {
-        console.warn(`[theme-designer] Gemini API (${formatted.status}): ${formatted.message}`);
+      if (
+        formatted.status === 503 ||
+        formatted.status === 429 ||
+        formatted.status === 403 ||
+        formatted.status === 400
+      ) {
+        console.warn(
+          `[theme-designer] Gemini API (${formatted.status}): ${formatted.summary}`,
+        );
       } else {
         console.error("[theme-designer] Gemini API error:", error);
       }
-      res.status(formatted.status).json({ error: formatted.message });
+      res.status(formatted.status).json({
+        error: formatted.message,
+        summary: formatted.summary,
+        retryable: formatted.retryable,
+      });
     }
   });
 

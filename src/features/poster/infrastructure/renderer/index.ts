@@ -1,6 +1,7 @@
 import { applyFades } from "./layers";
 import { drawPosterText } from "./typography";
 import { drawMarkersOnCanvas } from "@/features/markers/infrastructure/rendering";
+import { projectMarkerToCanvas } from "@/features/markers/infrastructure/projection";
 import { drawRoutesOnCanvas } from "@/features/routes/infrastructure/rendering";
 import { routeEndpointMarkerItems } from "@/features/routes/infrastructure/helpers";
 import type { ExportOptions, CanvasSize } from "../../domain/types";
@@ -69,9 +70,16 @@ export async function compositeExport(
     );
   }
 
-  // 4. Route endpoint markers (between route lines and user markers)
+  // 4. Route mile markers & endpoint markers (between route lines and user markers)
   if (routes.length > 0 && markerIcons.length > 0 && markerProjection) {
-    const endpointItems = routeEndpointMarkerItems(routes);
+    const endpointItems = routeEndpointMarkerItems(routes, {
+      project: (lat, lon) => {
+        const p = projectMarkerToCanvas(lat, lon, markerProjection);
+        return { x: p.x * markerScaleX, y: p.y * markerScaleY };
+      },
+      sizeScale: Math.max(markerScaleX, markerScaleY) * markerSizeScale,
+      strokeScale: ((markerScaleX + markerScaleY) / 2) * markerSizeScale,
+    });
     if (endpointItems.length > 0) {
       await drawMarkersOnCanvas(
         ctx,

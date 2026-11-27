@@ -6,6 +6,7 @@ import {
   MarkersIcon,
   RouteIcon,
   DesignIcon,
+  ColorIcon,
   SettingsIcon,
   PresetsIcon,
 } from "./Icons";
@@ -19,6 +20,7 @@ const tabs: {
   { id: "layout", label: "Layout", Icon: LayoutIcon },
   { id: "theme", label: "Theme", Icon: ThemeIcon },
   { id: "style", label: "Design", Icon: DesignIcon },
+  { id: "color", label: "Color", Icon: ColorIcon },
   { id: "layers", label: "Layers", Icon: LayersIcon },
   { id: "markers", label: "Markers", Icon: MarkersIcon },
   { id: "routes", label: "Routes", Icon: RouteIcon },

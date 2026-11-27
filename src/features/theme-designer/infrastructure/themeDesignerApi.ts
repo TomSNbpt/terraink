@@ -71,37 +71,74 @@ function isResolvedRouteOverlay(value: unknown): value is ResolvedRouteOverlay {
   );
 }
 
+export class ThemeDesignerApiError extends Error {
+  status: number;
+  summary: string;
+  retryable: boolean;
+
+  constructor(options: {
+    message: string;
+    summary: string;
+    status: number;
+    retryable: boolean;
+  }) {
+    super(options.message);
+    this.name = "ThemeDesignerApiError";
+    this.status = options.status;
+    this.summary = options.summary;
+    this.retryable = options.retryable;
+  }
+}
+
 export async function sendThemeDesignerMessage(input: {
-  messages: Pick<DesignerMessage, "role" | "content">[];
+  messages: Pick<DesignerMessage, "role" | "content" | "isError">[];
   selectedTheme?: Pick<GeneratedTheme, "name" | "description" | "colors"> | null;
   selectedThemeIsGenerated?: boolean;
   existingThemeNames?: string[];
   officialUrl?: string;
   signal?: AbortSignal;
 }): Promise<ThemeDesignerChatResponse> {
-  const response = await fetch("/api/theme-designer/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: input.messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-      selectedTheme: input.selectedTheme
-        ? {
-            name: input.selectedTheme.name,
-            description: input.selectedTheme.description,
-            colors: input.selectedTheme.colors,
-          }
-        : null,
-      selectedThemeIsGenerated: Boolean(input.selectedThemeIsGenerated),
-      existingThemeNames: input.existingThemeNames ?? [],
-      ...(input.officialUrl?.trim()
-        ? { officialUrl: input.officialUrl.trim() }
-        : {}),
-    }),
-    signal: input.signal,
-  });
+  const cleanMessages = input.messages
+    .filter((m) => !m.isError)
+    .map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+  let response: Response;
+  try {
+    response = await fetch("/api/theme-designer/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: cleanMessages,
+        selectedTheme: input.selectedTheme
+          ? {
+              name: input.selectedTheme.name,
+              description: input.selectedTheme.description,
+              colors: input.selectedTheme.colors,
+            }
+          : null,
+        selectedThemeIsGenerated: Boolean(input.selectedThemeIsGenerated),
+        existingThemeNames: input.existingThemeNames ?? [],
+        ...(input.officialUrl?.trim()
+          ? { officialUrl: input.officialUrl.trim() }
+          : {}),
+      }),
+      signal: input.signal,
+    });
+  } catch (error) {
+    if ((error as { name?: string })?.name === "AbortError") {
+      throw error;
+    }
+    throw new ThemeDesignerApiError({
+      status: 0,
+      message: "Could not reach the Theme Designer service.",
+      summary:
+        "A network or connection error interrupted the request before the server responded. Please click Retry.",
+      retryable: true,
+    });
+  }
 
   let payload: unknown = null;
   try {
@@ -111,13 +148,29 @@ export async function sendThemeDesignerMessage(input: {
   }
 
   if (!response.ok) {
+    const obj =
+      payload && typeof payload === "object"
+        ? (payload as Record<string, unknown>)
+        : null;
     const errorMessage =
-      payload &&
-      typeof payload === "object" &&
-      typeof (payload as { error?: unknown }).error === "string"
-        ? (payload as { error: string }).error
+      obj && typeof obj.error === "string" && obj.error.trim()
+        ? obj.error.trim()
         : `Theme Designer request failed (HTTP ${response.status}).`;
-    throw new Error(errorMessage);
+    const summary =
+      obj && typeof obj.summary === "string" && obj.summary.trim()
+        ? obj.summary.trim()
+        : `The server returned HTTP ${response.status}. ${errorMessage}`;
+    const retryable =
+      obj && typeof obj.retryable === "boolean"
+        ? obj.retryable
+        : response.status >= 500 || response.status === 429 || response.status === 408;
+
+    throw new ThemeDesignerApiError({
+      status: response.status,
+      message: errorMessage,
+      summary,
+      retryable,
+    });
   }
 
   const data = (payload ?? {}) as Partial<ThemeDesignerChatResponse>;

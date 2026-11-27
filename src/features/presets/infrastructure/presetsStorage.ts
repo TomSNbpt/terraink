@@ -108,6 +108,30 @@ function normalizeSnapshot(
     ...(typeof rawForm.showRoutes === "boolean"
       ? { showRoutes: rawForm.showRoutes }
       : {}),
+    ...(typeof rawForm.colorBrightness === "string"
+      ? { colorBrightness: rawForm.colorBrightness }
+      : {}),
+    ...(typeof rawForm.colorContrast === "string"
+      ? { colorContrast: rawForm.colorContrast }
+      : {}),
+    ...(typeof rawForm.colorSaturation === "string"
+      ? { colorSaturation: rawForm.colorSaturation }
+      : {}),
+    ...(typeof rawForm.colorHue === "string"
+      ? { colorHue: rawForm.colorHue }
+      : {}),
+    ...(typeof rawForm.colorWarmth === "string"
+      ? { colorWarmth: rawForm.colorWarmth }
+      : {}),
+    ...(typeof rawForm.colorInvert === "boolean"
+      ? { colorInvert: rawForm.colorInvert }
+      : {}),
+    ...(typeof rawForm.colorGrayscale === "boolean"
+      ? { colorGrayscale: rawForm.colorGrayscale }
+      : {}),
+    ...(typeof rawForm.colorKeepAcrossThemes === "boolean"
+      ? { colorKeepAcrossThemes: rawForm.colorKeepAcrossThemes }
+      : {}),
   };
 
   const customColors: Record<string, string> = {};

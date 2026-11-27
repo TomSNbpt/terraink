@@ -3,37 +3,28 @@ import { projectMarkerToCanvas } from "@/features/markers/infrastructure/project
 import { ROUTE_DASH_PATTERN } from "../domain/constants";
 import type { Route } from "../domain/types";
 import { resolveRouteOutline, resolveRouteOutline2 } from "./helpers";
+import {
+  resolveProjectedRouteGeometry,
+  type ProjectedRouteVertex,
+  type RoutePointProjector,
+} from "./overlapSeparation";
 
-export type RoutePointProjector = (
-  lat: number,
-  lon: number,
-) => { x: number; y: number } | null;
+export type { RoutePointProjector };
 
 interface DrawOptions {
   widthScale?: number;
 }
 
-function strokeRouteSegments(
+function strokeProjectedSegments(
   ctx: CanvasRenderingContext2D,
-  route: Route,
-  project: RoutePointProjector,
+  segments: ProjectedRouteVertex[][],
 ): void {
-  for (const segment of route.segments) {
+  for (const segment of segments) {
     if (segment.length < 2) continue;
     ctx.beginPath();
-    let started = false;
-    for (const { lat, lon } of segment) {
-      const projected = project(lat, lon);
-      if (!projected) {
-        started = false;
-        continue;
-      }
-      if (!started) {
-        ctx.moveTo(projected.x, projected.y);
-        started = true;
-      } else {
-        ctx.lineTo(projected.x, projected.y);
-      }
+    ctx.moveTo(segment[0]!.x, segment[0]!.y);
+    for (let i = 1; i < segment.length; i += 1) {
+      ctx.lineTo(segment[i]!.x, segment[i]!.y);
     }
     ctx.stroke();
   }
@@ -52,6 +43,13 @@ export function drawRoutesWithProjector(
   for (const route of routes) {
     if (!route.visible || route.segments.length === 0) continue;
 
+    const { segments } = resolveProjectedRouteGeometry(
+      route,
+      project,
+      widthScale,
+    );
+    if (segments.length === 0) continue;
+
     const width = Math.max(0.5, route.strokeWidth * widthScale);
     const outline = resolveRouteOutline(route);
     const outline2 = resolveRouteOutline2(route);
@@ -62,7 +60,7 @@ export function drawRoutesWithProjector(
       ctx.strokeStyle = outline2.color;
       ctx.globalAlpha = route.opacity;
       ctx.setLineDash([]);
-      strokeRouteSegments(ctx, route, project);
+      strokeProjectedSegments(ctx, segments);
     }
 
     if (outline.enabled && outline.width > 0) {
@@ -71,7 +69,7 @@ export function drawRoutesWithProjector(
       ctx.strokeStyle = outline.color;
       ctx.globalAlpha = route.opacity;
       ctx.setLineDash([]);
-      strokeRouteSegments(ctx, route, project);
+      strokeProjectedSegments(ctx, segments);
     }
 
     ctx.lineWidth = width;
@@ -83,7 +81,7 @@ export function drawRoutesWithProjector(
       ctx.setLineDash([]);
     }
 
-    strokeRouteSegments(ctx, route, project);
+    strokeProjectedSegments(ctx, segments);
   }
 
   ctx.restore();

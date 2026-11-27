@@ -25,6 +25,10 @@ export interface MarkerItem {
   strokeWidth?: number;
   outerStrokeColor?: string;
   outerStrokeWidth?: number;
+  labelText?: string;
+  labelColor?: string;
+  offsetX?: number;
+  offsetY?: number;
 }
 
 export interface MarkerDefaults {

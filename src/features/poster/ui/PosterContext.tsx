@@ -21,6 +21,11 @@ import {
   isThemeDesignModified,
 } from "@/features/theme/domain/designDirty";
 import { applyThemeColorOverrides } from "@/features/theme/domain/colorPaths";
+import {
+  adjustThemeColors,
+  getColorAdjustmentsFromForm,
+} from "@/features/theme/domain/colorAdjust";
+import { COLOR_ADJUST_DEFAULTS } from "../application/colorAdjustFields";
 import { generateMapStyle } from "@/features/map/infrastructure/maplibreStyle";
 import type { StyleSpecification } from "maplibre-gl";
 import type { MapInstanceRef } from "@/features/map/domain/types";
@@ -116,6 +121,8 @@ export const DEFAULT_FORM: PosterForm = {
   includeRoadOutline: true,
   showMarkers: true,
   showRoutes: true,
+  ...COLOR_ADJUST_DEFAULTS,
+  colorKeepAcrossThemes: false,
 };
 
 export function createFallbackPresetSnapshot(): PresetSnapshot {
@@ -268,29 +275,54 @@ export function PosterProvider({ children }: { children: ReactNode }) {
     return getTheme(state.form.theme);
   }, [state.form.theme, state.savedThemes]);
 
-  const effectiveTheme = useMemo(() => {
+  const baseTheme = useMemo(() => {
     if (Object.keys(state.customColors).length === 0) {
       return selectedTheme;
     }
     return applyThemeColorOverrides(selectedTheme, state.customColors);
   }, [selectedTheme, state.customColors]);
 
+  const colorAdjustments = useMemo(
+    () => getColorAdjustmentsFromForm(state.form),
+    [
+      state.form.colorBrightness,
+      state.form.colorContrast,
+      state.form.colorSaturation,
+      state.form.colorHue,
+      state.form.colorWarmth,
+      state.form.colorInvert,
+      state.form.colorGrayscale,
+    ],
+  );
+
+  const effectiveTheme = useMemo(
+    () => adjustThemeColors(baseTheme, colorAdjustments),
+    [baseTheme, colorAdjustments],
+  );
+
   const previewTheme = useMemo<ResolvedTheme | null>(() => {
     if (!previewThemeId) return null;
     const saved = state.savedThemes.find((t) => t.id === previewThemeId);
-    if (saved) {
-      return {
-        name: saved.name,
-        description: saved.description || "Unsaved theme",
-        ui: { ...saved.colors.ui },
-        map: {
-          ...saved.colors.map,
-          roads: { ...saved.colors.map.roads },
-        },
-      };
-    }
-    return getTheme(previewThemeId);
-  }, [previewThemeId, state.savedThemes]);
+    const resolvedPreview = saved
+      ? {
+          name: saved.name,
+          description: saved.description || "Unsaved theme",
+          ui: { ...saved.colors.ui },
+          map: {
+            ...saved.colors.map,
+            roads: { ...saved.colors.map.roads },
+          },
+        }
+      : getTheme(previewThemeId);
+    return state.form.colorKeepAcrossThemes
+      ? adjustThemeColors(resolvedPreview, colorAdjustments)
+      : resolvedPreview;
+  }, [
+    colorAdjustments,
+    previewThemeId,
+    state.form.colorKeepAcrossThemes,
+    state.savedThemes,
+  ]);
 
   const displayTheme = previewTheme ?? effectiveTheme;
 
@@ -315,7 +347,7 @@ export function PosterProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    const markerThemeColor = effectiveTheme.ui.text;
+    const markerThemeColor = baseTheme.ui.text;
     const previouslySynced = lastSyncedMarkerThemeColorRef.current;
 
     if (
@@ -337,7 +369,7 @@ export function PosterProvider({ children }: { children: ReactNode }) {
       defaults: { color: markerThemeColor },
       applyToMarkers: true,
     });
-  }, [dispatch, effectiveTheme.ui.text, state.presetLoadSeq]);
+  }, [baseTheme.ui.text, dispatch, state.presetLoadSeq]);
 
   useEffect(() => {
     let isCancelled = false;

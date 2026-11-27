@@ -31,6 +31,11 @@ export interface Route {
   lineStyle: RouteLineStyle;
   visible: boolean;
   showEndpoints: boolean;
+  showMileMarkers?: boolean;
+  mileMarkerSize?: number;
+  showMileMarkerNumbers?: boolean;
+  separateOverlaps?: boolean;
+  overlapSpacing?: number;
   startMarker: RouteEndpointMarker;
   finishMarker: RouteEndpointMarker;
 }

@@ -10,6 +10,10 @@ import {
   type ResolvedTheme,
 } from "@/features/theme/domain/types";
 import { getThemeColorByPath } from "@/features/theme/domain/colorPaths";
+import {
+  getColorAdjustmentsFromForm,
+  hasColorAdjustments,
+} from "@/features/theme/domain/colorAdjust";
 import { normalizeHexColor } from "@/shared/utils/color";
 
 export interface LayerToggleSnapshot {
@@ -45,6 +49,11 @@ export interface RouteStyleSnapshot {
   opacity: number;
   lineStyle: RouteLineStyle;
   showEndpoints?: boolean;
+  showMileMarkers?: boolean;
+  mileMarkerSize?: number;
+  showMileMarkerNumbers?: boolean;
+  separateOverlaps?: boolean;
+  overlapSpacing?: number;
   startMarker?: RouteEndpointMarker;
   finishMarker?: RouteEndpointMarker;
 }
@@ -75,6 +84,11 @@ export function captureRouteStyleSnapshot(route: Route): RouteStyleSnapshot {
     opacity: route.opacity,
     lineStyle: route.lineStyle,
     showEndpoints: route.showEndpoints,
+    showMileMarkers: Boolean(route.showMileMarkers),
+    mileMarkerSize: route.mileMarkerSize,
+    showMileMarkerNumbers: route.showMileMarkerNumbers ?? true,
+    separateOverlaps: Boolean(route.separateOverlaps),
+    overlapSpacing: route.overlapSpacing ?? 0,
     startMarker: cloneEndpointMarker(route.startMarker),
     finishMarker: cloneEndpointMarker(route.finishMarker),
   };
@@ -143,6 +157,12 @@ function sameRouteStyle(route: Route, baseline: RouteStyleSnapshot): boolean {
     route.opacity === baseline.opacity &&
     route.lineStyle === baseline.lineStyle &&
     Boolean(route.showEndpoints) === Boolean(baseline.showEndpoints) &&
+    Boolean(route.showMileMarkers) === Boolean(baseline.showMileMarkers) &&
+    route.mileMarkerSize === baseline.mileMarkerSize &&
+    (route.showMileMarkerNumbers ?? true) ===
+      (baseline.showMileMarkerNumbers ?? true) &&
+    Boolean(route.separateOverlaps) === Boolean(baseline.separateOverlaps) &&
+    (route.overlapSpacing ?? 0) === (baseline.overlapSpacing ?? 0) &&
     sameEndpointMarker(route.startMarker, baseline.startMarker) &&
     sameEndpointMarker(route.finishMarker, baseline.finishMarker)
   );
@@ -164,6 +184,10 @@ export function isThemeDesignModified({
   baseline: ThemeDesignBaseline;
 }): boolean {
   if (activeGeneratedThemeId !== null) {
+    return true;
+  }
+
+  if (hasColorAdjustments(getColorAdjustmentsFromForm(form))) {
     return true;
   }
 

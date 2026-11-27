@@ -52,3 +52,5 @@ export { FiSave as SaveIcon } from "react-icons/fi";
 export { FiSend as SendIcon } from "react-icons/fi";
 export { FiArrowLeft as BackIcon } from "react-icons/fi";
 export { FiMessageSquare as DesignerIcon } from "react-icons/fi";
+export { LuPalette as ColorIcon } from "react-icons/lu";
+export { FiRotateCcw as ResetIcon } from "react-icons/fi";

@@ -22,6 +22,7 @@ import SaveThemeModal from "@/features/theme/ui/SaveThemeModal";
 import SaveChoiceModal from "@/features/theme/ui/SaveChoiceModal";
 import RouteStylingSection from "@/features/routes/ui/RouteStylingSection";
 import type { ThemeDesignerSession } from "@/features/theme-designer/domain/types";
+import { COLOR_ADJUST_DEFAULTS } from "@/features/poster/application/colorAdjustFields";
 
 const FALLBACK_COLOR = "#000000";
 
@@ -64,7 +65,7 @@ export default function DesignSection({
   onSetCustomColors,
   themeDesigner,
 }: DesignSectionProps) {
-  const { isThemeDesignDirty } = usePosterContext();
+  const { dispatch, isThemeDesignDirty } = usePosterContext();
 
   const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -307,6 +308,7 @@ export default function DesignSection({
       savedAt: new Date().toISOString(),
     });
     onResetColors();
+    dispatch({ type: "SET_FORM_FIELDS", fields: COLOR_ADJUST_DEFAULTS });
     setIsSaveChoiceModalOpen(false);
   }
 
@@ -331,6 +333,7 @@ export default function DesignSection({
     };
     onAddSavedTheme(newTheme);
     onThemeChange(id);
+    dispatch({ type: "SET_FORM_FIELDS", fields: COLOR_ADJUST_DEFAULTS });
     setIsSaveModalOpen(false);
   }
 

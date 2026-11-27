@@ -16,6 +16,7 @@ import RoutesSection from "@/features/routes/ui/RoutesSection";
 import PresetsSection from "@/features/presets/ui/PresetsSection";
 import TypographySection from "@/features/poster/ui/TypographySection";
 import DesignSection from "@/features/poster/ui/DesignSection";
+import ColorSection from "@/features/poster/ui/ColorSection";
 import {
   LocationIcon,
   ThemeIcon,
@@ -25,6 +26,7 @@ import {
   RouteIcon,
   PresetsIcon,
   DesignIcon,
+  ColorIcon,
   ChevronDownIcon,
 } from "@/shared/ui/Icons";
 
@@ -42,6 +44,7 @@ type SectionId =
   | "layout"
   | "theme"
   | "style"
+  | "color"
   | "layers"
   | "markers"
   | "routes"
@@ -56,6 +59,7 @@ const accordionSections: {
   { id: "layout", label: "Layout", Icon: LayoutIcon },
   { id: "theme", label: "Theme", Icon: ThemeIcon },
   { id: "style", label: "Design", Icon: DesignIcon },
+  { id: "color", label: "Color", Icon: ColorIcon },
   { id: "layers", label: "Layers", Icon: LayersIcon },
   { id: "markers", label: "Markers", Icon: MarkersIcon },
   { id: "routes", label: "Routes", Icon: RouteIcon },
@@ -333,12 +337,31 @@ export default function SettingsPanel({
       </div>
 
       <div
+        className={`mobile-section mobile-section--color accordion-item${openSections.has("color") ? " accordion-item--open" : ""}`}
+      >
+        <AccordionHeader
+          sectionId="color"
+          label={accordionSections[4].label}
+          Icon={accordionSections[4].Icon}
+          isOpen={openSections.has("color")}
+          onToggle={toggleSection}
+        />
+        <div
+          className={`accordion-body${openSections.has("color") ? " is-open" : ""}`}
+        >
+          <div className="accordion-body-inner">
+            <ColorSection />
+          </div>
+        </div>
+      </div>
+
+      <div
         className={`mobile-section mobile-section--layers accordion-item${openSections.has("layers") ? " accordion-item--open" : ""}`}
       >
         <AccordionHeader
           sectionId="layers"
-          label={accordionSections[4].label}
-          Icon={accordionSections[4].Icon}
+          label={accordionSections[5].label}
+          Icon={accordionSections[5].Icon}
           isOpen={openSections.has("layers")}
           onToggle={toggleSection}
         />
@@ -362,8 +385,8 @@ export default function SettingsPanel({
       >
         <AccordionHeader
           sectionId="markers"
-          label={accordionSections[5].label}
-          Icon={accordionSections[5].Icon}
+          label={accordionSections[6].label}
+          Icon={accordionSections[6].Icon}
           isOpen={openSections.has("markers")}
           onToggle={toggleSection}
         />
@@ -381,8 +404,8 @@ export default function SettingsPanel({
       >
         <AccordionHeader
           sectionId="routes"
-          label={accordionSections[6].label}
-          Icon={accordionSections[6].Icon}
+          label={accordionSections[7].label}
+          Icon={accordionSections[7].Icon}
           isOpen={openSections.has("routes")}
           onToggle={toggleSection}
         />
@@ -400,8 +423,8 @@ export default function SettingsPanel({
       >
         <AccordionHeader
           sectionId="presets"
-          label={accordionSections[7].label}
-          Icon={accordionSections[7].Icon}
+          label={accordionSections[8].label}
+          Icon={accordionSections[8].Icon}
           isOpen={openSections.has("presets")}
           onToggle={toggleSection}
         />

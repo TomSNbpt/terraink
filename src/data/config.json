@@ -1063,6 +1063,32 @@
           "outline": "#152338"
         }
       }
+    },
+    "night_blue": {
+      "name": "Night Blue",
+      "description": "Modified Blueprint",
+      "ui": {
+        "bg": "#00021b",
+        "text": "#37abff"
+      },
+      "map": {
+        "land": "#00021b",
+        "landcover": "#000824",
+        "water": "#000018",
+        "waterway": "#000018",
+        "parks": "#000c2c",
+        "buildings": "#17609d",
+        "aeroway": "#000c2c",
+        "rail": "#37abff",
+        "roads": {
+          "major": "#3bb4ff",
+          "minor_high": "#1b6ba7",
+          "minor_mid": "#002346",
+          "minor_low": "#00193a",
+          "path": "#0b2e52",
+          "outline": "#163a5e"
+        }
+      }
     }
   },
   "layouts": {
@@ -1306,7 +1332,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": true,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -1371,7 +1405,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -1457,7 +1499,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -1547,7 +1597,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -1670,7 +1728,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -1780,7 +1846,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -1890,7 +1964,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -1990,7 +2072,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -2102,7 +2192,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -2191,7 +2289,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -2277,7 +2383,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -2363,7 +2477,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {},
         "displayNameOverrides": {
@@ -2449,7 +2571,15 @@
           "includeRoadMinorLow": true,
           "includeRoadOutline": true,
           "showMarkers": false,
-          "showRoutes": true
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
         },
         "customColors": {
           "ui.bg": "#AFD6F2",
@@ -2537,6 +2667,260 @@
           },
           {
             "id": "guide-5f9f7c9d-5fa4-499f-9c70-28ccc1e244cd",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 0
+      }
+    },
+    {
+      "id": "preset-df7cbc26-b733-4992-8225-a1807a796780",
+      "name": "Boston-2",
+      "createdAt": "2026-11-24T21:34:10.219Z",
+      "updatedAt": "2026-11-24T21:59:21.716Z",
+      "snapshot": {
+        "form": {
+          "location": "Wellesley, Massachusetts",
+          "latitude": "42.289197",
+          "longitude": "-71.292288",
+          "distance": "22877",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "philadelphia_option_2",
+          "layout": "poster_large_portrait",
+          "displayCity": "Wellesley",
+          "displayCountry": "Massachusetts",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": false,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
+        },
+        "customColors": {},
+        "displayNameOverrides": {
+          "city": false,
+          "country": false
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#F0C239"
+        },
+        "routes": [
+          {
+            "id": "gpx-2ef44057-2da9-41ea-b7cc-c7f816e37137",
+            "label": "2127_8qx8uj68q_Boston_QGIS_Export",
+            "source": "gpx",
+            "sourceFilename": "2127_8qx8uj68q_Boston_QGIS_Export.gpx",
+            "gpxFile": "2127_8qx8uj68q_Boston_QGIS_Export.gpx",
+            "color": "#f0c239",
+            "strokeWidth": 4,
+            "outlineEnabled": true,
+            "outlineColor": "#ffffff",
+            "outlineWidth": 2,
+            "outline2Enabled": false,
+            "outline2Color": "#000000",
+            "outline2Width": 1,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": true,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1b8a3d",
+              "size": 15,
+              "outlineEnabled": true
+            },
+            "finishMarker": {
+              "iconId": "circle",
+              "color": "#d62828",
+              "size": 15,
+              "outlineEnabled": true
+            }
+          }
+        ],
+        "routeDefaults": {
+          "color": "#1A5F7A",
+          "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-4069a7c3-6b16-4f6c-9097-cb484399993b",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-d933b3cb-2f5f-4121-a50a-09f1c4c51bb7",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-5cec90c4-8410-43f9-a3e1-a650a663dceb",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-9c12ad78-08aa-4f1e-ac01-19a0e95d2a84",
+            "axis": "y",
+            "offsetCm": 39.37
+          }
+        ],
+        "showGuides": true,
+        "bearing": 45
+      }
+    },
+    {
+      "id": "preset-41ecb514-19f8-48dd-a88d-e1edc01688cc",
+      "name": "Los Angeles",
+      "createdAt": "2026-11-25T04:46:36.282Z",
+      "updatedAt": "2026-11-25T04:48:24.962Z",
+      "snapshot": {
+        "form": {
+          "location": "Los Angeles, California",
+          "latitude": "34.074538",
+          "longitude": "-118.355369",
+          "distance": "13103",
+          "width": "30.48",
+          "height": "40.64",
+          "customSizeUnit": "in",
+          "theme": "night_blue",
+          "layout": "poster_large_portrait",
+          "displayCity": "LA MARATHON",
+          "displayCountry": "",
+          "displayContinent": "North America",
+          "fontFamily": "",
+          "showPosterText": true,
+          "includeCredits": true,
+          "includeLandcover": true,
+          "includeBuildings": false,
+          "includeWater": true,
+          "includeParks": true,
+          "includeAeroway": true,
+          "includeRail": true,
+          "includeRoads": true,
+          "includeRoadPath": true,
+          "includeRoadMinorLow": true,
+          "includeRoadOutline": true,
+          "showMarkers": false,
+          "showRoutes": true,
+          "colorBrightness": "0",
+          "colorContrast": "0",
+          "colorSaturation": "0",
+          "colorHue": "0",
+          "colorWarmth": "0",
+          "colorInvert": false,
+          "colorGrayscale": false,
+          "colorKeepAcrossThemes": false
+        },
+        "customColors": {
+          "ui.text": "#ff8c37"
+        },
+        "displayNameOverrides": {
+          "city": true,
+          "country": true
+        },
+        "markers": [],
+        "markerDefaults": {
+          "size": 36,
+          "color": "#ff8c37"
+        },
+        "routes": [
+          {
+            "id": "gpx-e21026ec-208a-4b1a-945d-2e944cdef782",
+            "label": "los-angeles-marathon-2026-los-angeles-2026-track",
+            "source": "gpx",
+            "sourceFilename": "los-angeles-marathon-2026-los-angeles-2026-track.gpx",
+            "gpxFile": "los-angeles-marathon-2026-los-angeles-2026-track.gpx",
+            "color": "#d56c0c",
+            "strokeWidth": 3,
+            "outlineEnabled": true,
+            "outlineColor": "#ffffff",
+            "outlineWidth": 1.5,
+            "outline2Enabled": false,
+            "outline2Color": "#000000",
+            "outline2Width": 1,
+            "opacity": 1,
+            "lineStyle": "solid",
+            "visible": true,
+            "showEndpoints": true,
+            "startMarker": {
+              "iconId": "circle",
+              "color": "#1b8a3d",
+              "size": 15,
+              "outlineEnabled": true
+            },
+            "finishMarker": {
+              "iconId": "circle",
+              "color": "#d62828",
+              "size": 15,
+              "outlineEnabled": true
+            }
+          }
+        ],
+        "routeDefaults": {
+          "color": "#1A5F7A",
+          "strokeWidth": 3,
+          "outlineEnabled": true,
+          "outlineColor": "#ffffff",
+          "outlineWidth": 1,
+          "outline2Enabled": false,
+          "outline2Color": "#000000",
+          "outline2Width": 1,
+          "opacity": 1,
+          "lineStyle": "solid",
+          "startIconId": "circle",
+          "finishIconId": "flag"
+        },
+        "guides": [
+          {
+            "id": "guide-35952f58-6eaa-4303-8447-b0ab2c01d83c",
+            "axis": "x",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-67830881-9af6-40a8-83f6-1621902c0996",
+            "axis": "x",
+            "offsetCm": 29.21
+          },
+          {
+            "id": "guide-963987a5-ddfb-4347-8b42-c0b58ba361d8",
+            "axis": "y",
+            "offsetCm": 1.27
+          },
+          {
+            "id": "guide-c2cf626a-dc33-4157-afa8-2571e47f042a",
             "axis": "y",
             "offsetCm": 39.37
           }

@@ -6,6 +6,7 @@ import type {
   MarkerItem,
 } from "@/features/markers/domain/types";
 import { drawMarkersOnCanvas } from "@/features/markers/infrastructure/rendering";
+import { projectMarkerToCanvas } from "@/features/markers/infrastructure/projection";
 import type { Route } from "@/features/routes/domain/types";
 import { drawRoutesOnCanvas } from "@/features/routes/infrastructure/rendering";
 import { routeEndpointMarkerItems } from "@/features/routes/infrastructure/helpers";
@@ -218,7 +219,14 @@ export async function createLayeredSvgBlobFromMap({
     if (visibleRoutes.length > 0 && markerIcons.length > 0) {
       for (let routeIdx = 0; routeIdx < visibleRoutes.length; routeIdx += 1) {
         const route = visibleRoutes[routeIdx];
-        const endpointItems = routeEndpointMarkerItems([route]);
+        const endpointItems = routeEndpointMarkerItems([route], {
+          project: (lat, lon) => {
+            const p = projectMarkerToCanvas(lat, lon, markerProjection);
+            return { x: p.x * markerScaleX, y: p.y * markerScaleY };
+          },
+          sizeScale: Math.max(markerScaleX, markerScaleY) * markerSizeScale,
+          strokeScale: ((markerScaleX + markerScaleY) / 2) * markerSizeScale,
+        });
         if (endpointItems.length === 0) continue;
         const endpointsCanvas = document.createElement("canvas");
         endpointsCanvas.width = exportWidth;

@@ -190,3 +190,71 @@ export function buildStrokedSvgIcon(
     boxSize,
   };
 }
+
+export function buildNumberedCircleSvg(options: {
+  size: number;
+  fillColor: string;
+  labelText: string;
+  labelColor: string;
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  outerStrokeColor?: string;
+  outerStrokeWidthPx?: number;
+}): StrokedSvgResult {
+  const {
+    size,
+    fillColor,
+    labelText,
+    labelColor,
+    strokeColor,
+    strokeWidthPx,
+    outerStrokeColor,
+    outerStrokeWidthPx,
+  } = options;
+
+  const safeSize = Math.max(1, size);
+  const hasStroke =
+    Boolean(strokeColor) &&
+    typeof strokeWidthPx === "number" &&
+    Number.isFinite(strokeWidthPx) &&
+    strokeWidthPx > 0;
+  const hasOuterStroke =
+    hasStroke &&
+    Boolean(outerStrokeColor) &&
+    typeof outerStrokeWidthPx === "number" &&
+    Number.isFinite(outerStrokeWidthPx) &&
+    outerStrokeWidthPx > 0;
+
+  const vbPerPx = 100 / safeSize;
+  const vbStrokeHalf = hasStroke ? strokeWidthPx! * vbPerPx : 0;
+  const vbOuterHalf = hasOuterStroke ? outerStrokeWidthPx! * vbPerPx : 0;
+  const vbTotalHalf = vbStrokeHalf + vbOuterHalf;
+  const padVb = hasStroke ? vbTotalHalf * 1.25 : 0;
+
+  const viewBox = `${fmt(-padVb)} ${fmt(-padVb)} ${fmt(100 + padVb * 2)} ${fmt(100 + padVb * 2)}`;
+  const boxSize = safeSize + 2 * (padVb / vbPerPx);
+
+  const outerRing = hasOuterStroke
+    ? `<circle cx="50" cy="50" r="${fmt(50 + vbTotalHalf)}" fill="${escapeXmlAttr(outerStrokeColor!)}" />`
+    : "";
+  const innerRing = hasStroke
+    ? `<circle cx="50" cy="50" r="${fmt(50 + vbStrokeHalf)}" fill="${escapeXmlAttr(strokeColor!)}" />`
+    : "";
+  const fillCircle = `<circle cx="50" cy="50" r="50" fill="${escapeXmlAttr(fillColor)}" />`;
+
+  const textLen = labelText.length;
+  const fontSize = textLen <= 1 ? 62 : textLen === 2 ? 52 : 38;
+  const letterSpacing = textLen >= 2 ? ` letter-spacing="-1.5"` : "";
+  const textEl = `<text x="50" y="50" dy="0.36em" text-anchor="middle" fill="${escapeXmlAttr(labelColor)}" font-family="'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif" font-size="${fmt(fontSize)}" font-weight="700"${letterSpacing}>${escapeXmlAttr(labelText)}</text>`;
+
+  const innerMarkup = `${outerRing}${innerRing}${fillCircle}${textEl}`;
+  const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="${fmt(boxSize)}" height="${fmt(boxSize)}" viewBox="${escapeXmlAttr(viewBox)}">${innerMarkup}</svg>`;
+
+  return {
+    svgMarkup,
+    viewBox,
+    innerMarkup,
+    boxSize,
+  };
+}
+

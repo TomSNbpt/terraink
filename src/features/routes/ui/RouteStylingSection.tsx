@@ -6,6 +6,7 @@ import {
   MIN_MARKER_SIZE,
 } from "@/features/markers/domain/constants";
 import {
+  getRouteMileMarkerSize,
   resolveRouteOutline,
   resolveRouteOutline2,
   routeLengthMeters,
@@ -15,12 +16,15 @@ import {
   DEFAULT_ROUTE_FINISH_COLOR,
   DEFAULT_ROUTE_OUTLINE_COLOR,
   DEFAULT_ROUTE_OUTLINE2_COLOR,
+  DEFAULT_ROUTE_OVERLAP_SPACING,
   DEFAULT_ROUTE_START_COLOR,
   MAX_ROUTE_OPACITY,
   MAX_ROUTE_OUTLINE_WIDTH,
+  MAX_ROUTE_OVERLAP_SPACING,
   MAX_ROUTE_STROKE_WIDTH,
   MIN_ROUTE_OPACITY,
   MIN_ROUTE_OUTLINE_WIDTH,
+  MIN_ROUTE_OVERLAP_SPACING,
   MIN_ROUTE_STROKE_WIDTH,
   ROUTE_LINE_STYLES,
 } from "@/features/routes/domain/constants";
@@ -183,13 +187,25 @@ export default function RouteStylingSection() {
       if (!route) return;
       const current = kind === "start" ? route.startMarker : route.finishMarker;
       const next: RouteEndpointMarker = { ...current, ...changes };
+      const routeChanges: Partial<Route> =
+        kind === "start" ? { startMarker: next } : { finishMarker: next };
+      if (changes.size !== undefined) {
+        if (kind === "start") {
+          routeChanges.finishMarker = {
+            ...route.finishMarker,
+            size: changes.size,
+          };
+        } else {
+          routeChanges.startMarker = {
+            ...route.startMarker,
+            size: changes.size,
+          };
+        }
+      }
       dispatch({
         type: "UPDATE_ROUTE",
         routeId,
-        changes:
-          kind === "start"
-            ? { startMarker: next }
-            : { finishMarker: next },
+        changes: routeChanges,
       });
     },
     [dispatch, routes],
@@ -445,7 +461,7 @@ export default function RouteStylingSection() {
                           <label
                             htmlFor={`route-${route.id}-${endpointKind}-size`}
                           >
-                            <span>Size</span>
+                            <span>Size (Start &amp; Finish)</span>
                             <span className="route-card__value">
                               {endpoint.size}px
                             </span>
@@ -507,63 +523,213 @@ export default function RouteStylingSection() {
                   </label>
 
                   {route.showEndpoints ? (
-                    <div className="route-card__endpoint-rows">
-                      {(["start", "finish"] as const).map((kind) => {
-                        const endpoint =
-                          kind === "start"
-                            ? route.startMarker
-                            : route.finishMarker;
-                        const icon = findMarkerIcon(
-                          endpoint.iconId,
-                          customMarkerIcons,
-                        );
-                        const label = kind === "start" ? "Start" : "Finish";
-                        const endpointOutlineEnabled =
-                          endpoint.outlineEnabled ??
-                          DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED;
-                        return (
-                          <button
-                            key={kind}
-                            type="button"
-                            className="route-card__endpoint-row"
-                            onClick={() => openEndpointEditor(route.id, kind)}
-                            aria-label={`Edit ${label.toLowerCase()} marker`}
-                          >
-                            <span className="route-card__endpoint-row-icon">
-                              {icon ? (
-                                <MarkerVisual
-                                  icon={icon}
-                                  size={24}
-                                  color={endpoint.color}
-                                  strokeColor={
-                                    endpointOutlineEnabled && outline.width > 0
-                                      ? outline.color
-                                      : undefined
-                                  }
-                                  strokeWidth={
-                                    endpointOutlineEnabled && outline.width > 0
-                                      ? Math.min(2, outline.width)
-                                      : undefined
-                                  }
-                                  outerStrokeColor={
-                                    endpointOutlineEnabled && outline2.active
-                                      ? outline2.color
-                                      : undefined
-                                  }
-                                  outerStrokeWidth={
-                                    endpointOutlineEnabled && outline2.active
-                                      ? Math.min(1.5, outline2.width)
-                                      : undefined
-                                  }
-                                />
-                              ) : null}
-                            </span>
-                            <span className="route-card__endpoint-row-label">
-                              {label}
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="route-card__subcontrols">
+                      <div className="route-card__endpoint-rows">
+                        {(["start", "finish"] as const).map((kind) => {
+                          const endpoint =
+                            kind === "start"
+                              ? route.startMarker
+                              : route.finishMarker;
+                          const icon = findMarkerIcon(
+                            endpoint.iconId,
+                            customMarkerIcons,
+                          );
+                          const label = kind === "start" ? "Start" : "Finish";
+                          const endpointOutlineEnabled =
+                            endpoint.outlineEnabled ??
+                            DEFAULT_ROUTE_ENDPOINT_OUTLINE_ENABLED;
+                          return (
+                            <button
+                              key={kind}
+                              type="button"
+                              className="route-card__endpoint-row"
+                              onClick={() => openEndpointEditor(route.id, kind)}
+                              aria-label={`Edit ${label.toLowerCase()} marker`}
+                            >
+                              <span className="route-card__endpoint-row-icon">
+                                {icon ? (
+                                  <MarkerVisual
+                                    icon={icon}
+                                    size={24}
+                                    color={endpoint.color}
+                                    strokeColor={
+                                      endpointOutlineEnabled &&
+                                      outline.width > 0
+                                        ? outline.color
+                                        : undefined
+                                    }
+                                    strokeWidth={
+                                      endpointOutlineEnabled &&
+                                      outline.width > 0
+                                        ? Math.min(2, outline.width)
+                                        : undefined
+                                    }
+                                    outerStrokeColor={
+                                      endpointOutlineEnabled && outline2.active
+                                        ? outline2.color
+                                        : undefined
+                                    }
+                                    outerStrokeWidth={
+                                      endpointOutlineEnabled && outline2.active
+                                        ? Math.min(1.5, outline2.width)
+                                        : undefined
+                                    }
+                                  />
+                                ) : null}
+                              </span>
+                              <span className="route-card__endpoint-row-label">
+                                {label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="route-card__field">
+                        <label htmlFor={`route-endpoints-size-${route.id}`}>
+                          <span>Start / Finish size</span>
+                          <span className="route-card__value">
+                            {route.startMarker.size}px
+                          </span>
+                        </label>
+                        <input
+                          id={`route-endpoints-size-${route.id}`}
+                          type="range"
+                          min={MIN_MARKER_SIZE}
+                          max={MAX_MARKER_SIZE}
+                          step={1}
+                          value={route.startMarker.size}
+                          onChange={(event) => {
+                            const nextSize = Number(event.target.value);
+                            updateRoute(route.id, {
+                              startMarker: {
+                                ...route.startMarker,
+                                size: nextSize,
+                              },
+                              finishMarker: {
+                                ...route.finishMarker,
+                                size: nextSize,
+                              },
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <label className="toggle-field">
+                    <span>Mile markers (1 mi)</span>
+                    <span className="theme-switch">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(route.showMileMarkers)}
+                        onChange={(event) => {
+                          const enabled = event.target.checked;
+                          updateRoute(route.id, {
+                            showMileMarkers: enabled,
+                            ...(enabled && route.mileMarkerSize === undefined
+                              ? { mileMarkerSize: route.startMarker.size }
+                              : {}),
+                          });
+                        }}
+                      />
+                      <span className="theme-switch-track" aria-hidden="true" />
+                    </span>
+                  </label>
+
+                  {route.showMileMarkers ? (
+                    <div className="route-card__subcontrols">
+                      <label className="toggle-field">
+                        <span>Show numbers</span>
+                        <span className="theme-switch">
+                          <input
+                            type="checkbox"
+                            checked={route.showMileMarkerNumbers ?? true}
+                            onChange={(event) =>
+                              updateRoute(route.id, {
+                                showMileMarkerNumbers: event.target.checked,
+                              })
+                            }
+                          />
+                          <span
+                            className="theme-switch-track"
+                            aria-hidden="true"
+                          />
+                        </span>
+                      </label>
+
+                      <div className="route-card__field">
+                        <label htmlFor={`route-mile-size-${route.id}`}>
+                          <span>Mile marker size</span>
+                          <span className="route-card__value">
+                            {getRouteMileMarkerSize(route)}px
+                          </span>
+                        </label>
+                        <input
+                          id={`route-mile-size-${route.id}`}
+                          type="range"
+                          min={MIN_MARKER_SIZE}
+                          max={MAX_MARKER_SIZE}
+                          step={1}
+                          value={getRouteMileMarkerSize(route)}
+                          onChange={(event) =>
+                            updateRoute(route.id, {
+                              mileMarkerSize: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <label className="toggle-field">
+                    <span>Separate overlaps</span>
+                    <span className="theme-switch">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(route.separateOverlaps)}
+                        onChange={(event) =>
+                          updateRoute(route.id, {
+                            separateOverlaps: event.target.checked,
+                          })
+                        }
+                      />
+                      <span className="theme-switch-track" aria-hidden="true" />
+                    </span>
+                  </label>
+
+                  {route.separateOverlaps ? (
+                    <div className="route-card__subcontrols">
+                      <div className="route-card__field">
+                        <label htmlFor={`route-overlap-spacing-${route.id}`}>
+                          <span>Spacing fine-tune</span>
+                          <span className="route-card__value">
+                            {(() => {
+                              const adj =
+                                route.overlapSpacing ??
+                                DEFAULT_ROUTE_OVERLAP_SPACING;
+                              if (Math.abs(adj) < 0.01) return "Auto";
+                              return `${adj > 0 ? "+" : ""}${adj}px`;
+                            })()}
+                          </span>
+                        </label>
+                        <input
+                          id={`route-overlap-spacing-${route.id}`}
+                          type="range"
+                          min={MIN_ROUTE_OVERLAP_SPACING}
+                          max={MAX_ROUTE_OVERLAP_SPACING}
+                          step={0.5}
+                          value={
+                            route.overlapSpacing ??
+                            DEFAULT_ROUTE_OVERLAP_SPACING
+                          }
+                          onChange={(event) =>
+                            updateRoute(route.id, {
+                              overlapSpacing: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   ) : null}
 

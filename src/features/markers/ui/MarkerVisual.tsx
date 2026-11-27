@@ -1,6 +1,9 @@
 import { memo, useMemo, type CSSProperties } from "react";
 import type { MarkerIconDefinition } from "@/features/markers/domain/types";
-import { buildStrokedSvgIcon } from "@/features/markers/infrastructure/svgStroke";
+import {
+  buildNumberedCircleSvg,
+  buildStrokedSvgIcon,
+} from "@/features/markers/infrastructure/svgStroke";
 
 interface MarkerVisualProps {
   icon: MarkerIconDefinition;
@@ -10,6 +13,8 @@ interface MarkerVisualProps {
   strokeWidth?: number;
   outerStrokeColor?: string;
   outerStrokeWidth?: number;
+  labelText?: string;
+  labelColor?: string;
   className?: string;
 }
 
@@ -21,6 +26,8 @@ const MarkerVisual = memo(function MarkerVisual({
   strokeWidth,
   outerStrokeColor,
   outerStrokeWidth,
+  labelText,
+  labelColor,
   className = "",
 }: MarkerVisualProps) {
   const isThemeTintedMarkerSvg =
@@ -42,6 +49,18 @@ const MarkerVisual = memo(function MarkerVisual({
     outerStrokeWidth > 0;
 
   const strokedSvg = useMemo(() => {
+    if (labelText) {
+      return buildNumberedCircleSvg({
+        size,
+        fillColor: color,
+        labelText,
+        labelColor: labelColor || strokeColor || "#ffffff",
+        strokeColor: hasStroke ? strokeColor : undefined,
+        strokeWidthPx: hasStroke ? strokeWidth : undefined,
+        outerStrokeColor: hasOuterStroke ? outerStrokeColor : undefined,
+        outerStrokeWidthPx: hasOuterStroke ? outerStrokeWidth : undefined,
+      });
+    }
     if (!hasStroke || icon.kind !== "svg" || !icon.svgMarkup) {
       return null;
     }
@@ -60,6 +79,8 @@ const MarkerVisual = memo(function MarkerVisual({
     hasStroke,
     icon.kind,
     icon.svgMarkup,
+    labelColor,
+    labelText,
     outerStrokeColor,
     outerStrokeWidth,
     size,
